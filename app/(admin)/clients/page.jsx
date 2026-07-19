@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { StatCard } from "@/components/admin/stat-card";
 import { ClientFilters } from "@/components/clients/client-filters";
 import { DeleteClientButton } from "@/components/clients/delete-client-button";
+import { ExportCsvMenu } from "@/components/clients/export-csv-menu";
+import { ImportCsvDialog } from "@/components/clients/import-csv-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -82,12 +84,16 @@ export default async function ClientsPage({ searchParams }) {
 					<h1 className="text-2xl font-semibold tracking-tight">Clients</h1>
 					<p className="text-sm text-muted-foreground">Households and travelers you work with.</p>
 				</div>
-				<Button asChild>
-					<Link href="/clients/new">
-						<Plus className="size-4" />
-						New Client
-					</Link>
-				</Button>
+				<div className="flex items-center gap-2">
+					<ImportCsvDialog />
+					<ExportCsvMenu />
+					<Button asChild>
+						<Link href="/clients/new">
+							<Plus className="size-4" />
+							New Client
+						</Link>
+					</Button>
+				</div>
 			</div>
 
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -12,6 +12,7 @@ const typeLabels = {
   VISA: "Visa",
   INSURANCE: "Insurance",
   TICKET: "Ticket",
+  VOUCHER: "Voucher",
   OTHER: "Other",
 };
 
@@ -51,13 +52,26 @@ export default async function DocumentsPage({ params }) {
     prisma.document.findMany({
       where: { clientId },
       orderBy: { uploadedAt: "desc" },
-      include: { traveler: { select: { id: true, firstName: true, lastName: true } } },
+      include: {
+        traveler: { select: { id: true, firstName: true, lastName: true } },
+        segment: { select: { id: true, title: true, trip: { select: { id: true, name: true } } } },
+      },
     }),
     prisma.traveler.findMany({ where: { clientId }, select: { id: true, firstName: true, lastName: true } }),
   ]);
 
-  const clientDocs = documents.filter((d) => !d.travelerId);
   const travelerDocs = documents.filter((d) => d.travelerId);
+  const segmentDocs = documents.filter((d) => d.segmentId);
+  const clientDocs = documents.filter((d) => !d.travelerId && !d.segmentId);
+
+  const tripGroups = new Map();
+  for (const doc of segmentDocs) {
+    const tripId = doc.segment.trip.id;
+    if (!tripGroups.has(tripId)) {
+      tripGroups.set(tripId, { tripId, tripName: doc.segment.trip.name, docs: [] });
+    }
+    tripGroups.get(tripId).docs.push(doc);
+  }
 
   return (
     <div className="space-y-6">
@@ -95,6 +109,21 @@ export default async function DocumentsPage({ params }) {
           </div>
         );
       })}
+
+      {[...tripGroups.values()].map((group) => (
+        <div key={group.tripId} className="space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            <Link href={`/trips/${group.tripId}/itinerary`} className="hover:underline">
+              {group.tripName}
+            </Link>
+          </h3>
+          <div className="space-y-2">
+            {group.docs.map((doc) => (
+              <DocumentRow key={doc.id} doc={doc} />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

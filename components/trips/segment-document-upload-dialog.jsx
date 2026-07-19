@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,20 +20,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { uploadDocument } from "@/app/(admin)/clients/[clientId]/documents/actions";
+import { uploadSegmentDocument } from "@/app/(admin)/trips/[tripId]/itinerary/actions";
 
 const documentTypes = [
-  { value: "PASSPORT", label: "Passport" },
-  { value: "VISA", label: "Visa" },
-  { value: "INSURANCE", label: "Insurance" },
   { value: "TICKET", label: "Ticket" },
   { value: "VOUCHER", label: "Voucher" },
+  { value: "INSURANCE", label: "Insurance" },
   { value: "OTHER", label: "Other" },
 ];
 
-export function DocumentUploadDialog({ clientId, travelers }) {
+export function SegmentDocumentUploadDialog({ segmentId }) {
   const [open, setOpen] = useState(false);
-  const action = uploadDocument.bind(null, clientId);
+  const action = uploadSegmentDocument.bind(null, segmentId);
   const [error, formAction, pending] = useActionState(action, undefined);
   const wasPending = useRef(false);
   const formRef = useRef(null);
@@ -49,14 +47,14 @@ export function DocumentUploadDialog({ clientId, travelers }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <Plus className="size-4" />
-          Upload document
+        <Button variant="ghost" size="icon-sm">
+          <Paperclip className="size-4" />
+          <span className="sr-only">Attach document</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Upload document</DialogTitle>
+          <DialogTitle>Attach document</DialogTitle>
         </DialogHeader>
         <form ref={formRef} action={formAction} className="space-y-4">
           <div className="space-y-2">
@@ -66,7 +64,7 @@ export function DocumentUploadDialog({ clientId, travelers }) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="type">Type</Label>
-            <Select name="type" defaultValue="OTHER">
+            <Select name="type" defaultValue="TICKET">
               <SelectTrigger id="type" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -78,28 +76,6 @@ export function DocumentUploadDialog({ clientId, travelers }) {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          {travelers.length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="travelerId">Belongs to</Label>
-              <Select name="travelerId" defaultValue="none">
-                <SelectTrigger id="travelerId" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Client (household)</SelectItem>
-                  {travelers.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.firstName} {t.lastName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="expiryDate">Expiry date (optional)</Label>
-            <Input id="expiryDate" name="expiryDate" type="date" />
           </div>
 
           {error && (

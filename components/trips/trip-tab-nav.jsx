@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutList, Route } from "lucide-react";
+import { LayoutList, Route, ListChecks } from "lucide-react";
 
 const tabs = [
   { label: "Overview", segment: "overview", icon: LayoutList },
   { label: "Itinerary", segment: "itinerary", icon: Route },
+  { label: "Tasks", segment: "tasks", icon: ListChecks },
 ];
 
 export function TripTabNav({ tripId }) {

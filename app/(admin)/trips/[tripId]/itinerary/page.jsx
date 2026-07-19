@@ -2,17 +2,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { SegmentFormDialog } from "@/components/trips/segment-form-dialog";
 import { SegmentCard } from "@/components/trips/segment-card";
+import { groupSegmentsByDay } from "@/lib/trip-segments";
 import { formatDate } from "@/lib/format";
-
-function utcDateKey(date) {
-  const d = new Date(date);
-  return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
-}
-
-function utcMidnight(date) {
-  const d = new Date(date);
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-}
 
 export default async function ItineraryPage({ params }) {
   const { tripId } = await params;
@@ -25,38 +16,11 @@ export default async function ItineraryPage({ params }) {
 
   const segments = await prisma.tripSegment.findMany({
     where: { tripId },
-    orderBy: [{ startDateTime: "asc" }, { createdAt: "asc" }],
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    include: { documents: true },
   });
 
-  const scheduled = segments.filter((s) => s.startDateTime);
-  const unscheduled = segments.filter((s) => !s.startDateTime);
-
-  const days = [];
-  if (trip.startDate && trip.endDate) {
-    const cursor = utcMidnight(trip.startDate);
-    const endDay = utcMidnight(trip.endDate);
-    let dayNum = 1;
-    const dayKeys = new Set();
-    while (cursor <= endDay) {
-      const key = utcDateKey(cursor);
-      dayKeys.add(key);
-      days.push({
-        key,
-        label: `Day ${dayNum}`,
-        date: new Date(cursor),
-        segments: scheduled.filter((s) => utcDateKey(s.startDateTime) === key),
-      });
-      cursor.setUTCDate(cursor.getUTCDate() + 1);
-      dayNum++;
-    }
-    unscheduled.push(...scheduled.filter((s) => !dayKeys.has(utcDateKey(s.startDateTime))));
-  } else if (scheduled.length > 0) {
-    const uniqueKeys = [...new Set(scheduled.map((s) => utcDateKey(s.startDateTime)))];
-    uniqueKeys.forEach((key, i) => {
-      const daySegments = scheduled.filter((s) => utcDateKey(s.startDateTime) === key);
-      days.push({ key, label: `Day ${i + 1}`, date: daySegments[0].startDateTime, segments: daySegments });
-    });
-  }
+  const { days, unscheduled } = groupSegmentsByDay(segments, trip);
 
   return (
     <div className="space-y-6">
@@ -85,8 +49,14 @@ export default async function ItineraryPage({ params }) {
                 <p className="text-sm italic text-muted-foreground/70">Nothing scheduled.</p>
               ) : (
                 <div className="space-y-2">
-                  {day.segments.map((segment) => (
-                    <SegmentCard key={segment.id} segment={segment} tripId={tripId} />
+                  {day.segments.map((segment, index) => (
+                    <SegmentCard
+                      key={segment.id}
+                      segment={segment}
+                      tripId={tripId}
+                      canMoveUp={index > 0}
+                      canMoveDown={index < day.segments.length - 1}
+                    />
                   ))}
                 </div>
               )}
@@ -97,8 +67,14 @@ export default async function ItineraryPage({ params }) {
             <div className="space-y-3 border-t border-border pt-6">
               <h3 className="text-sm font-semibold text-foreground">Unscheduled</h3>
               <div className="space-y-2">
-                {unscheduled.map((segment) => (
-                  <SegmentCard key={segment.id} segment={segment} tripId={tripId} />
+                {unscheduled.map((segment, index) => (
+                  <SegmentCard
+                    key={segment.id}
+                    segment={segment}
+                    tripId={tripId}
+                    canMoveUp={index > 0}
+                    canMoveDown={index < unscheduled.length - 1}
+                  />
                 ))}
               </div>
             </div>

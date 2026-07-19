@@ -38,6 +38,7 @@ enum DocumentType {
   VISA
   INSURANCE
   TICKET
+  VOUCHER
   OTHER
 }
 
@@ -84,6 +85,7 @@ model User {
   assignedClients Client[]      @relation("ClientAgent")
   notes           Note[]
   activityLogs    ActivityLog[]
+  assignedTasks   TripTask[]    @relation("TaskAssignee")
 }
 
 model Client {
@@ -184,6 +186,7 @@ model Trip {
 
   invoices Invoice[]
   segments TripSegment[]
+  tasks    TripTask[]
 }
 
 model TripSegment {
@@ -202,6 +205,27 @@ model TripSegment {
   cost               Int?
   notes              String?
   details            Json?
+  /// Manual ordering within a day (or the Unscheduled bucket) — see
+  /// groupSegmentsByDay in lib/trip-segments.js. Set to (trip max + 1) at
+  /// creation, swapped between neighbors on reorder.
+  sortOrder          Int         @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  documents Document[]
+}
+
+model TripTask {
+  id     String @id @default(cuid())
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  title      String
+  dueDate    DateTime?
+  assigneeId String?
+  assignee   User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  completed  Boolean   @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -228,11 +252,13 @@ model Invoice {
 }
 
 model Document {
-  id         String    @id @default(cuid())
+  id         String       @id @default(cuid())
   clientId   String?
-  client     Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client     Client?      @relation(fields: [clientId], references: [id], onDelete: Cascade)
   travelerId String?
-  traveler   Traveler? @relation(fields: [travelerId], references: [id], onDelete: Cascade)
+  traveler   Traveler?    @relation(fields: [travelerId], references: [id], onDelete: Cascade)
+  segmentId  String?
+  segment    TripSegment? @relation(fields: [segmentId], references: [id], onDelete: Cascade)
 
   type        DocumentType
   fileName    String

@@ -1,0 +1,231 @@
+// Prisma schema for AERIA Hub — Phase 1
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  ADMIN
+  AGENT
+}
+
+enum TripStatus {
+  INQUIRY
+  QUOTED
+  BOOKED
+  TRAVELING
+  COMPLETED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum DocumentType {
+  PASSPORT
+  VISA
+  INSURANCE
+  TICKET
+  OTHER
+}
+
+enum ReminderType {
+  PASSPORT_EXPIRY
+  FINAL_PAYMENT
+  CUSTOM
+}
+
+enum InquiryStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(AGENT)
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assignedClients Client[]      @relation("ClientAgent")
+  notes           Note[]
+  activityLogs    ActivityLog[]
+}
+
+model Client {
+  id      String  @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  address   String?
+  city      String?
+  country   String?
+
+  dateOfBirth    DateTime?
+  passportNumber String?
+  passportExpiry DateTime?
+  nationality    String?
+
+  travelPreferences String?
+  loyaltyPrograms   String?
+  dietaryNotes      String?
+  mobilityNotes     String?
+
+  status String @default("active")
+
+  assignedAgentId String?
+  assignedAgent   User?   @relation("ClientAgent", fields: [assignedAgentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  travelers    Traveler[]
+  trips        Trip[]
+  invoices     Invoice[]
+  documents    Document[]
+  notes        Note[]
+  reminders    Reminder[]
+  activityLogs ActivityLog[]
+}
+
+model Traveler {
+  id       String @id @default(cuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  firstName            String
+  lastName              String
+  relationshipToClient String?
+  dateOfBirth          DateTime?
+  passportNumber       String?
+  passportExpiry       DateTime?
+  nationality          String?
+  dietaryNotes         String?
+  mobilityNotes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  documents Document[]
+}
+
+model Trip {
+  id       String @id @default(cuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  name        String
+  destination String
+  startDate   DateTime?
+  endDate     DateTime?
+  status      TripStatus @default(INQUIRY)
+  totalPrice  Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoices Invoice[]
+}
+
+model Invoice {
+  id       String  @id @default(cuid())
+  clientId String
+  client   Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tripId   String?
+  trip     Trip?   @relation(fields: [tripId], references: [id])
+
+  invoiceNumber String        @unique
+  issueDate     DateTime      @default(now())
+  dueDate       DateTime?
+  amount        Float
+  amountPaid    Float         @default(0)
+  status        InvoiceStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Document {
+  id         String    @id @default(cuid())
+  clientId   String?
+  client     Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  travelerId String?
+  traveler   Traveler? @relation(fields: [travelerId], references: [id], onDelete: Cascade)
+
+  type       DocumentType
+  fileName   String
+  fileUrl    String
+  expiryDate DateTime?
+  uploadedAt DateTime     @default(now())
+}
+
+model Note {
+  id       String @id @default(cuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+  body     String
+
+  createdAt DateTime @default(now())
+}
+
+model Reminder {
+  id       String @id @default(cuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  type      ReminderType
+  title     String
+  dueDate   DateTime
+  completed Boolean      @default(false)
+
+  createdAt DateTime @default(now())
+}
+
+model Inquiry {
+  id     String        @id @default(cuid())
+  name   String
+  email  String?
+  phone  String?
+  source String        @default("web_form")
+  status InquiryStatus @default(NEW)
+  notes  String?
+
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  entityType  String
+  entityId    String
+  action      String
+  description String?
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  createdAt DateTime @default(now())
+}

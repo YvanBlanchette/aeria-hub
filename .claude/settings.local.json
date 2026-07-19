@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Bash(git --version)",
+      "Bash(npx --yes create-next-app@latest . --js --tailwind --eslint --app --src-dir=false --import-alias \"@/*\" --use-npm --no-turbopack)"
+    ]
+  }
+}

@@ -24,7 +24,7 @@ export default async function EditClientPage({ params }) {
 			<div>
 				<h1 className="text-2xl font-semibold tracking-tight">Edit client</h1>
 				<p className="text-sm text-muted-foreground">
-					Update {client.firstName} {client.lastName}'s profile.
+					Update {client.firstName} {client.lastName}&apos;s profile.
 				</p>
 			</div>
 			<ClientForm

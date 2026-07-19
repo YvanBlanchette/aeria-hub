@@ -113,10 +113,12 @@ export default async function ClientsPage({ searchParams }) {
 				/>
 			</div>
 
-			<ClientFilters
-				defaultQuery={q}
-				defaultStatus={status}
-			/>
+			<div className="flex w-full items-center justify-end">
+				<ClientFilters
+					defaultQuery={q}
+					defaultStatus={status}
+				/>
+			</div>
 
 			<div className="overflow-hidden rounded-lg border border-border">
 				<Table>
@@ -127,7 +129,8 @@ export default async function ClientsPage({ searchParams }) {
 							<TableHead>Phone</TableHead>
 							<TableHead className="text-right">Active bookings</TableHead>
 							<TableHead className="text-right">Total spent</TableHead>
-							<TableHead className="w-10" />
+							<TableHead className="text-center">Status</TableHead>
+							<TableHead className="w-10 text-center" />
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -158,12 +161,6 @@ export default async function ClientsPage({ searchParams }) {
 												<p className="truncate text-sm font-medium">
 													{client.firstName} {client.lastName}
 												</p>
-												<Badge
-													variant={client.status === "active" ? "default" : "secondary"}
-													className="text-[10px]"
-												>
-													{client.status}
-												</Badge>
 											</div>
 										</Link>
 									</TableCell>
@@ -171,6 +168,14 @@ export default async function ClientsPage({ searchParams }) {
 									<TableCell className="text-muted-foreground">{client.primaryPhone || "—"}</TableCell>
 									<TableCell className="text-right tabular-nums">{client._count.trips}</TableCell>
 									<TableCell className="text-right tabular-nums">{formatCurrency(spentByClient[client.id] || 0)}</TableCell>
+									<TableCell className="text-center w-32">
+										<Badge
+											variant={client.status === "active" ? "default" : "secondary"}
+											className="text-[10px]"
+										>
+											{client.status}
+										</Badge>
+									</TableCell>
 									<TableCell>
 										<DeleteClientButton
 											clientId={client.id}

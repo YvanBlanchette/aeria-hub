@@ -63,37 +63,6 @@ export function Topbar({ user }) {
 						<DropdownMenuTrigger asChild>
 							<Button
 								size="icon"
-								variant="default"
-								className="rounded-full"
-							>
-								<Plus className="size-4" />
-								<span className="sr-only">Quick create</span>
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end">
-							<DropdownMenuLabel>Quick create</DropdownMenuLabel>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem asChild>
-								<Link href="/clients/new">
-									<UserPlus className="size-4" />
-									New Client
-								</Link>
-							</DropdownMenuItem>
-							<DropdownMenuItem disabled>
-								<Plane className="size-4" />
-								New Trip
-							</DropdownMenuItem>
-							<DropdownMenuItem disabled>
-								<Receipt className="size-4" />
-								New Invoice
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
-
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								size="icon"
 								variant="ghost"
 							>
 								<Bell className="size-4" />
@@ -114,9 +83,9 @@ export function Topbar({ user }) {
 						<DropdownMenuTrigger asChild>
 							<Button
 								variant="ghost"
-								className="gap-2 px-1.5"
+								className="gap-2 px-1.5 hover:bg-transparent"
 							>
-								<Avatar className="size-7">
+								<Avatar className="size-10">
 									<AvatarFallback className="bg-primary text-xs text-primary-foreground">{initials(user?.name)}</AvatarFallback>
 								</Avatar>
 							</Button>

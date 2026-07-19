@@ -46,6 +46,8 @@ export async function createReminder(clientId, prevState, formData) {
  */
 export async function toggleReminder(reminderId, clientId, completed) {
   await requireUser();
+  const reminder = await prisma.reminder.findFirst({ where: { id: reminderId, clientId } });
+  if (!reminder) return;
   await prisma.reminder.update({ where: { id: reminderId }, data: { completed } });
   revalidatePath(`/clients/${clientId}/reminders`);
 }
@@ -56,6 +58,8 @@ export async function toggleReminder(reminderId, clientId, completed) {
  */
 export async function deleteReminder(reminderId, clientId) {
   await requireUser();
+  const reminder = await prisma.reminder.findFirst({ where: { id: reminderId, clientId } });
+  if (!reminder) return;
   await prisma.reminder.delete({ where: { id: reminderId } });
   revalidatePath(`/clients/${clientId}/reminders`);
 }

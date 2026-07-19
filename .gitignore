@@ -38,9 +38,10 @@ yarn-error.log*
 /prisma/dev.db
 /prisma/dev.db-journal
 
-# uploaded documents
-/public/uploads/*
-!/public/uploads/.gitkeep
+# uploaded documents (private, served only via the authenticated
+# /api/documents/[id] route — never placed under public/)
+/storage/uploads/*
+!/storage/uploads/.gitkeep
 
 # vercel
 .vercel

@@ -52,7 +52,7 @@ export default async function ClientsPage({ searchParams }) {
 			},
 		}),
 		prisma.client.count(),
-		prisma.client.count({ where: { status: "active" } }),
+		prisma.client.count({ where: { status: "ACTIVE" } }),
 		prisma.client.count({ where: { createdAt: { gte: startOfMonth } } }),
 		prisma.traveler.count(),
 	]);
@@ -176,10 +176,10 @@ export default async function ClientsPage({ searchParams }) {
 									<TableCell className="text-right tabular-nums">{formatCurrency(spentByClient[client.id] || 0)}</TableCell>
 									<TableCell className="text-center w-32">
 										<Badge
-											variant={client.status === "active" ? "default" : "secondary"}
-											className="text-[10px]"
+											variant={client.status === "ACTIVE" ? "default" : "secondary"}
+											className="text-[10px] capitalize"
 										>
-											{client.status}
+											{client.status.toLowerCase()}
 										</Badge>
 									</TableCell>
 									<TableCell>

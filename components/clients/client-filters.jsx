@@ -45,8 +45,8 @@ export function ClientFilters({ defaultQuery, defaultStatus }) {
 				</SelectTrigger>
 				<SelectContent>
 					<SelectItem value="all">All</SelectItem>
-					<SelectItem value="active">Active</SelectItem>
-					<SelectItem value="inactive">Inactive</SelectItem>
+					<SelectItem value="ACTIVE">Active</SelectItem>
+					<SelectItem value="INACTIVE">Inactive</SelectItem>
 				</SelectContent>
 			</Select>
 		</div>

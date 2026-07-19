@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { createSegment, updateSegment } from "@/app/(admin)/trips/[tripId]/itinerary/actions";
 import { SEGMENT_TYPES, SEGMENT_DETAIL_FIELDS } from "@/lib/trip-segments";
-import { dateTimeInputValue } from "@/lib/format";
+import { dateTimeInputValue, centsToDollarsInputValue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export function SegmentFormDialog({ tripId, segment, trigger }) {
@@ -132,7 +132,7 @@ export function SegmentFormDialog({ tripId, segment, trigger }) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="cost">Cost</Label>
-              <Input id="cost" name="cost" type="number" step="0.01" min="0" defaultValue={segment?.cost ?? ""} />
+              <Input id="cost" name="cost" type="number" step="0.01" min="0" defaultValue={centsToDollarsInputValue(segment?.cost)} />
             </div>
           </div>
 

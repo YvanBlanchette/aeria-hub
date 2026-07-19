@@ -15,6 +15,12 @@ const typeLabels = {
   OTHER: "Other",
 };
 
+function formatFileSize(bytes) {
+  if (!bytes) return null;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function DocumentRow({ doc }) {
   const isExpired = doc.expiryDate && new Date(doc.expiryDate) < new Date();
   return (
@@ -23,12 +29,13 @@ function DocumentRow({ doc }) {
         <FileText className="size-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <Link href={doc.fileUrl} target="_blank" className="truncate text-sm font-medium hover:underline">
+        <Link href={`/api/documents/${doc.id}`} target="_blank" className="truncate text-sm font-medium hover:underline">
           {doc.fileName}
         </Link>
         <p className="text-xs text-muted-foreground">
           Uploaded {formatDate(doc.uploadedAt)}
           {doc.expiryDate ? ` · Expires ${formatDate(doc.expiryDate)}` : ""}
+          {doc.fileSize ? ` · ${formatFileSize(doc.fileSize)}` : ""}
         </p>
       </div>
       <Badge variant={isExpired ? "destructive" : "secondary"}>{typeLabels[doc.type] || doc.type}</Badge>

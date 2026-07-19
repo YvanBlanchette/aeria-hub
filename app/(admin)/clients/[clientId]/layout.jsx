@@ -38,7 +38,7 @@ export default async function ClientLayout({ children, params }) {
 							<h1 className="text-xl font-semibold tracking-tight">
 								{client.firstName} {client.lastName}
 							</h1>
-							<Badge variant={client.status === "active" ? "default" : "secondary"}>{client.status}</Badge>
+							<Badge variant={client.status === "ACTIVE" ? "default" : "secondary"} className="capitalize">{client.status.toLowerCase()}</Badge>
 						</div>
 						<p className="text-sm text-muted-foreground">
 							{client.primaryEmail || "No email"} {client.primaryPhone ? `· ${client.primaryPhone}` : ""}

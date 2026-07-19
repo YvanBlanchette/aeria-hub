@@ -111,10 +111,10 @@ export default async function DashboardPage() {
 										</TableCell>
 										<TableCell className="text-muted-foreground">
 											<Badge
-												variant={client.status === "active" ? "default" : "secondary"}
-												className="text-[10px]"
+												variant={client.status === "ACTIVE" ? "default" : "secondary"}
+												className="text-[10px] capitalize"
 											>
-												{client.status}
+												{client.status.toLowerCase()}
 											</Badge>
 										</TableCell>
 									</TableRow>

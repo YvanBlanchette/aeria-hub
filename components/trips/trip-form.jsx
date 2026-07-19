@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClientPicker } from "@/components/trips/client-picker";
+import { centsToDollarsInputValue } from "@/lib/format";
 
 function dateInputValue(date) {
   if (!date) return "";
@@ -84,7 +85,7 @@ export function TripForm({ action, trip, clients, lockClient = false, submitLabe
               type="number"
               step="0.01"
               min="0"
-              defaultValue={trip?.totalPrice ?? ""}
+              defaultValue={centsToDollarsInputValue(trip?.totalPrice)}
             />
           </div>
         </CardContent>

@@ -40,7 +40,7 @@ function readClientFields(formData) {
     travelPreferences: get("travelPreferences"),
     dietaryNotes: get("dietaryNotes"),
     mobilityNotes: get("mobilityNotes"),
-    status: get("status") || "active",
+    status: get("status") || "ACTIVE",
     assignedAgentId: get("assignedAgentId"),
   };
 }

@@ -187,13 +187,13 @@ export function ClientForm({ action, client, agents, submitLabel }) {
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
-            <Select name="status" defaultValue={client?.status ?? "active"}>
+            <Select name="status" defaultValue={client?.status ?? "ACTIVE"}>
               <SelectTrigger id="status" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="INACTIVE">Inactive</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
+import { dollarsToCents } from "@/lib/format";
 
 function readTripFields(formData) {
   const get = (name) => {
@@ -15,10 +16,6 @@ function readTripFields(formData) {
     const value = get(name);
     return value ? new Date(value) : null;
   };
-  const getFloat = (name) => {
-    const value = get(name);
-    return value ? parseFloat(value) : null;
-  };
 
   return {
     clientId: get("clientId"),
@@ -27,7 +24,7 @@ function readTripFields(formData) {
     startDate: getDate("startDate"),
     endDate: getDate("endDate"),
     status: get("status") || "INQUIRY",
-    totalPrice: getFloat("totalPrice"),
+    totalPrice: dollarsToCents(get("totalPrice")),
   };
 }
 
@@ -41,6 +38,9 @@ export async function createTrip(prevState, formData) {
 
   if (!clientId) return "Please select a client.";
   if (!fields.name || !fields.destination) return "Trip name and destination are required.";
+  if (fields.startDate && fields.endDate && fields.endDate < fields.startDate) {
+    return "End date can't be before the start date.";
+  }
 
   const trip = await prisma.trip.create({ data: { ...fields, clientId } });
 
@@ -69,6 +69,9 @@ export async function updateTrip(tripId, prevState, formData) {
 
   if (!clientId) return "Please select a client.";
   if (!fields.name || !fields.destination) return "Trip name and destination are required.";
+  if (fields.startDate && fields.endDate && fields.endDate < fields.startDate) {
+    return "End date can't be before the start date.";
+  }
 
   const trip = await prisma.trip.update({ where: { id: tripId }, data: { ...fields, clientId } });
 
@@ -93,6 +96,8 @@ export async function updateTrip(tripId, prevState, formData) {
  */
 export async function deleteTrip(tripId, clientId) {
   const user = await requireUser();
+  const existing = await prisma.trip.findFirst({ where: { id: tripId, clientId } });
+  if (!existing) return;
   const trip = await prisma.trip.delete({ where: { id: tripId } });
 
   await logActivity({

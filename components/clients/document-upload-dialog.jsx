@@ -60,7 +60,8 @@ export function DocumentUploadDialog({ clientId, travelers }) {
         <form ref={formRef} action={formAction} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="file">File</Label>
-            <Input id="file" name="file" type="file" required />
+            <Input id="file" name="file" type="file" accept=".jpg,.jpeg,.png,.webp,.heic,.pdf" required />
+            <p className="text-xs text-muted-foreground">JPEG, PNG, WebP, HEIC, or PDF. Max 10MB.</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="type">Type</Label>

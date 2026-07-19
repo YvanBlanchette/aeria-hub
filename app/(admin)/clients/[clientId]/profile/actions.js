@@ -78,6 +78,8 @@ export async function updateLoyaltyProgram(loyaltyProgramId, prevState, formData
  */
 export async function deleteLoyaltyProgram(loyaltyProgramId, clientId) {
   await requireUser();
+  const program = await prisma.loyaltyProgram.findFirst({ where: { id: loyaltyProgramId, clientId } });
+  if (!program) return;
   await prisma.loyaltyProgram.delete({ where: { id: loyaltyProgramId } });
   revalidatePath(`/clients/${clientId}/profile`);
 }

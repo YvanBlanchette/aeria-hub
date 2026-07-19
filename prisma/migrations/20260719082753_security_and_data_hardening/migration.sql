@@ -34,7 +34,7 @@ CREATE TABLE "Client" (
     "travelPreferences" TEXT,
     "dietaryNotes" TEXT,
     "mobilityNotes" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'active',
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
     "assignedAgentId" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
@@ -80,10 +80,29 @@ CREATE TABLE "Trip" (
     "startDate" DATETIME,
     "endDate" DATETIME,
     "status" TEXT NOT NULL DEFAULT 'INQUIRY',
-    "totalPrice" REAL,
+    "totalPrice" INTEGER,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "Trip_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "Client" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "TripSegment" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "tripId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "provider" TEXT,
+    "confirmationNumber" TEXT,
+    "startDateTime" DATETIME,
+    "endDateTime" DATETIME,
+    "location" TEXT,
+    "cost" INTEGER,
+    "notes" TEXT,
+    "details" JSONB,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "TripSegment_tripId_fkey" FOREIGN KEY ("tripId") REFERENCES "Trip" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -94,8 +113,8 @@ CREATE TABLE "Invoice" (
     "invoiceNumber" TEXT NOT NULL,
     "issueDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "dueDate" DATETIME,
-    "amount" REAL NOT NULL,
-    "amountPaid" REAL NOT NULL DEFAULT 0,
+    "amount" INTEGER NOT NULL,
+    "amountPaid" INTEGER NOT NULL DEFAULT 0,
     "status" TEXT NOT NULL DEFAULT 'DRAFT',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
@@ -110,7 +129,9 @@ CREATE TABLE "Document" (
     "travelerId" TEXT,
     "type" TEXT NOT NULL,
     "fileName" TEXT NOT NULL,
-    "fileUrl" TEXT NOT NULL,
+    "storagePath" TEXT NOT NULL,
+    "mimeType" TEXT,
+    "fileSize" INTEGER,
     "expiryDate" DATETIME,
     "uploadedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Document_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "Client" ("id") ON DELETE CASCADE ON UPDATE CASCADE,

@@ -86,7 +86,9 @@ export async function updateTraveler(travelerId, prevState, formData) {
  */
 export async function deleteTraveler(travelerId, clientId) {
   const user = await requireUser();
-  const traveler = await prisma.traveler.delete({ where: { id: travelerId } });
+  const traveler = await prisma.traveler.findFirst({ where: { id: travelerId, clientId } });
+  if (!traveler) return;
+  await prisma.traveler.delete({ where: { id: travelerId } });
 
   await logActivity({
     entityType: "Traveler",

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
 import { SEGMENT_DETAIL_FIELDS, SEGMENT_TYPE_MAP } from "@/lib/trip-segments";
-import { parseLocalDateTime } from "@/lib/format";
+import { parseLocalDateTime, dollarsToCents } from "@/lib/format";
 
 function readSegmentFields(formData) {
   const get = (name) => {
@@ -13,10 +13,6 @@ function readSegmentFields(formData) {
     return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
   };
   const getDateTime = (name) => parseLocalDateTime(get(name));
-  const getFloat = (name) => {
-    const value = get(name);
-    return value ? parseFloat(value) : null;
-  };
 
   const type = SEGMENT_TYPE_MAP[get("type")] ? get("type") : "OTHER";
   const detailFields = SEGMENT_DETAIL_FIELDS[type] || [];
@@ -34,7 +30,7 @@ function readSegmentFields(formData) {
     startDateTime: getDateTime("startDateTime"),
     endDateTime: getDateTime("endDateTime"),
     location: get("location"),
-    cost: getFloat("cost"),
+    cost: dollarsToCents(get("cost")),
     notes: get("notes"),
     details: Object.keys(details).length > 0 ? details : undefined,
   };
@@ -49,6 +45,9 @@ export async function createSegment(tripId, prevState, formData) {
   const user = await requireUser();
   const fields = readSegmentFields(formData);
   if (!fields.title) return "Title is required.";
+  if (fields.startDateTime && fields.endDateTime && fields.endDateTime < fields.startDateTime) {
+    return "End can't be before the start.";
+  }
 
   const trip = await prisma.trip.findUnique({ where: { id: tripId }, select: { clientId: true, name: true } });
   if (!trip) return "Trip not found.";
@@ -77,6 +76,9 @@ export async function updateSegment(segmentId, prevState, formData) {
   const user = await requireUser();
   const fields = readSegmentFields(formData);
   if (!fields.title) return "Title is required.";
+  if (fields.startDateTime && fields.endDateTime && fields.endDateTime < fields.startDateTime) {
+    return "End can't be before the start.";
+  }
 
   const segment = await prisma.tripSegment.update({
     where: { id: segmentId },
@@ -103,6 +105,8 @@ export async function updateSegment(segmentId, prevState, formData) {
  */
 export async function deleteSegment(segmentId, tripId) {
   await requireUser();
+  const existing = await prisma.tripSegment.findFirst({ where: { id: segmentId, tripId } });
+  if (!existing) return;
   await prisma.tripSegment.delete({ where: { id: segmentId } });
   revalidatePath(`/trips/${tripId}/itinerary`);
   revalidatePath(`/trips/${tripId}/overview`);

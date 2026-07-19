@@ -66,6 +66,11 @@ enum SegmentType {
   OTHER
 }
 
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -109,7 +114,7 @@ model Client {
   dietaryNotes      String?
   mobilityNotes     String?
 
-  status String @default("active")
+  status ClientStatus @default(ACTIVE)
 
   assignedAgentId String?
   assignedAgent   User?   @relation("ClientAgent", fields: [assignedAgentId], references: [id])
@@ -171,7 +176,8 @@ model Trip {
   startDate   DateTime?
   endDate     DateTime?
   status      TripStatus @default(INQUIRY)
-  totalPrice  Float?
+  /// Cents, not dollars — use dollarsToCents/formatCurrency from lib/format.js.
+  totalPrice  Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -192,7 +198,8 @@ model TripSegment {
   startDateTime      DateTime?
   endDateTime        DateTime?
   location           String?
-  cost               Float?
+  /// Cents, not dollars — use dollarsToCents/formatCurrency from lib/format.js.
+  cost               Int?
   notes              String?
   details            Json?
 
@@ -210,8 +217,10 @@ model Invoice {
   invoiceNumber String        @unique
   issueDate     DateTime      @default(now())
   dueDate       DateTime?
-  amount        Float
-  amountPaid    Float         @default(0)
+  /// Cents, not dollars — use dollarsToCents/formatCurrency from lib/format.js.
+  amount        Int
+  /// Cents, not dollars — use dollarsToCents/formatCurrency from lib/format.js.
+  amountPaid    Int           @default(0)
   status        InvoiceStatus @default(DRAFT)
 
   createdAt DateTime @default(now())
@@ -225,11 +234,15 @@ model Document {
   travelerId String?
   traveler   Traveler? @relation(fields: [travelerId], references: [id], onDelete: Cascade)
 
-  type       DocumentType
-  fileName   String
-  fileUrl    String
-  expiryDate DateTime?
-  uploadedAt DateTime     @default(now())
+  type        DocumentType
+  fileName    String
+  /// Path relative to the private storage/uploads directory (never served
+  /// directly — always through the authenticated /api/documents/[id] route).
+  storagePath String
+  mimeType    String?
+  fileSize    Int?
+  expiryDate  DateTime?
+  uploadedAt  DateTime     @default(now())
 }
 
 model Note {

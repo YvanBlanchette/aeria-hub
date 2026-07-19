@@ -39,6 +39,8 @@ export async function createNote(clientId, prevState, formData) {
  */
 export async function deleteNote(noteId, clientId) {
   await requireUser();
+  const note = await prisma.note.findFirst({ where: { id: noteId, clientId } });
+  if (!note) return;
   await prisma.note.delete({ where: { id: noteId } });
   revalidatePath(`/clients/${clientId}/notes`);
 }

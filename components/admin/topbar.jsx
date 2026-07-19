@@ -1,0 +1,124 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
+import { Search, Plus, Bell, LogOut, UserPlus, Plane, Receipt, Sun, Moon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { MobileSidebar } from "./mobile-sidebar";
+import { logout } from "@/lib/actions/session-actions";
+import { initials } from "@/lib/format";
+
+export function Topbar({ user }) {
+  const router = useRouter();
+  const { resolvedTheme, setTheme } = useTheme();
+
+  function handleSearch(event) {
+    event.preventDefault();
+    const q = new FormData(event.currentTarget).get("q");
+    router.push(q ? `/clients?q=${encodeURIComponent(q)}` : "/clients");
+  }
+
+  return (
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background px-4">
+      <MobileSidebar />
+
+      <form onSubmit={handleSearch} className="relative hidden flex-1 max-w-sm sm:block">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input name="q" placeholder="Search clients..." className="pl-8" />
+      </form>
+
+      <div className="flex-1 sm:hidden" />
+
+      <div className="flex items-center gap-1.5">
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+        >
+          <Sun className="size-4 dark:hidden" />
+          <Moon className="hidden size-4 dark:block" />
+          <span className="sr-only">Toggle theme</span>
+        </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="icon" variant="default" className="rounded-full">
+              <Plus className="size-4" />
+              <span className="sr-only">Quick create</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Quick create</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/clients/new">
+                <UserPlus className="size-4" />
+                New Client
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled>
+              <Plane className="size-4" />
+              New Trip
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled>
+              <Receipt className="size-4" />
+              New Invoice
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="icon" variant="ghost">
+              <Bell className="size-4" />
+              <span className="sr-only">Notifications</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <p className="px-2 py-4 text-center text-sm text-muted-foreground">
+              You're all caught up.
+            </p>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="gap-2 px-1.5">
+              <Avatar className="size-7">
+                <AvatarFallback className="bg-primary text-xs text-primary-foreground">
+                  {initials(user?.name)}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel className="flex flex-col">
+              <span className="font-medium">{user?.name}</span>
+              <span className="text-xs font-normal capitalize text-muted-foreground">
+                {user?.role?.toLowerCase()}
+              </span>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => logout()}>
+              <LogOut className="size-4" />
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </header>
+  );
+}

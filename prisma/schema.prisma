@@ -55,6 +55,17 @@ enum InquiryStatus {
   LOST
 }
 
+enum SegmentType {
+  FLIGHT
+  HOTEL
+  CRUISE
+  TRANSFER
+  EXCURSION
+  CAR_RENTAL
+  INSURANCE
+  OTHER
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -166,6 +177,27 @@ model Trip {
   updatedAt DateTime @updatedAt
 
   invoices Invoice[]
+  segments TripSegment[]
+}
+
+model TripSegment {
+  id     String @id @default(cuid())
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  type               SegmentType
+  title              String
+  provider           String?
+  confirmationNumber String?
+  startDateTime      DateTime?
+  endDateTime        DateTime?
+  location           String?
+  cost               Float?
+  notes              String?
+  details            Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Invoice {

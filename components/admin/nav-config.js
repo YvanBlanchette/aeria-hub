@@ -13,7 +13,7 @@ import {
 export const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Clients", href: "/clients", icon: Users },
-  { label: "Trips", href: null, icon: Plane },
+  { label: "Trips", href: "/trips", icon: Plane },
   { label: "Quotes", href: null, icon: FileText },
   { label: "Invoices", href: null, icon: Receipt },
   { label: "Inquiries", href: null, icon: Inbox },

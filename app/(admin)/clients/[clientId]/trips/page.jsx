@@ -1,6 +1,9 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/format";
 
 const statusVariant = {
@@ -12,19 +15,25 @@ const statusVariant = {
   CANCELLED: "destructive",
 };
 
-export default async function TripsPage({ params }) {
+export default async function ClientTripsPage({ params }) {
   const { clientId } = await params;
 
   const trips = await prisma.trip.findMany({
     where: { clientId },
     orderBy: { startDate: "desc" },
+    include: { _count: { select: { segments: true } } },
   });
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Trips</h2>
-        <p className="text-xs text-muted-foreground">Trip management arrives in a later phase.</p>
+        <Button size="sm" asChild>
+          <Link href={`/trips/new?clientId=${clientId}`}>
+            <Plus className="size-4" />
+            New Trip
+          </Link>
+        </Button>
       </div>
 
       {trips.length === 0 ? (
@@ -36,24 +45,27 @@ export default async function TripsPage({ params }) {
       ) : (
         <div className="space-y-2">
           {trips.map((trip) => (
-            <Card key={trip.id}>
-              <CardContent className="flex flex-wrap items-center justify-between gap-2 p-4">
-                <div>
-                  <p className="font-medium">{trip.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {trip.destination} · {formatDate(trip.startDate)} – {formatDate(trip.endDate)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  {trip.totalPrice != null && (
-                    <span className="text-sm tabular-nums text-muted-foreground">
-                      {formatCurrency(trip.totalPrice)}
-                    </span>
-                  )}
-                  <Badge variant={statusVariant[trip.status] || "secondary"}>{trip.status}</Badge>
-                </div>
-              </CardContent>
-            </Card>
+            <Link key={trip.id} href={`/trips/${trip.id}`} className="block">
+              <Card className="transition-colors hover:bg-muted/40">
+                <CardContent className="flex flex-wrap items-center justify-between gap-2 p-4">
+                  <div>
+                    <p className="font-medium">{trip.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {trip.destination} · {formatDate(trip.startDate)} – {formatDate(trip.endDate)}
+                      {trip._count.segments > 0 && ` · ${trip._count.segments} segment${trip._count.segments === 1 ? "" : "s"}`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {trip.totalPrice != null && (
+                      <span className="text-sm tabular-nums text-muted-foreground">
+                        {formatCurrency(trip.totalPrice)}
+                      </span>
+                    )}
+                    <Badge variant={statusVariant[trip.status] || "secondary"}>{trip.status}</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

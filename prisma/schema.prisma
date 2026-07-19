@@ -74,19 +74,27 @@ model Client {
   id      String  @id @default(cuid())
   firstName String
   lastName  String
-  email     String?
-  phone     String?
-  address   String?
-  city      String?
-  country   String?
 
-  dateOfBirth    DateTime?
-  passportNumber String?
-  passportExpiry DateTime?
-  nationality    String?
+  primaryEmail   String?
+  secondaryEmail String?
+  primaryPhone   String?
+  secondaryPhone String?
+
+  address       String?
+  city          String?
+  stateProvince String?
+  postalCode    String?
+  country       String?
+
+  dateOfBirth         DateTime?
+  passportNumber      String?
+  passportIssueDate   DateTime?
+  passportExpiry      DateTime?
+  redressNumber       String?
+  knownTravelerNumber String?
+  nationality         String?
 
   travelPreferences String?
-  loyaltyPrograms   String?
   dietaryNotes      String?
   mobilityNotes     String?
 
@@ -98,13 +106,27 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  travelers    Traveler[]
-  trips        Trip[]
-  invoices     Invoice[]
-  documents    Document[]
-  notes        Note[]
-  reminders    Reminder[]
-  activityLogs ActivityLog[]
+  travelers       Traveler[]
+  trips           Trip[]
+  invoices        Invoice[]
+  documents       Document[]
+  notes           Note[]
+  reminders       Reminder[]
+  activityLogs    ActivityLog[]
+  loyaltyPrograms LoyaltyProgram[]
+}
+
+model LoyaltyProgram {
+  id       String @id @default(cuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  programName  String
+  memberNumber String
+  notes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Traveler {

@@ -30,7 +30,7 @@ export default async function DashboardPage() {
       prisma.client.findMany({
         orderBy: { createdAt: "desc" },
         take: 5,
-        select: { id: true, firstName: true, lastName: true, email: true, createdAt: true },
+        select: { id: true, firstName: true, lastName: true, primaryEmail: true, createdAt: true },
       }),
     ]);
 
@@ -72,7 +72,7 @@ export default async function DashboardPage() {
                       <p className="truncate text-sm font-medium">
                         {client.firstName} {client.lastName}
                       </p>
-                      <p className="truncate text-xs text-muted-foreground">{client.email}</p>
+                      <p className="truncate text-xs text-muted-foreground">{client.primaryEmail}</p>
                     </div>
                   </Link>
                 </li>

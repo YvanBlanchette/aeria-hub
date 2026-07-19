@@ -41,12 +41,20 @@ export function ClientForm({ action, client, agents, submitLabel }) {
             <Input id="lastName" name="lastName" defaultValue={client?.lastName} required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" defaultValue={client?.email ?? ""} />
+            <Label htmlFor="primaryEmail">Primary email</Label>
+            <Input id="primaryEmail" name="primaryEmail" type="email" defaultValue={client?.primaryEmail ?? ""} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" name="phone" defaultValue={client?.phone ?? ""} />
+            <Label htmlFor="secondaryEmail">Secondary email</Label>
+            <Input id="secondaryEmail" name="secondaryEmail" type="email" defaultValue={client?.secondaryEmail ?? ""} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="primaryPhone">Primary phone</Label>
+            <Input id="primaryPhone" name="primaryPhone" defaultValue={client?.primaryPhone ?? ""} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="secondaryPhone">Secondary phone</Label>
+            <Input id="secondaryPhone" name="secondaryPhone" defaultValue={client?.secondaryPhone ?? ""} />
           </div>
         </CardContent>
       </Card>
@@ -63,6 +71,14 @@ export function ClientForm({ action, client, agents, submitLabel }) {
           <div className="space-y-2">
             <Label htmlFor="city">City</Label>
             <Input id="city" name="city" defaultValue={client?.city ?? ""} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="stateProvince">Province / State</Label>
+            <Input id="stateProvince" name="stateProvince" defaultValue={client?.stateProvince ?? ""} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="postalCode">Postal / ZIP code</Label>
+            <Input id="postalCode" name="postalCode" defaultValue={client?.postalCode ?? ""} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="country">Country</Label>
@@ -93,13 +109,35 @@ export function ClientForm({ action, client, agents, submitLabel }) {
             <Label htmlFor="passportNumber">Passport number</Label>
             <Input id="passportNumber" name="passportNumber" defaultValue={client?.passportNumber ?? ""} />
           </div>
+          <div /> {/* keeps issue/expiry paired on their own row on desktop */}
           <div className="space-y-2">
-            <Label htmlFor="passportExpiry">Passport expiry</Label>
+            <Label htmlFor="passportIssueDate">Passport issue date</Label>
+            <Input
+              id="passportIssueDate"
+              name="passportIssueDate"
+              type="date"
+              defaultValue={dateInputValue(client?.passportIssueDate)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="passportExpiry">Passport expiry date</Label>
             <Input
               id="passportExpiry"
               name="passportExpiry"
               type="date"
               defaultValue={dateInputValue(client?.passportExpiry)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="redressNumber">Redress number</Label>
+            <Input id="redressNumber" name="redressNumber" defaultValue={client?.redressNumber ?? ""} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="knownTravelerNumber">Known Traveler Number</Label>
+            <Input
+              id="knownTravelerNumber"
+              name="knownTravelerNumber"
+              defaultValue={client?.knownTravelerNumber ?? ""}
             />
           </div>
         </CardContent>
@@ -109,33 +147,24 @@ export function ClientForm({ action, client, agents, submitLabel }) {
         <CardHeader>
           <CardTitle>Preferences & notes</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="space-y-2">
             <Label htmlFor="travelPreferences">Travel preferences</Label>
             <Textarea
               id="travelPreferences"
               name="travelPreferences"
-              rows={3}
+              rows={4}
               placeholder="Window seat, boutique hotels, direct flights..."
               defaultValue={client?.travelPreferences ?? ""}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="loyaltyPrograms">Loyalty programs</Label>
-            <Textarea
-              id="loyaltyPrograms"
-              name="loyaltyPrograms"
-              rows={3}
-              placeholder="Delta SkyMiles #12345, Marriott Bonvoy #67890..."
-              defaultValue={client?.loyaltyPrograms ?? ""}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="dietaryNotes">Dietary notes</Label>
+            <Label htmlFor="dietaryNotes">Dietary / medical notes</Label>
             <Textarea
               id="dietaryNotes"
               name="dietaryNotes"
-              rows={2}
+              rows={4}
+              placeholder="Allergies, medical conditions, dietary restrictions..."
               defaultValue={client?.dietaryNotes ?? ""}
             />
           </div>
@@ -144,7 +173,7 @@ export function ClientForm({ action, client, agents, submitLabel }) {
             <Textarea
               id="mobilityNotes"
               name="mobilityNotes"
-              rows={2}
+              rows={4}
               defaultValue={client?.mobilityNotes ?? ""}
             />
           </div>

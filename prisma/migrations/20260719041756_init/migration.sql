@@ -15,17 +15,23 @@ CREATE TABLE "Client" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
-    "email" TEXT,
-    "phone" TEXT,
+    "primaryEmail" TEXT,
+    "secondaryEmail" TEXT,
+    "primaryPhone" TEXT,
+    "secondaryPhone" TEXT,
     "address" TEXT,
     "city" TEXT,
+    "stateProvince" TEXT,
+    "postalCode" TEXT,
     "country" TEXT,
     "dateOfBirth" DATETIME,
     "passportNumber" TEXT,
+    "passportIssueDate" DATETIME,
     "passportExpiry" DATETIME,
+    "redressNumber" TEXT,
+    "knownTravelerNumber" TEXT,
     "nationality" TEXT,
     "travelPreferences" TEXT,
-    "loyaltyPrograms" TEXT,
     "dietaryNotes" TEXT,
     "mobilityNotes" TEXT,
     "status" TEXT NOT NULL DEFAULT 'active',
@@ -33,6 +39,18 @@ CREATE TABLE "Client" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "Client_assignedAgentId_fkey" FOREIGN KEY ("assignedAgentId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "LoyaltyProgram" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "clientId" TEXT NOT NULL,
+    "programName" TEXT NOT NULL,
+    "memberNumber" TEXT NOT NULL,
+    "notes" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "LoyaltyProgram_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "Client" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable

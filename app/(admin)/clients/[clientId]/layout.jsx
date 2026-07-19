@@ -18,8 +18,8 @@ export default async function ClientLayout({ children, params }) {
       id: true,
       firstName: true,
       lastName: true,
-      email: true,
-      phone: true,
+      primaryEmail: true,
+      primaryPhone: true,
       status: true,
     },
   });
@@ -45,7 +45,7 @@ export default async function ClientLayout({ children, params }) {
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              {client.email || "No email"} {client.phone ? `· ${client.phone}` : ""}
+              {client.primaryEmail || "No email"} {client.primaryPhone ? `· ${client.primaryPhone}` : ""}
             </p>
           </div>
         </div>

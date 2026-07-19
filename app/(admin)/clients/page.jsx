@@ -37,7 +37,8 @@ export default async function ClientsPage({ searchParams }) {
           OR: [
             { firstName: { contains: q } },
             { lastName: { contains: q } },
-            { email: { contains: q } },
+            { primaryEmail: { contains: q } },
+            { secondaryEmail: { contains: q } },
           ],
         }
       : {}),
@@ -152,8 +153,8 @@ export default async function ClientsPage({ searchParams }) {
                       </div>
                     </Link>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{client.email || "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{client.phone || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{client.primaryEmail || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{client.primaryPhone || "—"}</TableCell>
                   <TableCell className="text-right tabular-nums">{client._count.trips}</TableCell>
                   <TableCell className="text-right tabular-nums">
                     {formatCurrency(spentByClient[client.id] || 0)}

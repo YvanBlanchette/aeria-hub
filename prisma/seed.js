@@ -28,7 +28,7 @@ async function main() {
 	const admin = await prisma.user.create({
 		data: {
 			name: "Yvan Blanchette",
-			email: "admin@aeriahub.com",
+			email: "yvanblanchette@aeriavoyages.com",
 			passwordHash,
 			role: "ADMIN",
 		},
@@ -738,7 +738,7 @@ async function main() {
 	console.log(`Inquiries: ${await prisma.inquiry.count()}`);
 	console.log("");
 	console.log("Login with:");
-	console.log("  admin@aeriahub.com / Password123!");
+	console.log("  yvanblanchette@aeriavoyages.com / Password123!");
 	console.log("  marcus@aeriahub.com / Password123!");
 	console.log("  priya@aeriahub.com / Password123!");
 }

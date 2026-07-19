@@ -158,7 +158,7 @@ export default async function ClientProfilePage({ params }) {
 						</div>
 
 						{loyaltyPrograms.length === 0 ? (
-							<p className="text-sm text-muted-foreground">No loyalty programs on file.</p>
+							<p className="p-4 text-sm text-muted-foreground">No loyalty programs on file.</p>
 						) : (
 							<div className="overflow-hidden rounded-lg  w-full rounded-t-none">
 								<Table>

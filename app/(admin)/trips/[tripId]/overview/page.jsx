@@ -33,6 +33,7 @@ export default async function TripOverviewPage({ params }) {
       client: true,
       invoices: { orderBy: { issueDate: "desc" } },
       segments: { select: { type: true, cost: true } },
+      payments: { where: { cancelled: false }, select: { amount: true } },
     },
   });
 
@@ -43,6 +44,8 @@ export default async function TripOverviewPage({ params }) {
     return acc;
   }, {});
   const segmentsSubtotal = trip.segments.reduce((sum, s) => sum + (s.cost || 0), 0);
+  const paymentsTotal = trip.payments.reduce((sum, p) => sum + p.amount, 0);
+  const balanceDue = segmentsSubtotal - paymentsTotal;
 
   return (
     <div className="space-y-6">
@@ -57,6 +60,16 @@ export default async function TripOverviewPage({ params }) {
             <Field label="End date" value={trip.endDate ? formatDate(trip.endDate) : null} />
             <Field label="Total price" value={trip.totalPrice != null ? formatCurrency(trip.totalPrice) : null} />
             <Field label="Segments subtotal" value={formatCurrency(segmentsSubtotal)} />
+            <Field label="Final payment date" value={trip.finalPaymentDate ? formatDate(trip.finalPaymentDate) : null} />
+            <Field label="Payments received" value={formatCurrency(paymentsTotal)} />
+            <Field
+              label="Balance due"
+              value={
+                <span className={balanceDue > 0 ? "font-medium text-destructive" : "font-medium"}>
+                  {formatCurrency(balanceDue)}
+                </span>
+              }
+            />
           </dl>
         </CardContent>
       </Card>

@@ -32,6 +32,11 @@ enum QuoteStatus {
   EXPIRED
 }
 
+enum PaymentType {
+  CC_TO_SUPPLIER
+  FUTURE_CRUISE_CREDIT
+}
+
 enum InvoiceStatus {
   DRAFT
   SENT
@@ -188,6 +193,7 @@ model Trip {
   status      TripStatus @default(INQUIRY)
   /// Cents, not dollars — use dollarsToCents/formatCurrency from lib/format.js.
   totalPrice  Int?
+  finalPaymentDate DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -196,6 +202,7 @@ model Trip {
   segments TripSegment[]
   tasks    TripTask[]
   quotes   Quote[]
+  payments TripPayment[]
 }
 
 model TripSegment {
@@ -267,6 +274,29 @@ model QuoteLineItem {
   unitPrice   Int
   /// Manual creation order — items display in the order they were added.
   sortOrder   Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TripPayment {
+  id     String @id @default(cuid())
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  type               PaymentType
+  cardHolder         String?
+  cardNumber         String?
+  confirmationNumber String?
+  /// Cents, not dollars — use dollarsToCents/formatCurrency from lib/format.js.
+  amount             Int
+  paymentDate        DateTime
+  paidTo             String?
+  comments           String?
+  /// Logical cancellation — cancelled payments are excluded from the
+  /// balance calculation but kept for the audit trail, and can be
+  /// hidden/shown in the history table via a toggle.
+  cancelled          Boolean     @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

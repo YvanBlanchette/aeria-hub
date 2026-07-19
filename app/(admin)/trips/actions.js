@@ -25,6 +25,7 @@ function readTripFields(formData) {
     endDate: getDate("endDate"),
     status: get("status") || "INQUIRY",
     totalPrice: dollarsToCents(get("totalPrice")),
+    finalPaymentDate: getDate("finalPaymentDate"),
   };
 }
 

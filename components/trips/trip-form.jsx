@@ -88,6 +88,15 @@ export function TripForm({ action, trip, clients, lockClient = false, submitLabe
               defaultValue={centsToDollarsInputValue(trip?.totalPrice)}
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="finalPaymentDate">Final payment date</Label>
+            <Input
+              id="finalPaymentDate"
+              name="finalPaymentDate"
+              type="date"
+              defaultValue={dateInputValue(trip?.finalPaymentDate)}
+            />
+          </div>
         </CardContent>
       </Card>
 

@@ -24,6 +24,14 @@ enum TripStatus {
   CANCELLED
 }
 
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
 enum InvoiceStatus {
   DRAFT
   SENT
@@ -187,6 +195,7 @@ model Trip {
   invoices Invoice[]
   segments TripSegment[]
   tasks    TripTask[]
+  quotes   Quote[]
 }
 
 model TripSegment {
@@ -226,6 +235,38 @@ model TripTask {
   assigneeId String?
   assignee   User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
   completed  Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Quote {
+  id     String @id @default(cuid())
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  title      String
+  status     QuoteStatus @default(DRAFT)
+  validUntil DateTime?
+  notes      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lineItems QuoteLineItem[]
+}
+
+model QuoteLineItem {
+  id      String @id @default(cuid())
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  description String
+  quantity    Int    @default(1)
+  /// Cents, not dollars — use dollarsToCents/formatCurrency from lib/format.js.
+  unitPrice   Int
+  /// Manual creation order — items display in the order they were added.
+  sortOrder   Int    @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

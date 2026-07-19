@@ -33,9 +33,21 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# prisma
+/app/generated/prisma
+/prisma/dev.db
+/prisma/dev.db-journal
+
+# uploaded documents
+/public/uploads/*
+!/public/uploads/.gitkeep
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local claude code settings
+.claude/settings.local.json

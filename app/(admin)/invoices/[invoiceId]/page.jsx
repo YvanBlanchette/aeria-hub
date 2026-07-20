@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil } from "lucide-react";
+import { Pencil, Download } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +60,12 @@ export default async function InvoiceDetailPage({ params }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <a href={`/api/invoices/${invoice.id}/pdf`} target="_blank" rel="noopener noreferrer">
+              <Download className="size-4" />
+              Download PDF
+            </a>
+          </Button>
           <InvoiceEditDialog
             invoice={invoice}
             trigger={

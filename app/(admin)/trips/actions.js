@@ -155,6 +155,57 @@ export async function duplicateTrip(tripId, prevState, formData) {
 }
 
 /**
+ * Links an additional client (household) to a trip beyond its primary
+ * client — e.g. two families booking the same cruise together.
+ * @param {string} tripId
+ * @param {string | undefined} prevState
+ * @param {FormData} formData
+ */
+export async function addTripClient(tripId, prevState, formData) {
+  const user = await requireUser();
+  const clientId = formData.get("clientId");
+  if (typeof clientId !== "string" || !clientId) return "Please select a client.";
+
+  const trip = await prisma.trip.findUnique({ where: { id: tripId }, select: { clientId: true, name: true } });
+  if (!trip) return "Trip not found.";
+  if (trip.clientId === clientId) return "This client is already the primary client on this trip.";
+
+  const existing = await prisma.tripClient.findUnique({
+    where: { tripId_clientId: { tripId, clientId } },
+  });
+  if (existing) return "This client is already on this trip.";
+
+  await prisma.tripClient.create({ data: { tripId, clientId } });
+
+  await logActivity({
+    entityType: "Trip",
+    entityId: tripId,
+    action: "updated",
+    description: `Client added to "${trip.name}"`,
+    userId: user.id,
+    clientId,
+  });
+
+  revalidatePath(`/trips/${tripId}/overview`);
+  revalidatePath(`/clients/${clientId}/trips`);
+}
+
+/**
+ * @param {string} tripClientId
+ * @param {string} tripId
+ */
+export async function removeTripClient(tripClientId, tripId) {
+  await requireUser();
+  const tripClient = await prisma.tripClient.findFirst({ where: { id: tripClientId, tripId } });
+  if (!tripClient) return;
+
+  await prisma.tripClient.delete({ where: { id: tripClientId } });
+
+  revalidatePath(`/trips/${tripId}/overview`);
+  revalidatePath(`/clients/${tripClient.clientId}/trips`);
+}
+
+/**
  * @param {string} tripId
  * @param {string} clientId
  */

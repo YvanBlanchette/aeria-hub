@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AddTripClientDialog } from "@/components/trips/add-trip-client-dialog";
+import { RemoveTripClientButton } from "@/components/trips/remove-trip-client-button";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { SEGMENT_TYPE_MAP } from "@/lib/trip-segments";
 
@@ -34,10 +36,18 @@ export default async function TripOverviewPage({ params }) {
       invoices: { orderBy: { issueDate: "desc" } },
       segments: { select: { type: true, cost: true } },
       payments: { where: { cancelled: false }, select: { amount: true } },
+      additionalClients: { include: { client: true }, orderBy: { createdAt: "asc" } },
     },
   });
 
   if (!trip) notFound();
+
+  const excludedIds = new Set([trip.clientId, ...trip.additionalClients.map((ac) => ac.clientId)]);
+  const availableClients = await prisma.client.findMany({
+    where: { id: { notIn: [...excludedIds] } },
+    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    select: { id: true, firstName: true, lastName: true, primaryEmail: true },
+  });
 
   const segmentsByType = trip.segments.reduce((acc, s) => {
     acc[s.type] = (acc[s.type] || 0) + 1;
@@ -75,16 +85,42 @@ export default async function TripOverviewPage({ params }) {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Client</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle>Clients</CardTitle>
+          <AddTripClientDialog tripId={tripId} clients={availableClients} />
         </CardHeader>
-        <CardContent>
-          <Link href={`/clients/${trip.client.id}`} className="font-medium hover:underline">
-            {trip.client.firstName} {trip.client.lastName}
-          </Link>
-          <p className="text-sm text-muted-foreground">
-            {trip.client.primaryEmail || "No email"} {trip.client.primaryPhone ? `· ${trip.client.primaryPhone}` : ""}
-          </p>
+        <CardContent className="space-y-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Link href={`/clients/${trip.client.id}`} className="font-medium hover:underline">
+                {trip.client.firstName} {trip.client.lastName}
+              </Link>
+              <Badge variant="secondary" className="text-[10px]">
+                Primary
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {trip.client.primaryEmail || "No email"} {trip.client.primaryPhone ? `· ${trip.client.primaryPhone}` : ""}
+            </p>
+          </div>
+
+          {trip.additionalClients.map((ac) => (
+            <div key={ac.id} className="flex items-center justify-between gap-2 border-t border-border pt-3">
+              <div>
+                <Link href={`/clients/${ac.client.id}`} className="font-medium hover:underline">
+                  {ac.client.firstName} {ac.client.lastName}
+                </Link>
+                <p className="text-sm text-muted-foreground">
+                  {ac.client.primaryEmail || "No email"} {ac.client.primaryPhone ? `· ${ac.client.primaryPhone}` : ""}
+                </p>
+              </div>
+              <RemoveTripClientButton
+                tripClientId={ac.id}
+                tripId={tripId}
+                clientName={`${ac.client.firstName} ${ac.client.lastName}`}
+              />
+            </div>
+          ))}
         </CardContent>
       </Card>
 

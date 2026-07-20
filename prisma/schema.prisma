@@ -145,6 +145,7 @@ model Client {
 
   travelers       Traveler[]
   trips           Trip[]
+  additionalTrips TripClient[]
   invoices        Invoice[]
   documents       Document[]
   notes           Note[]
@@ -204,11 +205,27 @@ model Trip {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  invoices Invoice[]
-  segments TripSegment[]
-  tasks    TripTask[]
-  quotes   Quote[]
-  payments TripPayment[]
+  invoices          Invoice[]
+  segments          TripSegment[]
+  tasks             TripTask[]
+  quotes            Quote[]
+  payments          TripPayment[]
+  /// Clients beyond the primary clientId above — e.g. a second household
+  /// traveling together on the same booking.
+  additionalClients TripClient[]
+}
+
+/// Join row linking a Trip to a Client beyond its primary clientId.
+model TripClient {
+  id       String @id @default(cuid())
+  tripId   String
+  trip     Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([tripId, clientId])
 }
 
 model TripSegment {

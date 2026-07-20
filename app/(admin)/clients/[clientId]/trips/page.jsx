@@ -18,11 +18,22 @@ const statusVariant = {
 export default async function ClientTripsPage({ params }) {
   const { clientId } = await params;
 
-  const trips = await prisma.trip.findMany({
-    where: { clientId },
-    orderBy: { startDate: "desc" },
-    include: { _count: { select: { segments: true } } },
-  });
+  const [primaryTrips, companionLinks] = await Promise.all([
+    prisma.trip.findMany({
+      where: { clientId },
+      orderBy: { startDate: "desc" },
+      include: { _count: { select: { segments: true } } },
+    }),
+    prisma.tripClient.findMany({
+      where: { clientId },
+      include: { trip: { include: { _count: { select: { segments: true } } } } },
+    }),
+  ]);
+
+  const trips = [
+    ...primaryTrips.map((trip) => ({ ...trip, isCompanion: false })),
+    ...companionLinks.map(({ trip }) => ({ ...trip, isCompanion: true })),
+  ].sort((a, b) => new Date(b.startDate ?? 0) - new Date(a.startDate ?? 0));
 
   return (
     <div className="space-y-4">
@@ -49,7 +60,14 @@ export default async function ClientTripsPage({ params }) {
               <Card className="transition-colors hover:bg-muted/40">
                 <CardContent className="flex flex-wrap items-center justify-between gap-2 p-4">
                   <div>
-                    <p className="font-medium">{trip.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{trip.name}</p>
+                      {trip.isCompanion && (
+                        <Badge variant="outline" className="text-[10px]">
+                          Companion
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       {trip.destination} · {formatDate(trip.startDate)} – {formatDate(trip.endDate)}
                       {trip._count.segments > 0 && ` · ${trip._count.segments} segment${trip._count.segments === 1 ? "" : "s"}`}

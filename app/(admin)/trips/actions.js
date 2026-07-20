@@ -92,6 +92,69 @@ export async function updateTrip(tripId, prevState, formData) {
 }
 
 /**
+ * Copies a trip's core details and itinerary segments onto a new trip for
+ * a different (or the same) client — e.g. two clients booking the same
+ * cruise. Confirmation numbers are cleared since they're unique per
+ * booking and would otherwise be misleading on the copy. Tasks, quotes,
+ * payments, and documents are intentionally left behind — they're specific
+ * to the original client's booking.
+ * @param {string} tripId
+ * @param {string | undefined} prevState
+ * @param {FormData} formData
+ */
+export async function duplicateTrip(tripId, prevState, formData) {
+  const user = await requireUser();
+  const targetClientId = formData.get("clientId");
+  if (typeof targetClientId !== "string" || !targetClientId) return "Please select a client.";
+
+  const source = await prisma.trip.findUnique({
+    where: { id: tripId },
+    include: { segments: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
+  });
+  if (!source) return "Trip not found.";
+
+  const newTrip = await prisma.trip.create({
+    data: {
+      clientId: targetClientId,
+      name: source.name,
+      destination: source.destination,
+      startDate: source.startDate,
+      endDate: source.endDate,
+      status: "INQUIRY",
+      totalPrice: source.totalPrice,
+      segments: {
+        create: source.segments.map((s) => ({
+          type: s.type,
+          title: s.title,
+          provider: s.provider,
+          confirmationNumber: null,
+          startDateTime: s.startDateTime,
+          endDateTime: s.endDateTime,
+          location: s.location,
+          cost: s.cost,
+          notes: s.notes,
+          details: s.details ?? undefined,
+          sortOrder: s.sortOrder,
+        })),
+      },
+    },
+  });
+
+  await logActivity({
+    entityType: "Trip",
+    entityId: newTrip.id,
+    action: "created",
+    description: `Trip "${newTrip.name}" duplicated from "${source.name}"`,
+    userId: user.id,
+    clientId: targetClientId,
+  });
+
+  revalidatePath("/trips");
+  revalidatePath(`/clients/${targetClientId}/trips`);
+  redirect(`/trips/${newTrip.id}`);
+}
+
+/**
  * @param {string} tripId
  * @param {string} clientId
  */

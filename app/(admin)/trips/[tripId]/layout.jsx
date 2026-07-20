@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TripTabNav } from "@/components/trips/trip-tab-nav";
 import { DeleteTripButton } from "@/components/trips/delete-trip-button";
+import { DuplicateTripDialog } from "@/components/trips/duplicate-trip-dialog";
 import { formatDate } from "@/lib/format";
 
 const STATUS_VARIANT = {
@@ -20,18 +21,24 @@ const STATUS_VARIANT = {
 export default async function TripLayout({ children, params }) {
   const { tripId } = await params;
 
-  const trip = await prisma.trip.findUnique({
-    where: { id: tripId },
-    select: {
-      id: true,
-      name: true,
-      destination: true,
-      startDate: true,
-      endDate: true,
-      status: true,
-      client: { select: { id: true, firstName: true, lastName: true } },
-    },
-  });
+  const [trip, clients] = await Promise.all([
+    prisma.trip.findUnique({
+      where: { id: tripId },
+      select: {
+        id: true,
+        name: true,
+        destination: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        client: { select: { id: true, firstName: true, lastName: true } },
+      },
+    }),
+    prisma.client.findMany({
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      select: { id: true, firstName: true, lastName: true, primaryEmail: true },
+    }),
+  ]);
 
   if (!trip) notFound();
 
@@ -52,6 +59,7 @@ export default async function TripLayout({ children, params }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <DuplicateTripDialog tripId={trip.id} clients={clients} />
           <Button variant="outline" asChild>
             <Link href={`/trips/${trip.id}/edit`}>
               <Pencil className="size-4" />

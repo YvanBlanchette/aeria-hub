@@ -7,6 +7,8 @@ import { QuoteFormDialog } from "@/components/trips/quote-form-dialog";
 import { DeleteQuoteButton } from "@/components/trips/delete-quote-button";
 import { LineItemFormDialog } from "@/components/trips/line-item-form-dialog";
 import { DeleteLineItemButton } from "@/components/trips/delete-line-item-button";
+import { ConvertToInvoiceButton } from "@/components/invoices/convert-to-invoice-button";
+import { convertQuoteToInvoice } from "@/app/(admin)/invoices/actions";
 import { formatCurrency, formatDate } from "@/lib/format";
 
 const STATUS_VARIANT = {
@@ -34,6 +36,13 @@ export function QuoteCard({ quote, tripId }) {
             )}
           </div>
           <div className="flex items-center gap-1">
+            {quote.lineItems.length > 0 && (
+              <ConvertToInvoiceButton
+                action={convertQuoteToInvoice.bind(null, quote.id)}
+                label="Invoice"
+                description={`Creates a new invoice copying the line items from "${quote.title}". You can edit them afterward.`}
+              />
+            )}
             <QuoteFormDialog
               tripId={tripId}
               quote={quote}

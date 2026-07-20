@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { SegmentFormDialog } from "@/components/trips/segment-form-dialog";
 import { SegmentCard } from "@/components/trips/segment-card";
+import { ConvertToInvoiceButton } from "@/components/invoices/convert-to-invoice-button";
+import { convertItineraryToInvoice } from "@/app/(admin)/invoices/actions";
 import { groupSegmentsByDay } from "@/lib/trip-segments";
 import { formatDate } from "@/lib/format";
 
@@ -31,7 +33,15 @@ export default async function ItineraryPage({ params }) {
             Flights, hotels, cruises, transfers, excursions, car rentals, insurance, and more.
           </p>
         </div>
-        <SegmentFormDialog tripId={tripId} />
+        <div className="flex items-center gap-2">
+          {segments.length > 0 && (
+            <ConvertToInvoiceButton
+              action={convertItineraryToInvoice.bind(null, tripId)}
+              description="Creates a new invoice with one line item per segment, using each segment's title and cost. You can edit the line items afterward."
+            />
+          )}
+          <SegmentFormDialog tripId={tripId} />
+        </div>
       </div>
 
       {segments.length === 0 ? (

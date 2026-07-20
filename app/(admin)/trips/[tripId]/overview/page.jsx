@@ -161,7 +161,9 @@ export default async function TripOverviewPage({ params }) {
             <ul className="space-y-2">
               {trip.invoices.map((invoice) => (
                 <li key={invoice.id} className="flex items-center justify-between text-sm">
-                  <span>{invoice.invoiceNumber}</span>
+                  <Link href={`/invoices/${invoice.id}`} className="hover:underline">
+                    {invoice.invoiceNumber}
+                  </Link>
                   <span className="flex items-center gap-3 text-muted-foreground">
                     {formatCurrency(invoice.amountPaid)} / {formatCurrency(invoice.amount)}
                     <Badge variant={INVOICE_STATUS_VARIANT[invoice.status] || "secondary"}>{invoice.status}</Badge>

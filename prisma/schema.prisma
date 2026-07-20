@@ -359,10 +359,32 @@ model Invoice {
   issueDate     DateTime      @default(now())
   dueDate       DateTime?
   /// Cents, not dollars — use dollarsToCents/formatCurrency from lib/format.js.
+  /// Kept in sync with the sum of lineItems by the invoice line-item
+  /// actions — never edited directly by the line-item total.
   amount        Int
   /// Cents, not dollars — use dollarsToCents/formatCurrency from lib/format.js.
   amountPaid    Int           @default(0)
   status        InvoiceStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lineItems InvoiceLineItem[]
+}
+
+/// A priced line on an Invoice — mirrors QuoteLineItem. Populated by
+/// copying a trip's segments or a quote's line items at conversion time,
+/// and editable afterward.
+model InvoiceLineItem {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  description String
+  quantity    Int    @default(1)
+  /// Cents, not dollars — use dollarsToCents/formatCurrency from lib/format.js.
+  unitPrice   Int
+  sortOrder   Int    @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

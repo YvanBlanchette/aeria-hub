@@ -7,6 +7,7 @@ import { logActivity } from "@/lib/activity";
 import { SEGMENT_DETAIL_FIELDS, SEGMENT_TYPE_MAP, groupSegmentsByDay } from "@/lib/trip-segments";
 import { parseLocalDateTime, dollarsToCents } from "@/lib/format";
 import { validateUploadedFile, saveUploadedFile, deleteStoredFile } from "@/lib/documents";
+import { computeCommissionPortions } from "@/lib/commissions";
 
 function readSegmentFields(formData) {
   const get = (name) => {
@@ -221,4 +222,90 @@ export async function deleteSegmentDocument(documentId, segmentId, tripId) {
   if (document.clientId) {
     revalidatePath(`/clients/${document.clientId}/documents`);
   }
+}
+
+/**
+ * Sets a segment's total commission, splitting it into portions (see
+ * computeCommissionPortions). Portions already marked RECEIVED are left
+ * untouched so re-entering the total never erases a confirmed receipt;
+ * PENDING portions are updated in place, and extra/missing portions are
+ * added or removed to match the new split.
+ * @param {string} segmentId
+ * @param {string | undefined} prevState
+ * @param {FormData} formData
+ */
+export async function setSegmentCommission(segmentId, prevState, formData) {
+  await requireUser();
+  const amount = dollarsToCents(formData.get("amount"));
+  if (amount == null || amount < 0) return "Enter a valid commission amount.";
+
+  const segment = await prisma.tripSegment.findUnique({
+    where: { id: segmentId },
+    include: {
+      trip: { select: { id: true, createdAt: true, endDate: true } },
+      commissions: { orderBy: { createdAt: "asc" } },
+    },
+  });
+  if (!segment) return "Segment not found.";
+
+  const portions = computeCommissionPortions(amount, segment, segment.trip);
+  const existing = segment.commissions;
+
+  await prisma.$transaction(async (tx) => {
+    for (let i = 0; i < Math.max(portions.length, existing.length); i++) {
+      const target = portions[i];
+      const current = existing[i];
+      if (current?.status === "RECEIVED") continue;
+
+      if (target && current) {
+        await tx.segmentCommission.update({
+          where: { id: current.id },
+          data: { amount: target.amount, dueDate: target.dueDate },
+        });
+      } else if (target && !current) {
+        await tx.segmentCommission.create({
+          data: { segmentId, amount: target.amount, dueDate: target.dueDate },
+        });
+      } else if (!target && current) {
+        await tx.segmentCommission.delete({ where: { id: current.id } });
+      }
+    }
+  });
+
+  revalidatePath(`/trips/${segment.trip.id}/itinerary`);
+  revalidatePath("/commissions");
+}
+
+/**
+ * @param {string} segmentId
+ * @param {string} tripId
+ */
+export async function deleteSegmentCommission(segmentId, tripId) {
+  await requireUser();
+  const segment = await prisma.tripSegment.findFirst({ where: { id: segmentId, tripId } });
+  if (!segment) return;
+  await prisma.segmentCommission.deleteMany({ where: { segmentId } });
+  revalidatePath(`/trips/${tripId}/itinerary`);
+  revalidatePath("/commissions");
+}
+
+/**
+ * @param {string} portionId
+ * @param {boolean} received
+ */
+export async function setCommissionReceived(portionId, received) {
+  await requireUser();
+  const portion = await prisma.segmentCommission.findUnique({
+    where: { id: portionId },
+    include: { segment: { select: { tripId: true } } },
+  });
+  if (!portion) return;
+
+  await prisma.segmentCommission.update({
+    where: { id: portionId },
+    data: { status: received ? "RECEIVED" : "PENDING", receivedDate: received ? new Date() : null },
+  });
+
+  revalidatePath(`/trips/${portion.segment.tripId}/itinerary`);
+  revalidatePath("/commissions");
 }

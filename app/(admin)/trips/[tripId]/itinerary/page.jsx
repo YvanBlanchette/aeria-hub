@@ -17,7 +17,7 @@ export default async function ItineraryPage({ params }) {
   const segments = await prisma.tripSegment.findMany({
     where: { tripId },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    include: { documents: true },
+    include: { documents: true, commissions: { orderBy: { createdAt: "asc" } } },
   });
 
   const { days, unscheduled } = groupSegmentsByDay(segments, trip);

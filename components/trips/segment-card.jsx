@@ -10,6 +10,7 @@ import { SegmentFormDialog } from "@/components/trips/segment-form-dialog";
 import { DeleteSegmentButton } from "@/components/trips/delete-segment-button";
 import { SegmentDocumentUploadDialog } from "@/components/trips/segment-document-upload-dialog";
 import { DeleteSegmentDocumentButton } from "@/components/trips/delete-segment-document-button";
+import { SegmentCommission } from "@/components/trips/segment-commission";
 import { CopyableText } from "@/components/clients/copyable-text";
 import { SEGMENT_TYPE_MAP, summarizeSegmentDetails } from "@/lib/trip-segments";
 import { formatCurrency, formatTime } from "@/lib/format";
@@ -96,6 +97,8 @@ export function SegmentCard({ segment, tripId, canMoveUp = false, canMoveDown = 
               ))}
             </ul>
           )}
+
+          <SegmentCommission segment={segment} tripId={tripId} />
         </div>
 
         <div className="flex shrink-0 items-center gap-3">

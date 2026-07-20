@@ -37,6 +37,11 @@ enum PaymentType {
   FUTURE_CRUISE_CREDIT
 }
 
+enum CommissionStatus {
+  PENDING
+  RECEIVED
+}
+
 enum InvoiceStatus {
   DRAFT
   SENT
@@ -73,6 +78,7 @@ enum SegmentType {
   FLIGHT
   HOTEL
   CRUISE
+  CIRCUIT
   TRANSFER
   EXCURSION
   CAR_RENTAL
@@ -229,7 +235,30 @@ model TripSegment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  documents Document[]
+  documents   Document[]
+  commissions SegmentCommission[]
+}
+
+/**
+ * A portion of the commission owed to the agency for a segment. Most
+ * segments have a single portion due at the trip's end date (client
+ * return). Exoticca circuits split into two: 60% due at the trip's
+ * booking date, 40% at the client's return — see readCommissionPortions
+ * in the segment commission actions.
+ */
+model SegmentCommission {
+  id        String @id @default(cuid())
+  segmentId String
+  segment   TripSegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+
+  /// Cents, not dollars — use dollarsToCents/formatCurrency from lib/format.js.
+  amount       Int
+  dueDate      DateTime?
+  status       CommissionStatus @default(PENDING)
+  receivedDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model TripTask {

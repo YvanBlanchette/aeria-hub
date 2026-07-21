@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableTableHead, useSortableRows } from "@/components/ui/sortable-table";
 import { PaymentEditDialog } from "@/components/trips/payment-edit-dialog";
 import { setPaymentCancelled } from "@/app/(admin)/trips/[tripId]/payments/actions";
 import { PAYMENT_TYPES } from "@/components/trips/payment-fields";
@@ -14,6 +15,15 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const TYPE_LABELS = Object.fromEntries(PAYMENT_TYPES.map((t) => [t.value, t.label]));
+
+const COLUMNS = [
+  { key: "paymentDate", label: "Date", kind: "date" },
+  { key: "typeLabel", label: "Type" },
+  { key: "cardHolder", label: "Card holder" },
+  { key: "confirmationNumber", label: "Confirmation #" },
+  { key: "paidTo", label: "Paid to" },
+  { key: "amount", label: "Amount", align: "right", kind: "number" },
+];
 
 function CancelToggle({ payment, tripId }) {
   const [isPending, startTransition] = useTransition();
@@ -32,7 +42,9 @@ function CancelToggle({ payment, tripId }) {
 
 export function PaymentsTable({ payments, tripId }) {
   const [hideCancelled, setHideCancelled] = useState(false);
-  const visible = hideCancelled ? payments.filter((p) => !p.cancelled) : payments;
+  const filtered = hideCancelled ? payments.filter((p) => !p.cancelled) : payments;
+  const rows = filtered.map((p) => ({ ...p, typeLabel: TYPE_LABELS[p.type] || p.type }));
+  const { sorted, sortKey, sortDir, toggleSort } = useSortableRows(rows, COLUMNS);
 
   return (
     <div className="space-y-3">
@@ -43,24 +55,21 @@ export function PaymentsTable({ payments, tripId }) {
         </Label>
       </div>
 
-      {visible.length === 0 ? (
+      {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">No payments yet.</p>
       ) : (
         <div className="overflow-hidden rounded-lg border border-border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Card holder</TableHead>
-                <TableHead>Confirmation #</TableHead>
-                <TableHead>Paid to</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                {COLUMNS.map((col) => (
+                  <SortableTableHead key={col.key} col={col} sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+                ))}
                 <TableHead className="w-24 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visible.map((payment) => (
+              {sorted.map((payment) => (
                 <TableRow key={payment.id} className={cn(payment.cancelled && "opacity-50")}>
                   <TableCell>{formatDate(payment.paymentDate)}</TableCell>
                   <TableCell>

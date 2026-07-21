@@ -1,13 +1,11 @@
 import { notFound } from "next/navigation";
-import { Pencil, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CopyableField } from "@/components/clients/copyable-field";
-import { CopyableText } from "@/components/clients/copyable-text";
 import { LoyaltyProgramFormDialog } from "@/components/clients/loyalty-program-form-dialog";
-import { DeleteLoyaltyProgramButton } from "@/components/clients/delete-loyalty-program-button";
+import { LoyaltyProgramsTable } from "@/components/clients/loyalty-programs-table";
 import { formatDate } from "@/lib/format";
 
 export default async function ClientProfilePage({ params }) {
@@ -161,57 +159,7 @@ export default async function ClientProfilePage({ params }) {
 							<p className="p-4 text-sm text-muted-foreground">No loyalty programs on file.</p>
 						) : (
 							<div className="overflow-hidden rounded-lg  w-full rounded-t-none">
-								<Table>
-									<TableHeader>
-										<TableRow>
-											<TableHead>Program</TableHead>
-											<TableHead>Member number</TableHead>
-											<TableHead>Notes</TableHead>
-											<TableHead className="w-20 text-right">Actions</TableHead>
-										</TableRow>
-									</TableHeader>
-									<TableBody>
-										{loyaltyPrograms.map((program) => (
-											<TableRow key={program.id}>
-												<TableCell className="font-medium">
-													<CopyableText
-														value={program.programName}
-														label="program name"
-													/>
-												</TableCell>
-												<TableCell>
-													<CopyableText
-														value={program.memberNumber}
-														label="member number"
-													/>
-												</TableCell>
-												<TableCell className="text-muted-foreground">{program.notes || "—"}</TableCell>
-												<TableCell>
-													<div className="flex justify-end gap-1">
-														<LoyaltyProgramFormDialog
-															clientId={clientId}
-															program={program}
-															trigger={
-																<Button
-																	variant="ghost"
-																	size="icon-sm"
-																>
-																	<Pencil className="size-4" />
-																	<span className="sr-only">Edit {program.programName}</span>
-																</Button>
-															}
-														/>
-														<DeleteLoyaltyProgramButton
-															loyaltyProgramId={program.id}
-															clientId={clientId}
-															programName={program.programName}
-														/>
-													</div>
-												</TableCell>
-											</TableRow>
-										))}
-									</TableBody>
-								</Table>
+								<LoyaltyProgramsTable loyaltyPrograms={loyaltyPrograms} clientId={clientId} />
 							</div>
 						)}
 					</div>

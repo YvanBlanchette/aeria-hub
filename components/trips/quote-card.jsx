@@ -1,8 +1,11 @@
+"use client";
+
 import { Pencil } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableTableHead, useSortableRows } from "@/components/ui/sortable-table";
 import { QuoteFormDialog } from "@/components/trips/quote-form-dialog";
 import { DeleteQuoteButton } from "@/components/trips/delete-quote-button";
 import { LineItemFormDialog } from "@/components/trips/line-item-form-dialog";
@@ -19,8 +22,17 @@ const STATUS_VARIANT = {
   EXPIRED: "secondary",
 };
 
+const LINE_ITEM_COLUMNS = [
+  { key: "description", label: "Description" },
+  { key: "quantity", label: "Qty", align: "right", kind: "number" },
+  { key: "unitPrice", label: "Unit price", align: "right", kind: "number" },
+  { key: "lineTotal", label: "Total", align: "right", kind: "number" },
+];
+
 export function QuoteCard({ quote, tripId }) {
   const total = quote.lineItems.reduce((sum, li) => sum + li.quantity * li.unitPrice, 0);
+  const lineItemRows = quote.lineItems.map((li) => ({ ...li, lineTotal: li.quantity * li.unitPrice }));
+  const { sorted, sortKey, sortDir, toggleSort } = useSortableRows(lineItemRows, LINE_ITEM_COLUMNS);
 
   return (
     <Card>
@@ -66,15 +78,14 @@ export function QuoteCard({ quote, tripId }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Qty</TableHead>
-                  <TableHead className="text-right">Unit price</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  {LINE_ITEM_COLUMNS.map((col) => (
+                    <SortableTableHead key={col.key} col={col} sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+                  ))}
                   <TableHead className="w-20 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {quote.lineItems.map((li) => (
+                {sorted.map((li) => (
                   <TableRow key={li.id}>
                     <TableCell className="font-medium">{li.description}</TableCell>
                     <TableCell className="text-right">{li.quantity}</TableCell>

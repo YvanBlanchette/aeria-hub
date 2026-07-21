@@ -3,15 +3,11 @@ import { Plus, Users, UserCheck, UserPlus2, Luggage } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { StatCard } from "@/components/admin/stat-card";
 import { ClientFilters } from "@/components/clients/client-filters";
-import { DeleteClientButton } from "@/components/clients/delete-client-button";
+import { ClientsTable } from "@/components/clients/clients-table";
 import { ExportCsvMenu } from "@/components/clients/export-csv-menu";
 import { ImportCsvDialog } from "@/components/clients/import-csv-dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { formatCurrency, initials } from "@/lib/format";
 
 export const metadata = {
 	title: "Clients — ÆRIA Hub",
@@ -127,72 +123,7 @@ export default async function ClientsPage({ searchParams }) {
 			</div>
 
 			<div className="overflow-hidden rounded-lg border border-border">
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead>Name</TableHead>
-							<TableHead>Email</TableHead>
-							<TableHead>Phone</TableHead>
-							<TableHead className="text-right">Active bookings</TableHead>
-							<TableHead className="text-right">Total spent</TableHead>
-							<TableHead className="text-center">Status</TableHead>
-							<TableHead className="w-10 text-center" />
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{clients.length === 0 ? (
-							<TableRow>
-								<TableCell
-									colSpan={6}
-									className="py-10 text-center text-sm text-muted-foreground"
-								>
-									No clients found.
-								</TableCell>
-							</TableRow>
-						) : (
-							clients.map((client) => (
-								<TableRow
-									key={client.id}
-									className="bg-card"
-								>
-									<TableCell>
-										<Link
-											href={`/clients/${client.id}`}
-											className="flex items-center gap-3"
-										>
-											<Avatar className="size-8">
-												<AvatarFallback className="bg-secondary text-xs">{initials(`${client.firstName} ${client.lastName}`)}</AvatarFallback>
-											</Avatar>
-											<div className="min-w-0">
-												<p className="truncate text-sm font-medium">
-													{client.firstName} {client.lastName}
-												</p>
-											</div>
-										</Link>
-									</TableCell>
-									<TableCell className="text-muted-foreground">{client.primaryEmail || "—"}</TableCell>
-									<TableCell className="text-muted-foreground">{client.primaryPhone || "—"}</TableCell>
-									<TableCell className="text-right tabular-nums">{client._count.trips}</TableCell>
-									<TableCell className="text-right tabular-nums">{formatCurrency(spentByClient[client.id] || 0)}</TableCell>
-									<TableCell className="text-center w-32">
-										<Badge
-											variant={client.status === "ACTIVE" ? "default" : "secondary"}
-											className="text-[10px] capitalize"
-										>
-											{client.status.toLowerCase()}
-										</Badge>
-									</TableCell>
-									<TableCell>
-										<DeleteClientButton
-											clientId={client.id}
-											clientName={`${client.firstName} ${client.lastName}`}
-										/>
-									</TableCell>
-								</TableRow>
-							))
-						)}
-					</TableBody>
-				</Table>
+				<ClientsTable clients={clients} spentByClient={spentByClient} />
 			</div>
 
 			{totalPages > 1 && (

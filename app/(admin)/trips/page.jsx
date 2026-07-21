@@ -3,10 +3,8 @@ import { Plus, Plane, CheckCircle2, CalendarClock, DollarSign } from "lucide-rea
 import { prisma } from "@/lib/prisma";
 import { StatCard } from "@/components/admin/stat-card";
 import { TripFilters } from "@/components/trips/trip-filters";
-import { DeleteTripButton } from "@/components/trips/delete-trip-button";
+import { TripsTable } from "@/components/trips/trips-table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Pagination,
   PaginationContent,
@@ -15,22 +13,13 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 
 export const metadata = {
   title: "Trips — ÆRIA Hub",
 };
 
 const PAGE_SIZE = 10;
-
-const STATUS_VARIANT = {
-  INQUIRY: "secondary",
-  QUOTED: "secondary",
-  BOOKED: "default",
-  TRAVELING: "default",
-  COMPLETED: "secondary",
-  CANCELLED: "destructive",
-};
 
 export default async function TripsPage({ searchParams }) {
   const params = await searchParams;
@@ -100,57 +89,7 @@ export default async function TripsPage({ searchParams }) {
       <TripFilters defaultQuery={q} defaultStatus={status} />
 
       <div className="overflow-hidden rounded-lg border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Trip</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Destination</TableHead>
-              <TableHead>Dates</TableHead>
-              <TableHead className="text-right">Total price</TableHead>
-              <TableHead className="text-center">Status</TableHead>
-              <TableHead className="w-10" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {trips.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
-                  No trips found.
-                </TableCell>
-              </TableRow>
-            ) : (
-              trips.map((trip) => (
-                <TableRow key={trip.id} className="bg-card">
-                  <TableCell>
-                    <Link href={`/trips/${trip.id}`} className="font-medium hover:underline">
-                      {trip.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Link href={`/clients/${trip.client.id}`} className="text-muted-foreground hover:underline">
-                      {trip.client.firstName} {trip.client.lastName}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{trip.destination}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {trip.startDate ? formatDate(trip.startDate) : "—"}
-                    {trip.endDate ? ` – ${formatDate(trip.endDate)}` : ""}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {trip.totalPrice != null ? formatCurrency(trip.totalPrice) : "—"}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant={STATUS_VARIANT[trip.status] || "secondary"}>{trip.status}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DeleteTripButton tripId={trip.id} clientId={trip.client.id} tripName={trip.name} />
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+        <TripsTable trips={trips} />
       </div>
 
       {totalPages > 1 && (

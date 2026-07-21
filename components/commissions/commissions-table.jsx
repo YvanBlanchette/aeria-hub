@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableTableHead, useSortableRows } from "@/components/ui/sortable-table";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -17,41 +16,11 @@ const COLUMNS = [
   { key: "status", label: "Status", align: "right" },
 ];
 
-function compareValues(a, b, kind) {
-  if (kind === "date") {
-    const av = a ? new Date(a).getTime() : -Infinity;
-    const bv = b ? new Date(b).getTime() : -Infinity;
-    return av - bv;
-  }
-  if (kind === "number") return (a ?? 0) - (b ?? 0);
-  return String(a ?? "").localeCompare(String(b ?? ""));
-}
-
 const STATUS_LABEL = { RECEIVED: "Received", PARTIAL: "Partial", PENDING: "Pending" };
 
 export function CommissionsTable({ rows }) {
   const router = useRouter();
-  const [sortKey, setSortKey] = useState("bookingDate");
-  const [sortDir, setSortDir] = useState("asc");
-
-  const sorted = useMemo(() => {
-    const col = COLUMNS.find((c) => c.key === sortKey);
-    const copy = [...rows];
-    copy.sort((a, b) => {
-      const cmp = compareValues(a[sortKey], b[sortKey], col?.kind);
-      return sortDir === "asc" ? cmp : -cmp;
-    });
-    return copy;
-  }, [rows, sortKey, sortDir]);
-
-  function toggleSort(key) {
-    if (key === sortKey) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  }
+  const { sorted, sortKey, sortDir, toggleSort } = useSortableRows(rows, COLUMNS, { defaultKey: "bookingDate" });
 
   if (rows.length === 0) {
     return (
@@ -69,24 +38,7 @@ export function CommissionsTable({ rows }) {
         <TableHeader>
           <TableRow>
             {COLUMNS.map((col) => (
-              <TableHead
-                key={col.key}
-                className={cn("cursor-pointer select-none", col.align === "right" && "text-right")}
-                onClick={() => toggleSort(col.key)}
-              >
-                <span className={cn("inline-flex items-center gap-1", col.align === "right" && "flex-row-reverse")}>
-                  {col.label}
-                  {sortKey === col.key ? (
-                    sortDir === "asc" ? (
-                      <ArrowUp className="size-3" />
-                    ) : (
-                      <ArrowDown className="size-3" />
-                    )
-                  ) : (
-                    <ArrowUpDown className="size-3 opacity-30" />
-                  )}
-                </span>
-              </TableHead>
+              <SortableTableHead key={col.key} col={col} sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
             ))}
           </TableRow>
         </TableHeader>

@@ -1,14 +1,9 @@
-import Link from "next/link";
 import { Plane, CalendarClock, Receipt, Inbox } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { StatCard } from "@/components/admin/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { initials } from "@/lib/format";
-import { CopyableText } from "@/components/clients/copyable-text";
+import { RecentClientsTable } from "@/components/dashboard/recent-clients-table";
 
 export const metadata = {
 	title: "Dashboard — ÆRIA Hub",
@@ -71,57 +66,7 @@ export default async function DashboardPage() {
 					<CardTitle>Recent clients</CardTitle>
 				</CardHeader>
 				<CardContent className="p-0">
-					<Table>
-						<TableBody>
-							{recentClients.length === 0 ? (
-								<TableRow className="bg-card">
-									<TableCell
-										colSpan={6}
-										className="py-10 text-center text-sm text-muted-foreground"
-									>
-										No clients yet.
-									</TableCell>
-								</TableRow>
-							) : (
-								recentClients.map((client) => (
-									<TableRow
-										key={client.id}
-										className="bg-card"
-									>
-										<TableCell>
-											<Link
-												href={`/clients/${client.id}`}
-												className="flex items-center gap-3"
-											>
-												<Avatar className="size-8">
-													<AvatarFallback className="bg-secondary text-xs">{initials(`${client.firstName} ${client.lastName}`)}</AvatarFallback>
-												</Avatar>
-												<div className="min-w-0">
-													<p className="truncate text-sm font-medium">
-														{client.firstName} {client.lastName}
-													</p>
-												</div>
-											</Link>
-										</TableCell>
-										<TableCell className="text-muted-foreground">
-											<CopyableText value={client.primaryEmail} label="email" />
-										</TableCell>
-										<TableCell className="text-muted-foreground">
-											<CopyableText value={client.primaryPhone} label="phone" />
-										</TableCell>
-										<TableCell className="text-muted-foreground">
-											<Badge
-												variant={client.status === "ACTIVE" ? "default" : "secondary"}
-												className="text-[10px] capitalize"
-											>
-												{client.status.toLowerCase()}
-											</Badge>
-										</TableCell>
-									</TableRow>
-								))
-							)}
-						</TableBody>
-					</Table>
+					<RecentClientsTable clients={recentClients} />
 				</CardContent>
 			</Card>
 		</div>

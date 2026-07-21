@@ -5,11 +5,10 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { InvoiceEditDialog } from "@/components/invoices/invoice-edit-dialog";
 import { DeleteInvoiceButton } from "@/components/invoices/delete-invoice-button";
 import { InvoiceLineItemFormDialog } from "@/components/invoices/invoice-line-item-form-dialog";
-import { DeleteInvoiceLineItemButton } from "@/components/invoices/delete-invoice-line-item-button";
+import { InvoiceLineItemsTable } from "@/components/invoices/invoice-line-items-table";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -111,44 +110,7 @@ export default async function InvoiceDetailPage({ params }) {
           {invoice.lineItems.length === 0 ? (
             <p className="text-sm text-muted-foreground">No line items yet.</p>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
-                    <TableHead className="text-right">Unit price</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="w-20 text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invoice.lineItems.map((li) => (
-                    <TableRow key={li.id}>
-                      <TableCell className="font-medium">{li.description}</TableCell>
-                      <TableCell className="text-right">{li.quantity}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(li.unitPrice)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(li.quantity * li.unitPrice)}</TableCell>
-                      <TableCell>
-                        <div className="flex justify-end gap-1">
-                          <InvoiceLineItemFormDialog
-                            invoiceId={invoice.id}
-                            lineItem={li}
-                            trigger={
-                              <Button variant="ghost" size="icon-sm">
-                                <Pencil className="size-4" />
-                                <span className="sr-only">Edit {li.description}</span>
-                              </Button>
-                            }
-                          />
-                          <DeleteInvoiceLineItemButton lineItemId={li.id} invoiceId={invoice.id} itemLabel={li.description} />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <InvoiceLineItemsTable lineItems={invoice.lineItems} invoiceId={invoice.id} />
           )}
 
           <div className="flex justify-end border-t border-border pt-3">

@@ -7,9 +7,9 @@ export function Sidebar() {
 			<div className="flex h-14 items-center border-b border-sidebar-border px-5">
 				<Link
 					href="/dashboard"
-					className="text-4xl flex items-center justify-center gap-2 font-semibold w-full tracking-tight text-sidebar-foreground"
+					className="text-4xl flex items-center justify-center gap-1.5 font-semibold w-full tracking-tight text-sidebar-foreground"
 				>
-					ÆRIA <span className="font-light text-sidebar-foreground/70">Hub</span>
+					ÆRIA <span className="font-light text-accent">Hub</span>
 				</Link>
 			</div>
 			<SidebarNav />

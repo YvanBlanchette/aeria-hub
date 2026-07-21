@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
 	title: "ÆRIA Hub",
-	description: "Travel agency CRM — clients, trips, and itineraries in one place.",
+	description: "Travel agency CRM to manage clients, trips, and itineraries in one place.",
 };
 
 export default function RootLayout({ children }) {
@@ -24,6 +24,12 @@ export default function RootLayout({ children }) {
 			suppressHydrationWarning
 			className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
 		>
+			<head>
+				<meta
+					name="apple-mobile-web-app-title"
+					content="ÆRIA Hub"
+				/>
+			</head>
 			<body
 				className="min-h-full flex flex-col"
 				suppressHydrationWarning

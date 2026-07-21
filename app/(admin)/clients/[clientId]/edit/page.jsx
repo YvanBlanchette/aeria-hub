@@ -21,10 +21,11 @@ export default async function EditClientPage({ params }) {
 
 	return (
 		<div className="mx-auto max-w-6xl space-y-6">
-			<div>
-				<h1 className="text-2xl font-semibold tracking-tight">Edit client</h1>
-				<p className="text-sm text-muted-foreground">
-					Update {client.firstName} {client.lastName}&apos;s profile.
+			<div className="rounded-3xl border border-border/70 bg-card/85 p-5 shadow-sm backdrop-blur-sm sm:p-6">
+				<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">Client maintenance</p>
+				<h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-[2rem]">Edit client</h1>
+				<p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+					Update {client.firstName} {client.lastName}&apos;s profile, service preferences, and operational ownership.
 				</p>
 			</div>
 			<ClientForm

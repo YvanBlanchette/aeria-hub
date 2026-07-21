@@ -23,7 +23,7 @@ function TableHeader({ className, ...props }) {
 	return (
 		<thead
 			data-slot="table-header"
-			className={cn("[&_tr]:border-b", className)}
+			className={cn("[&_tr]:border-b [&_tr]:border-border/70", className)}
 			{...props}
 		/>
 	);
@@ -43,7 +43,7 @@ function TableFooter({ className, ...props }) {
 	return (
 		<tfoot
 			data-slot="table-footer"
-			className={cn("border-t bg-muted/50 font-medium [&>tr]:last:border-b-0", className)}
+			className={cn("border-t border-border/70 bg-muted/40 font-medium [&>tr]:last:border-b-0", className)}
 			{...props}
 		/>
 	);
@@ -53,7 +53,7 @@ function TableRow({ className, ...props }) {
 	return (
 		<tr
 			data-slot="table-row"
-			className={cn("border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted", className)}
+			className={cn("border-b border-border/60 transition-colors hover:bg-muted/30 has-aria-expanded:bg-muted/40 data-[state=selected]:bg-muted/50", className)}
 			{...props}
 		/>
 	);
@@ -64,7 +64,7 @@ function TableHead({ className, ...props }) {
 		<th
 			data-slot="table-head"
 			className={cn(
-				"h-10 px-2 bg-sidebar  text-left align-middle font-medium whitespace-nowrap text-sidebar-foreground [&:has([role=checkbox])]:pr-0",
+				"h-11 border-b border-border/70 bg-muted/45 px-3 text-left align-middle text-[11px] font-semibold whitespace-nowrap uppercase tracking-[0.22em] text-muted-foreground [&:has([role=checkbox])]:pr-0",
 				className,
 			)}
 			{...props}
@@ -76,7 +76,7 @@ function TableCell({ className, ...props }) {
 	return (
 		<td
 			data-slot="table-cell"
-			className={cn("p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0", className)}
+			className={cn("p-3 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0", className)}
 			{...props}
 		/>
 	);

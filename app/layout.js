@@ -31,9 +31,13 @@ export default function RootLayout({ children }) {
 				/>
 			</head>
 			<body
-				className="min-h-full flex flex-col"
+				className="min-h-screen flex flex-col bg-background text-foreground selection:bg-primary/20 selection:text-foreground"
 				suppressHydrationWarning
 			>
+				<div
+					aria-hidden="true"
+					className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(232,163,61,0.14),transparent_34%),radial-gradient(circle_at_top_right,rgba(11,79,108,0.12),transparent_28%),linear-gradient(to_bottom,rgba(255,255,255,0.7),transparent_18%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(232,163,61,0.08),transparent_30%),radial-gradient(circle_at_top_right,rgba(62,150,190,0.1),transparent_26%),linear-gradient(to_bottom,rgba(255,255,255,0.03),transparent_18%)]"
+				/>
 				<ThemeProvider
 					attribute="class"
 					defaultTheme="light"

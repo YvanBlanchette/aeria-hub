@@ -30,19 +30,19 @@ export function Topbar({ user }) {
 	}
 
 	return (
-		<header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-card px-4">
+		<header className="flex h-16 shrink-0 items-center gap-3 border-b border-border/80 bg-card/90 px-4 shadow-[0_1px_0_rgba(255,255,255,0.4)_inset] backdrop-blur-xl">
 			<MobileSidebar />
 
-			<div className="flex w-full items-center justify-between px-4">
+			<div className="flex w-full items-center justify-between gap-4 px-2 sm:px-4">
 				<form
 					onSubmit={handleSearch}
-					className="relative hidden flex-1 max-w-sm sm:block bg-background"
+					className="relative hidden flex-1 max-w-md sm:block"
 				>
 					<Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 					<Input
 						name="q"
 						placeholder="Search clients..."
-						className="pl-8"
+						className="h-10 rounded-full border-border/80 bg-background/80 pl-8 shadow-sm backdrop-blur"
 					/>
 				</form>
 
@@ -83,10 +83,15 @@ export function Topbar({ user }) {
 						<DropdownMenuTrigger asChild>
 							<Button
 								variant="ghost"
-								className="gap-2 px-1.5 hover:bg-transparent"
+								className="gap-2 rounded-full px-1.5 hover:bg-transparent"
 							>
 								<Avatar className="size-10">
-									{user?.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.name} />}
+									{user?.avatarUrl && (
+										<AvatarImage
+											src={user.avatarUrl}
+											alt={user.name}
+										/>
+									)}
 									<AvatarFallback className="bg-primary text-xs text-primary-foreground">{initials(user?.name)}</AvatarFallback>
 								</Avatar>
 							</Button>

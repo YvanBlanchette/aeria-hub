@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutList, Route, ListChecks, FileText, CreditCard } from "lucide-react";
+import { LayoutList, Route, ListChecks, FileText, CreditCard, Percent } from "lucide-react";
 
 const tabs = [
   { label: "Overview", segment: "overview", icon: LayoutList },
   { label: "Itinerary", segment: "itinerary", icon: Route },
   { label: "Quotes", segment: "quotes", icon: FileText },
   { label: "Payments", segment: "payments", icon: CreditCard },
+  { label: "Commissions", segment: "commissions", icon: Percent },
   { label: "Tasks", segment: "tasks", icon: ListChecks },
 ];
 

@@ -8,6 +8,7 @@ import {
   Inbox,
   Building2,
   MessageSquareText,
+  Settings,
 } from "lucide-react";
 
 /** Sidebar navigation entries. `href: null` renders a disabled "coming soon" item. */
@@ -21,4 +22,5 @@ export const navItems = [
   { label: "Inquiries", href: null, icon: Inbox },
   { label: "Suppliers", href: "/suppliers", icon: Building2 },
   { label: "Client Requests", href: null, icon: MessageSquareText },
+  { label: "Settings", href: "/settings", icon: Settings },
 ];

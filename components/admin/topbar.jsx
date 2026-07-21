@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Search, Plus, Bell, LogOut, UserPlus, Plane, Receipt, Sun, Moon } from "lucide-react";
+import { Search, Plus, Bell, LogOut, UserPlus, Plane, Receipt, Sun, Moon, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	DropdownMenu,
 	DropdownMenuTrigger,
@@ -86,6 +86,7 @@ export function Topbar({ user }) {
 								className="gap-2 px-1.5 hover:bg-transparent"
 							>
 								<Avatar className="size-10">
+									{user?.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.name} />}
 									<AvatarFallback className="bg-primary text-xs text-primary-foreground">{initials(user?.name)}</AvatarFallback>
 								</Avatar>
 							</Button>
@@ -96,6 +97,12 @@ export function Topbar({ user }) {
 								<span className="text-xs font-normal capitalize text-muted-foreground">{user?.role?.toLowerCase()}</span>
 							</DropdownMenuLabel>
 							<DropdownMenuSeparator />
+							<DropdownMenuItem asChild>
+								<Link href="/settings">
+									<Settings className="size-4" />
+									Settings
+								</Link>
+							</DropdownMenuItem>
 							<DropdownMenuItem onSelect={() => logout()}>
 								<LogOut className="size-4" />
 								Log out

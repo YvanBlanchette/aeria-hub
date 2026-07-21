@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { toggleTask, deleteTask } from "@/app/(admin)/trips/[tripId]/tasks/actions";
 import { formatDate, initials } from "@/lib/format";
@@ -32,6 +32,7 @@ export function TaskRow({ task, tripId }) {
       </div>
       {task.assignee && (
         <Avatar className="size-7" title={task.assignee.name}>
+          {task.assignee.avatarUrl && <AvatarImage src={task.assignee.avatarUrl} alt={task.assignee.name} />}
           <AvatarFallback className="bg-secondary text-xs">{initials(task.assignee.name)}</AvatarFallback>
         </Avatar>
       )}

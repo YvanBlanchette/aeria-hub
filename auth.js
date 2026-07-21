@@ -40,11 +40,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
         token.avatarUrl = user.avatarUrl;
+        token.name = user.name;
+        token.email = user.email;
+      } else if (token.id) {
+        // Re-read on every request (not just at sign-in) so profile/avatar/
+        // password changes made from Settings show up without a re-login.
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id },
+          select: { name: true, email: true, role: true, avatarUrl: true },
+        });
+        if (dbUser) {
+          token.name = dbUser.name;
+          token.email = dbUser.email;
+          token.role = dbUser.role;
+          token.avatarUrl = dbUser.avatarUrl;
+        }
       }
       return token;
     },
@@ -53,6 +68,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id;
         session.user.role = token.role;
         session.user.avatarUrl = token.avatarUrl;
+        session.user.name = token.name;
+        session.user.email = token.email;
       }
       return session;
     },

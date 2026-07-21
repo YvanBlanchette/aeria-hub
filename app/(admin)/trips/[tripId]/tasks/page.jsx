@@ -13,7 +13,7 @@ export default async function TripTasksPage({ params }) {
     prisma.tripTask.findMany({
       where: { tripId },
       orderBy: [{ completed: "asc" }, { dueDate: "asc" }],
-      include: { assignee: { select: { id: true, name: true } } },
+      include: { assignee: { select: { id: true, name: true, avatarUrl: true } } },
     }),
     prisma.user.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);

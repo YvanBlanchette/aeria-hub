@@ -43,6 +43,10 @@ yarn-error.log*
 /storage/uploads/*
 !/storage/uploads/.gitkeep
 
+# uploaded avatars (public, unlike client documents, but still runtime data)
+/public/uploads/avatars/*
+!/public/uploads/avatars/.gitkeep
+
 # vercel
 .vercel
 

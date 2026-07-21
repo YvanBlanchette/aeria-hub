@@ -9,8 +9,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const COLUMNS = [
-  { key: "provider", label: "Provider" },
-  { key: "typeLabel", label: "Type" },
+  { key: "tripName", label: "Trip" },
   { key: "clientName", label: "Client" },
   { key: "totalAmount", label: "Amount", align: "right", kind: "number" },
   { key: "paymentDate", label: "Payment date", align: "right", kind: "date" },
@@ -96,12 +95,11 @@ export function CommissionsTable({ rows }) {
             const overdue = row.status !== "RECEIVED" && row.paymentDate && new Date(row.paymentDate) < now;
             return (
               <TableRow
-                key={row.segmentId}
+                key={row.tripId}
                 className="cursor-pointer bg-card hover:bg-muted/40"
                 onClick={() => router.push(`/trips/${row.tripId}/commissions`)}
               >
-                <TableCell>{row.provider || "—"}</TableCell>
-                <TableCell>{row.typeLabel}</TableCell>
+                <TableCell className="font-medium">{row.tripName}</TableCell>
                 <TableCell>{row.clientName}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatCurrency(row.totalAmount)}</TableCell>
                 <TableCell className={cn("text-right", overdue && "text-destructive")}>

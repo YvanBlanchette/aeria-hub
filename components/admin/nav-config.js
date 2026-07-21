@@ -19,6 +19,6 @@ export const navItems = [
   { label: "Quotes", href: null, icon: FileText },
   { label: "Invoices", href: null, icon: Receipt },
   { label: "Inquiries", href: null, icon: Inbox },
-  { label: "Suppliers", href: null, icon: Building2 },
+  { label: "Suppliers", href: "/suppliers", icon: Building2 },
   { label: "Client Requests", href: null, icon: MessageSquareText },
 ];

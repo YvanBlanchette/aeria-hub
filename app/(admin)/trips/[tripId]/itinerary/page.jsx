@@ -16,11 +16,14 @@ export default async function ItineraryPage({ params }) {
   });
   if (!trip) notFound();
 
-  const segments = await prisma.tripSegment.findMany({
-    where: { tripId },
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    include: { documents: true, commissions: { orderBy: { createdAt: "asc" } } },
-  });
+  const [segments, suppliers] = await Promise.all([
+    prisma.tripSegment.findMany({
+      where: { tripId },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      include: { documents: true, commissions: { orderBy: { createdAt: "asc" } }, supplier: true },
+    }),
+    prisma.supplier.findMany({ orderBy: { name: "asc" } }),
+  ]);
 
   const { days, unscheduled } = groupSegmentsByDay(segments, trip);
 
@@ -40,7 +43,7 @@ export default async function ItineraryPage({ params }) {
               description="Creates a new invoice with one line item per segment, using each segment's title and cost. You can edit the line items afterward."
             />
           )}
-          <SegmentFormDialog tripId={tripId} />
+          <SegmentFormDialog tripId={tripId} suppliers={suppliers} />
         </div>
       </div>
 
@@ -64,6 +67,7 @@ export default async function ItineraryPage({ params }) {
                       key={segment.id}
                       segment={segment}
                       tripId={tripId}
+                      suppliers={suppliers}
                       canMoveUp={index > 0}
                       canMoveDown={index < day.segments.length - 1}
                     />
@@ -82,6 +86,7 @@ export default async function ItineraryPage({ params }) {
                     key={segment.id}
                     segment={segment}
                     tripId={tripId}
+                    suppliers={suppliers}
                     canMoveUp={index > 0}
                     canMoveDown={index < unscheduled.length - 1}
                   />

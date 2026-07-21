@@ -126,7 +126,7 @@ export async function duplicateTrip(tripId, prevState, formData) {
         create: source.segments.map((s) => ({
           type: s.type,
           title: s.title,
-          provider: s.provider,
+          supplierId: s.supplierId,
           confirmationNumber: null,
           startDateTime: s.startDateTime,
           endDateTime: s.endDateTime,

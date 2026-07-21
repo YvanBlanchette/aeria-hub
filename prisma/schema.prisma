@@ -91,6 +91,17 @@ enum ClientStatus {
   INACTIVE
 }
 
+enum SupplierCategory {
+  AIRLINE
+  CRUISE
+  HOTEL
+  TOUR_OPERATOR
+  CAR_RENTAL
+  INSURANCE
+  TRANSFER
+  OTHER
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -235,7 +246,8 @@ model TripSegment {
 
   type               SegmentType
   title              String
-  provider           String?
+  supplierId         String?
+  supplier           Supplier?   @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   confirmationNumber String?
   startDateTime      DateTime?
   endDateTime        DateTime?
@@ -254,6 +266,25 @@ model TripSegment {
 
   documents   Document[]
   commissions SegmentCommission[]
+}
+
+/// A travel vendor (airline, cruise line, hotel chain, tour operator...)
+/// that trip segments can be booked through. Deleting a supplier detaches
+/// it from any segments (segment.supplierId → null) rather than deleting them.
+model Supplier {
+  id       String           @id @default(cuid())
+  name     String
+  category SupplierCategory @default(OTHER)
+
+  phone          String?
+  website        String?
+  agentPortalUrl String?
+  notes          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  segments TripSegment[]
 }
 
 /**

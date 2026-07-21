@@ -26,9 +26,10 @@ import { SEGMENT_TYPES, SEGMENT_DETAIL_FIELDS } from "@/lib/trip-segments";
 import { dateTimeInputValue, centsToDollarsInputValue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-export function SegmentFormDialog({ tripId, segment, trigger }) {
+export function SegmentFormDialog({ tripId, segment, suppliers = [], trigger }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState(segment?.type || "FLIGHT");
+  const [supplierId, setSupplierId] = useState(segment?.supplierId || "none");
   const action = segment ? updateSegment.bind(null, segment.id) : createSegment.bind(null, tripId);
   const [error, formAction, pending] = useActionState(action, undefined);
   const wasPending = useRef(false);
@@ -47,7 +48,10 @@ export function SegmentFormDialog({ tripId, segment, trigger }) {
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (next) setType(segment?.type || "FLIGHT");
+        if (next) {
+          setType(segment?.type || "FLIGHT");
+          setSupplierId(segment?.supplierId || "none");
+        }
       }}
     >
       <DialogTrigger asChild>
@@ -114,13 +118,20 @@ export function SegmentFormDialog({ tripId, segment, trigger }) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="provider">Provider</Label>
-              <Input
-                id="provider"
-                name="provider"
-                defaultValue={segment?.provider ?? ""}
-                placeholder="Air France, Marriott, Royal Caribbean..."
-              />
+              <Label htmlFor="supplierId">Supplier</Label>
+              <Select name="supplierId" value={supplierId} onValueChange={setSupplierId}>
+                <SelectTrigger id="supplierId" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No supplier</SelectItem>
+                  {suppliers.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmationNumber">Confirmation #</Label>

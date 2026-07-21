@@ -24,10 +24,12 @@ function readSegmentFields(formData) {
     if (value != null) details[field.key] = value;
   }
 
+  const supplierId = get("supplierId");
+
   return {
     type,
     title: get("title"),
-    provider: get("provider"),
+    supplierId: supplierId === "none" ? null : supplierId,
     confirmationNumber: get("confirmationNumber"),
     startDateTime: getDateTime("startDateTime"),
     endDateTime: getDateTime("endDateTime"),
@@ -244,6 +246,7 @@ export async function setSegmentCommission(segmentId, prevState, formData) {
     include: {
       trip: { select: { id: true, createdAt: true, endDate: true } },
       commissions: { orderBy: { createdAt: "asc" } },
+      supplier: { select: { name: true } },
     },
   });
   if (!segment) return "Segment not found.";

@@ -16,7 +16,7 @@ import { SEGMENT_TYPE_MAP, summarizeSegmentDetails } from "@/lib/trip-segments";
 import { formatCurrency, formatTime } from "@/lib/format";
 import { reorderSegment } from "@/app/(admin)/trips/[tripId]/itinerary/actions";
 
-export function SegmentCard({ segment, tripId, canMoveUp = false, canMoveDown = false }) {
+export function SegmentCard({ segment, tripId, suppliers = [], canMoveUp = false, canMoveDown = false }) {
   const [isPending, startTransition] = useTransition();
   const meta = SEGMENT_TYPE_MAP[segment.type] || SEGMENT_TYPE_MAP.OTHER;
   const Icon = meta.icon;
@@ -62,10 +62,14 @@ export function SegmentCard({ segment, tripId, canMoveUp = false, canMoveDown = 
 
           <p className="text-sm text-muted-foreground">
             {startTime && (endTime && endTime !== startTime ? `${startTime} – ${endTime}` : startTime)}
-            {(startTime || segment.provider) && segment.location ? " · " : ""}
+            {(startTime || segment.supplier) && segment.location ? " · " : ""}
             {segment.location}
-            {segment.location && segment.provider ? " · " : ""}
-            {segment.provider}
+            {segment.location && segment.supplier ? " · " : ""}
+            {segment.supplier && (
+              <Link href={`/suppliers/${segment.supplier.id}`} className="hover:underline">
+                {segment.supplier.name}
+              </Link>
+            )}
           </p>
 
           {summary && <p className="text-sm text-muted-foreground">{summary}</p>}
@@ -108,6 +112,7 @@ export function SegmentCard({ segment, tripId, canMoveUp = false, canMoveDown = 
             <SegmentFormDialog
               tripId={tripId}
               segment={segment}
+              suppliers={suppliers}
               trigger={
                 <Button variant="ghost" size="icon-sm">
                   <Pencil className="size-4" />

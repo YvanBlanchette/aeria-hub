@@ -13,7 +13,7 @@ export default async function TripCommissionsPage({ params }) {
   const segments = await prisma.tripSegment.findMany({
     where: { tripId, commissions: { some: {} } },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    include: { commissions: { orderBy: { createdAt: "asc" } } },
+    include: { commissions: { orderBy: { createdAt: "asc" } }, supplier: true },
   });
 
   return (
@@ -39,7 +39,9 @@ export default async function TripCommissionsPage({ params }) {
                     <Icon className="size-4 shrink-0 text-muted-foreground" />
                     <p className="font-medium">{segment.title}</p>
                     <span className="text-sm text-muted-foreground">· {meta.label}</span>
-                    {segment.provider && <span className="text-sm text-muted-foreground">· {segment.provider}</span>}
+                    {segment.supplier && (
+                      <span className="text-sm text-muted-foreground">· {segment.supplier.name}</span>
+                    )}
                   </div>
                   <SegmentCommission segment={segment} tripId={tripId} />
                 </CardContent>

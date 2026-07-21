@@ -62,9 +62,9 @@ export default async function DashboardPage() {
 			</div>
 
 			<Card className="p-0">
-				<CardHeader className="bg-sidebar text-sidebar-foreground py-2 mb-0">
+				{/* <CardHeader className="bg-sidebar text-sidebar-foreground pb-2 mb-0">
 					<CardTitle>Recent clients</CardTitle>
-				</CardHeader>
+				</CardHeader> */}
 				<CardContent className="p-0">
 					<RecentClientsTable clients={recentClients} />
 				</CardContent>

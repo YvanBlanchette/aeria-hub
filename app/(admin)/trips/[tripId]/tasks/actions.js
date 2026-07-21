@@ -55,6 +55,7 @@ export async function toggleTask(taskId, tripId, completed) {
   if (!task) return;
   await prisma.tripTask.update({ where: { id: taskId }, data: { completed } });
   revalidatePath(`/trips/${tripId}/tasks`);
+  revalidatePath("/dashboard");
 }
 
 /**

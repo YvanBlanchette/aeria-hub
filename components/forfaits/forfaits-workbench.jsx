@@ -849,7 +849,7 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 						<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">Forfaits engine</p>
 						<h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem]">Calculateur de forfaits croisiere</h1>
 						<p className="text-sm leading-6 text-muted-foreground">
-							Reprise complete du module aeria-outil-forfaits, integree au CRM avec liaison client/voyage, suivi de marge et sauvegarde de dossiers.
+							Outil integree de planification de forfaits croisière, suivi de marge et sauvegarde de dossiers.
 						</p>
 					</div>
 					<div className="grid min-w-55 grid-cols-1 gap-2 text-sm">
@@ -958,24 +958,28 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 								<Input
 									value={draft.compagnie}
 									onChange={(e) => setField("compagnie", e.target.value)}
+									placeholder="Ex: Royal Caribbean, MSC, Celebrity, etc."
 								/>
 							</Field>
 							<Field label="Navire">
 								<Input
 									value={draft.navire}
 									onChange={(e) => setField("navire", e.target.value)}
+									placeholder="Ex: Royal Princess, Legend of the Seas, etc."
 								/>
 							</Field>
 							<Field label="Port depart">
 								<Input
 									value={draft.portDepart}
 									onChange={(e) => setField("portDepart", e.target.value)}
+									placeholder="Ex: Miami, New York, etc."
 								/>
 							</Field>
 							<Field label="Port arrivee">
 								<Input
 									value={draft.portArrivee}
 									onChange={(e) => setField("portArrivee", e.target.value)}
+									placeholder="Ex: Miami, New York, etc."
 								/>
 							</Field>
 							<Field label="Date debut">
@@ -1111,36 +1115,38 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 						<CardTitle>Vols et bagages</CardTitle>
 						<CardDescription>Prend en charge les montants par personne ou total groupe.</CardDescription>
 					</CardHeader>
-					<CardContent className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+					<CardContent className="grid gap-3 md:grid-cols-2">
 						<Field label="Details vols">
 							<Textarea
 								value={draft.volsDetails}
 								onChange={(e) => setField("volsDetails", e.target.value)}
-								rows={3}
+								rows={5}
 							/>
 						</Field>
-						<MoneyWithMode
-							label="Cout vols"
-							value={draft.vols}
-							mode={draft.volsMode}
-							onValue={(v) => setField("vols", v)}
-							onMode={(v) => setField("volsMode", v)}
-						/>
-						<MoneyWithMode
-							label="Bagages aller"
-							value={draft.bagAller}
-							mode={draft.bagAllerMode}
-							onValue={(v) => setField("bagAller", v)}
-							onMode={(v) => setField("bagAllerMode", v)}
-						/>
-						<MoneyWithMode
-							label="Bagages retour"
-							value={draft.bagRetour}
-							mode={draft.bagRetourMode}
-							onValue={(v) => setField("bagRetour", v)}
-							onMode={(v) => setField("bagRetourMode", v)}
-						/>
-						<Field label="Ajustement commission vols">
+						<div className="flex flex-col gap-3">
+							<MoneyWithMode
+								label="Cout vols"
+								value={draft.vols}
+								mode={draft.volsMode}
+								onValue={(v) => setField("vols", v)}
+								onMode={(v) => setField("volsMode", v)}
+							/>
+							<MoneyWithMode
+								label="Bagages aller"
+								value={draft.bagAller}
+								mode={draft.bagAllerMode}
+								onValue={(v) => setField("bagAller", v)}
+								onMode={(v) => setField("bagAllerMode", v)}
+							/>
+							<MoneyWithMode
+								label="Bagages retour"
+								value={draft.bagRetour}
+								mode={draft.bagRetourMode}
+								onValue={(v) => setField("bagRetour", v)}
+								onMode={(v) => setField("bagRetourMode", v)}
+							/>
+						</div>
+						{/* <Field label="Ajustement commission vols">
 							<Input
 								type="number"
 								min="0"
@@ -1148,7 +1154,7 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 								value={draft.commissionVols}
 								onChange={(e) => setField("commissionVols", e.target.value)}
 							/>
-						</Field>
+						</Field> */}
 					</CardContent>
 				</Card>
 			)}

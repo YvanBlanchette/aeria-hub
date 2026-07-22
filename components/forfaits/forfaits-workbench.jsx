@@ -1120,7 +1120,8 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 							<Textarea
 								value={draft.volsDetails}
 								onChange={(e) => setField("volsDetails", e.target.value)}
-								rows={5}
+								rows={7}
+								className="resize-none h-full"
 							/>
 						</Field>
 						<div className="flex flex-col gap-3">
@@ -1131,20 +1132,22 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 								onValue={(v) => setField("vols", v)}
 								onMode={(v) => setField("volsMode", v)}
 							/>
-							<MoneyWithMode
-								label="Bagages aller"
-								value={draft.bagAller}
-								mode={draft.bagAllerMode}
-								onValue={(v) => setField("bagAller", v)}
-								onMode={(v) => setField("bagAllerMode", v)}
-							/>
-							<MoneyWithMode
-								label="Bagages retour"
-								value={draft.bagRetour}
-								mode={draft.bagRetourMode}
-								onValue={(v) => setField("bagRetour", v)}
-								onMode={(v) => setField("bagRetourMode", v)}
-							/>
+							<div className="flex items-center gap-3">
+								<MoneyWithMode
+									label="Bagages aller"
+									value={draft.bagAller}
+									mode={draft.bagAllerMode}
+									onValue={(v) => setField("bagAller", v)}
+									onMode={(v) => setField("bagAllerMode", v)}
+								/>
+								<MoneyWithMode
+									label="Bagages retour"
+									value={draft.bagRetour}
+									mode={draft.bagRetourMode}
+									onValue={(v) => setField("bagRetour", v)}
+									onMode={(v) => setField("bagRetourMode", v)}
+								/>
+							</div>
 						</div>
 						{/* <Field label="Ajustement commission vols">
 							<Input

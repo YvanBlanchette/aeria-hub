@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Calculator, Copy, Download, FileText, FolderOpen, Save, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,6 +27,7 @@ const TAB_ITEMS = [
 	{ id: "hotel", label: "Hotel" },
 	{ id: "transferts", label: "Transferts" },
 	{ id: "sommaire", label: "Sommaire" },
+	{ id: "parametres", label: "Parametres" },
 ];
 
 const CABINS = [
@@ -90,7 +92,8 @@ function makeDefaultDraft() {
 		trAComp: "",
 		trBComp: "",
 		trCComp: "",
-		commissionHotel: "",
+		commissionHotelPre: "",
+		commissionHotelPost: "",
 		commissionTransferts: "",
 		commissionVols: "",
 		cabExampleInt: "",
@@ -361,9 +364,21 @@ function setByPath(target, path, rawValue) {
 }
 
 export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
+	const [hotelPre, setHotelPre] = useState(() => makeDefaultDraft().hasPre);
+	const [hotelPost, setHotelPost] = useState(() => makeDefaultDraft().hasPost);
 	const [tab, setTab] = useState("croisiere");
 	const [draft, setDraft] = useState(() => makeDefaultDraft());
-	const [constants, setConstants] = useState(DEFAULT_CONSTANTS);
+	const [constants, setConstants] = useState(() => {
+		if (typeof window === "undefined") return DEFAULT_CONSTANTS;
+		try {
+			const savedConstants = window.localStorage.getItem(CONSTANTS_KEY);
+			if (!savedConstants) return DEFAULT_CONSTANTS;
+			const parsed = JSON.parse(savedConstants);
+			return { ...DEFAULT_CONSTANTS, ...parsed };
+		} catch {
+			return DEFAULT_CONSTANTS;
+		}
+	});
 	const [projects, setProjects] = useState(() =>
 		Array.isArray(initialProjects)
 			? initialProjects.map((project) => ({
@@ -382,65 +397,25 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 
 	useEffect(() => {
 		try {
-			const savedConstants = localStorage.getItem(CONSTANTS_KEY);
-			if (savedConstants) {
-				const parsed = JSON.parse(savedConstants);
-				setConstants({ ...DEFAULT_CONSTANTS, ...parsed });
-			}
-		} catch {
-			setNotice("Impossible de lire le stockage local du navigateur.");
-		}
-	}, []);
-
-	useEffect(() => {
-		try {
 			localStorage.setItem(CONSTANTS_KEY, JSON.stringify(constants));
 		} catch {
-			setNotice("Impossible de sauvegarder les constantes localement.");
+			console.warn("Impossible de sauvegarder les constantes localement.");
 		}
 	}, [constants]);
 
-	useEffect(() => {
-		if (!selectedProjectId) {
-			setRevisions([]);
-			return;
-		}
-		let active = true;
-		setLoadingRevisions(true);
-		fetch(`/api/forfaits/${selectedProjectId}/revisions`)
-			.then(async (response) => {
-				if (!response.ok) throw new Error("revisions_failed");
-				return response.json();
-			})
-			.then((data) => {
-				if (!active) return;
-				setRevisions(Array.isArray(data?.revisions) ? data.revisions : []);
-			})
-			.catch(() => {
-				if (!active) return;
-				setRevisions([]);
-			})
-			.finally(() => {
-				if (!active) return;
-				setLoadingRevisions(false);
-			});
-		return () => {
-			active = false;
-		};
-	}, [selectedProjectId]);
-
 	const base = useMemo(() => computeBase(draft, constants), [draft, constants]);
 	const cabinRows = useMemo(() => activeCabins(draft, base), [draft, base]);
+	const { admin } = constants;
 
 	const resultRows = useMemo(() => {
 		return cabinRows.map((cab) => {
 			const calc = cabinCalc(base, constants, cab.facture);
 			const commCroisiere = toNumber(draft.commissions[cab.id]);
-			const commHotel = toNumber(draft.commissionHotel);
+			const commHotel = toNumber(draft.commissionHotelPre) + toNumber(draft.commissionHotelPost);
 			const commTransferts = toNumber(draft.commissionTransferts);
 			const commVols = toNumber(draft.commissionVols);
 			const markupRev = base.markup * base.pax;
-			const adminRev = constants.admin * base.pax;
+			const adminRev = admin * base.pax;
 			const coussinRev = calc.coussin * base.pax;
 			const revenu = commCroisiere + commHotel + commTransferts + commVols + markupRev + adminRev + coussinRev;
 			const margePct = calc.total > 0 ? (revenu / calc.total) * 100 : 0;
@@ -453,7 +428,17 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 				commCroisiere,
 			};
 		});
-	}, [base, cabinRows, constants.admin, draft.commissionHotel, draft.commissionTransferts, draft.commissionVols, draft.commissions]);
+	}, [
+		admin,
+		base,
+		cabinRows,
+		constants,
+		draft.commissionHotelPost,
+		draft.commissionHotelPre,
+		draft.commissionTransferts,
+		draft.commissionVols,
+		draft.commissions,
+	]);
 
 	const summary = useMemo(() => {
 		const totalVente = resultRows.reduce((sum, row) => sum + row.calc.total, 0);
@@ -491,8 +476,44 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 		}));
 	}
 
+	async function refreshRevisions(projectId) {
+		if (!projectId) {
+			setRevisions([]);
+			setLoadingRevisions(false);
+			return;
+		}
+
+		setLoadingRevisions(true);
+		try {
+			const response = await fetch(`/api/forfaits/${projectId}/revisions`);
+			if (!response.ok) throw new Error("revisions_failed");
+			const data = await response.json();
+			setRevisions(Array.isArray(data?.revisions) ? data.revisions : []);
+		} catch {
+			setRevisions([]);
+		} finally {
+			setLoadingRevisions(false);
+		}
+	}
+
+	function toggleHotelPre(checked) {
+		const next = Boolean(checked);
+		setHotelPre(next);
+		setField("hasPre", next);
+	}
+
+	function toggleHotelPost(checked) {
+		const next = Boolean(checked);
+		setHotelPost(next);
+		setField("hasPost", next);
+	}
+
 	function resetAll() {
-		setDraft(makeDefaultDraft());
+		const nextDraft = makeDefaultDraft();
+		setDraft(nextDraft);
+		setHotelPre(nextDraft.hasPre);
+		setHotelPost(nextDraft.hasPost);
+		setRevisions([]);
 		setSelectedProjectId("");
 		setNotice("Nouveau dossier initialise.");
 	}
@@ -539,6 +560,7 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 				return next;
 			});
 			setSelectedProjectId(normalized.id);
+			refreshRevisions(normalized.id);
 			setNotice(`Projet enregistre: ${normalized.name}`);
 		} catch {
 			setNotice("Enregistrement impossible. Verifie la connexion et reessaie.");
@@ -550,9 +572,13 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 	function loadProject(projectId) {
 		const project = projects.find((item) => item.id === projectId);
 		if (!project) return;
-		setDraft({ ...makeDefaultDraft(), ...(project.payload || project.draft || {}) });
+		const nextDraft = { ...makeDefaultDraft(), ...(project.payload || project.draft || {}) };
+		setDraft(nextDraft);
+		setHotelPre(Boolean(nextDraft.hasPre));
+		setHotelPost(Boolean(nextDraft.hasPost));
 		setConstants({ ...DEFAULT_CONSTANTS, ...(project.constants || {}) });
 		setSelectedProjectId(project.id);
+		refreshRevisions(project.id);
 		setNotice(`Projet charge: ${project.name}`);
 	}
 
@@ -975,59 +1001,6 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 									placeholder="Ex: Miami, New York, etc."
 								/>
 							</Field>
-							<Field label="Port arrivee">
-								<Input
-									value={draft.portArrivee}
-									onChange={(e) => setField("portArrivee", e.target.value)}
-									placeholder="Ex: Miami, New York, etc."
-								/>
-							</Field>
-							<Field label="Date debut">
-								<Input
-									type="date"
-									value={draft.croisiereDebut}
-									onChange={(e) => setField("croisiereDebut", e.target.value)}
-								/>
-							</Field>
-							<Field label="Date fin">
-								<Input
-									type="date"
-									value={draft.croisiereFin}
-									onChange={(e) => setField("croisiereFin", e.target.value)}
-								/>
-							</Field>
-							<Field label="Passagers">
-								<Input
-									type="number"
-									min="1"
-									value={draft.pax}
-									onChange={(e) => setField("pax", e.target.value)}
-								/>
-							</Field>
-							<Field label="Nuits croisiere">
-								<Input
-									type="number"
-									min="0"
-									value={draft.nuits}
-									onChange={(e) => setField("nuits", e.target.value)}
-								/>
-							</Field>
-							<Field label="Pourboires inclus">
-								<select
-									value={String(draft.pourboiresInclus)}
-									onChange={(e) => setField("pourboiresInclus", e.target.value === "true")}
-									className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
-								>
-									{YES_NO.map((opt) => (
-										<option
-											key={opt.value}
-											value={opt.value}
-										>
-											{opt.label}
-										</option>
-									))}
-								</select>
-							</Field>
 							<Field label="Pourboires manuels (si non inclus)">
 								<Input
 									type="number"
@@ -1116,29 +1089,34 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 						<CardDescription>Prend en charge les montants par personne ou total groupe.</CardDescription>
 					</CardHeader>
 					<CardContent className="grid gap-3 md:grid-cols-2">
-						<Field label="Details vols">
+						<Field
+							label="Details vols"
+							className="pb-6"
+						>
 							<Textarea
 								value={draft.volsDetails}
 								onChange={(e) => setField("volsDetails", e.target.value)}
-								rows={7}
-								className="resize-none h-full"
+								className="shadow-inner h-full placeholder:opacity-60"
+								placeholder="Ex: AC822 - Montréal à Miami - 08:00 - 11:30"
 							/>
 						</Field>
-						<div className="flex flex-col gap-3">
+						<div className="flex flex-col gap-3 w-full">
 							<MoneyWithMode
 								label="Cout vols"
 								value={draft.vols}
 								mode={draft.volsMode}
 								onValue={(v) => setField("vols", v)}
 								onMode={(v) => setField("volsMode", v)}
+								className="w-full"
 							/>
-							<div className="flex items-center gap-3">
+							<div className="flex items-center gap-3 w-full">
 								<MoneyWithMode
 									label="Bagages aller"
 									value={draft.bagAller}
 									mode={draft.bagAllerMode}
 									onValue={(v) => setField("bagAller", v)}
 									onMode={(v) => setField("bagAllerMode", v)}
+									className="flex-1 min-w-0"
 								/>
 								<MoneyWithMode
 									label="Bagages retour"
@@ -1146,6 +1124,7 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 									mode={draft.bagRetourMode}
 									onValue={(v) => setField("bagRetour", v)}
 									onMode={(v) => setField("bagRetourMode", v)}
+									className="flex-1 min-w-0"
 								/>
 							</div>
 						</div>
@@ -1167,187 +1146,205 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 				<div className="grid gap-4 lg:grid-cols-2">
 					<Card>
 						<CardHeader>
-							<CardTitle>Hotel pre et post</CardTitle>
-							<CardDescription>Controle des sejours et des nuits facturees.</CardDescription>
+							<CardTitle>Hôtels</CardTitle>
+							<CardDescription>Ajouter les séjours et des nuits facturées.</CardDescription>
 						</CardHeader>
 						<CardContent className="grid gap-3 md:grid-cols-2">
-							<Field label="Sejour pre-croisiere">
-								<select
-									value={String(draft.hasPre)}
-									onChange={(e) => setField("hasPre", e.target.value === "true")}
-									className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
-								>
-									{YES_NO.map((opt) => (
-										<option
-											key={opt.value}
-											value={opt.value}
+							<div className="space-y-4 md:col-span-2">
+								<label className="flex items-center gap-2 text-sm font-medium">
+									<Checkbox
+										checked={hotelPre}
+										onCheckedChange={toggleHotelPre}
+									/>
+									Séjour pre-croisière
+								</label>
+								{hotelPre ? (
+									<div className="grid gap-3 md:grid-cols-2">
+										<Field
+											label="Hôtel Pre-croisière"
+											className="md:col-span-2"
 										>
-											{opt.label}
-										</option>
-									))}
-								</select>
-							</Field>
-							<Field label="Nuits pre">
-								<Input
-									type="number"
-									min="0"
-									value={draft.nuitsHotel}
-									onChange={(e) => setField("nuitsHotel", e.target.value)}
-								/>
-							</Field>
-							<Field label="Cout hotel pre / nuit">
-								<Input
-									type="number"
-									min="0"
-									step="0.01"
-									value={draft.hotelNuit}
-									onChange={(e) => setField("hotelNuit", e.target.value)}
-								/>
-							</Field>
-							<Field label="Hotel pre">
-								<Input
-									value={draft.hotelNom}
-									onChange={(e) => setField("hotelNom", e.target.value)}
-								/>
-							</Field>
-							<Field label="Date arrivee pre">
-								<Input
-									type="date"
-									value={draft.hotelDebut}
-									onChange={(e) => setField("hotelDebut", e.target.value)}
-								/>
-							</Field>
-							<Field label="Date depart pre">
-								<Input
-									type="date"
-									value={draft.hotelFin}
-									onChange={(e) => setField("hotelFin", e.target.value)}
-								/>
-							</Field>
+											<Input
+												value={draft.hotelNom}
+												onChange={(e) => setField("hotelNom", e.target.value)}
+											/>
+										</Field>
 
-							<Field label="Sejour post-croisiere">
-								<select
-									value={String(draft.hasPost)}
-									onChange={(e) => setField("hasPost", e.target.value === "true")}
-									className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
-								>
-									{YES_NO.map((opt) => (
-										<option
-											key={opt.value}
-											value={opt.value}
+										<div className="md:col-span-2 grid gap-3 md:grid-cols-3">
+											<Field label="Date arrivee pre">
+												<Input
+													type="date"
+													value={draft.hotelDebut}
+													onChange={(e) => setField("hotelDebut", e.target.value)}
+												/>
+											</Field>
+											<Field label="Nuits pre">
+												<Input
+													type="number"
+													min="0"
+													value={draft.nuitsHotel}
+													onChange={(e) => setField("nuitsHotel", e.target.value)}
+												/>
+											</Field>
+											<Field label="Date depart pre">
+												<Input
+													type="date"
+													value={draft.hotelFin}
+													onChange={(e) => setField("hotelFin", e.target.value)}
+												/>
+											</Field>
+										</div>
+										<Field label="Cout hotel pre / nuit">
+											<Input
+												type="number"
+												min="0"
+												step="0.01"
+												value={draft.hotelNuit}
+												onChange={(e) => setField("hotelNuit", e.target.value)}
+											/>
+										</Field>
+										<Field label="Commission hotel pre">
+											<Input
+												type="number"
+												min="0"
+												step="0.01"
+												value={draft.commissionHotelPre}
+												onChange={(e) => setField("commissionHotelPre", e.target.value)}
+											/>
+										</Field>
+									</div>
+								) : null}
+							</div>
+
+							<div className="space-y-4 md:col-span-2">
+								<label className="flex items-center gap-2 text-sm font-medium">
+									<Checkbox
+										checked={hotelPost}
+										onCheckedChange={toggleHotelPost}
+									/>
+									Séjour post-croisière
+								</label>
+								{hotelPost ? (
+									<div className="grid gap-3 md:grid-cols-2">
+										<Field
+											label="Hôtel Post-croisière"
+											className="md:col-span-2"
 										>
-											{opt.label}
-										</option>
-									))}
-								</select>
-							</Field>
-							<Field label="Nuits post">
-								<Input
-									type="number"
-									min="0"
-									value={draft.nuitsHotelPost}
-									onChange={(e) => setField("nuitsHotelPost", e.target.value)}
-								/>
-							</Field>
-							<Field label="Cout hotel post / nuit">
-								<Input
-									type="number"
-									min="0"
-									step="0.01"
-									value={draft.hotelNuitPost}
-									onChange={(e) => setField("hotelNuitPost", e.target.value)}
-								/>
-							</Field>
-							<Field label="Hotel post">
-								<Input
-									value={draft.hotelPostNom}
-									onChange={(e) => setField("hotelPostNom", e.target.value)}
-								/>
-							</Field>
-							<Field label="Date arrivee post">
-								<Input
-									type="date"
-									value={draft.hotelPostDebut}
-									onChange={(e) => setField("hotelPostDebut", e.target.value)}
-								/>
-							</Field>
-							<Field label="Date depart post">
-								<Input
-									type="date"
-									value={draft.hotelPostFin}
-									onChange={(e) => setField("hotelPostFin", e.target.value)}
-								/>
-							</Field>
-						</CardContent>
-					</Card>
+											<Input
+												value={draft.hotelPostNom}
+												onChange={(e) => setField("hotelPostNom", e.target.value)}
+											/>
+										</Field>
 
-					<Card>
-						<CardHeader>
-							<CardTitle>Constantes et commissions</CardTitle>
-							<CardDescription>Parametres globaux de pricing et du revenu agence.</CardDescription>
-						</CardHeader>
-						<CardContent className="grid gap-3 md:grid-cols-2">
-							<Field label="Frais admin / passager">
-								<Input
-									type="number"
-									min="0"
-									step="0.01"
-									value={constants.admin}
-									onChange={(e) => setConstants((prev) => ({ ...prev, admin: toNumber(e.target.value) }))}
-								/>
-							</Field>
-							<Field label="Frais service vols (%)">
-								<Input
-									type="number"
-									min="0"
-									step="0.1"
-									value={constants.pctVols}
-									onChange={(e) => setConstants((prev) => ({ ...prev, pctVols: toNumber(e.target.value) }))}
-								/>
-							</Field>
-							<Field label="Markup hotel max (%)">
-								<Input
-									type="number"
-									min="0"
-									step="0.1"
-									value={constants.pctMarkup}
-									onChange={(e) => setConstants((prev) => ({ ...prev, pctMarkup: toNumber(e.target.value) }))}
-								/>
-							</Field>
-							<Field label="Pourboires / nuit / pers">
-								<Input
-									type="number"
-									min="0"
-									step="0.01"
-									value={constants.pourboiresNuit}
-									onChange={(e) => setConstants((prev) => ({ ...prev, pourboiresNuit: toNumber(e.target.value) }))}
-								/>
-							</Field>
-							<Field label="Arrondi prix / pers">
-								<select
-									value={String(constants.arrondi)}
-									onChange={(e) => setConstants((prev) => ({ ...prev, arrondi: toNumber(e.target.value) }))}
-									className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
-								>
-									<option value="0">Aucun</option>
-									<option value="5">Au 5 CAD</option>
-									<option value="10">Au 10 CAD</option>
-									<option value="25">Au 25 CAD</option>
-									<option value="50">Au 50 CAD</option>
-								</select>
-							</Field>
-							<Field label="Commission hotels (globale)">
-								<Input
-									type="number"
-									min="0"
-									step="0.01"
-									value={draft.commissionHotel}
-									onChange={(e) => setField("commissionHotel", e.target.value)}
-								/>
-							</Field>
+										<div className="md:col-span-2 grid gap-3 md:grid-cols-3">
+											<Field label="Date arrivee post">
+												<Input
+													type="date"
+													value={draft.hotelPostDebut}
+													onChange={(e) => setField("hotelPostDebut", e.target.value)}
+												/>
+											</Field>
+											<Field label="Nuits post">
+												<Input
+													type="number"
+													min="0"
+													value={draft.nuitsHotelPost}
+													onChange={(e) => setField("nuitsHotelPost", e.target.value)}
+												/>
+											</Field>
+											<Field label="Date depart post">
+												<Input
+													type="date"
+													value={draft.hotelPostFin}
+													onChange={(e) => setField("hotelPostFin", e.target.value)}
+												/>
+											</Field>
+										</div>
+										<Field label="Cout hotel post / nuit">
+											<Input
+												type="number"
+												min="0"
+												step="0.01"
+												value={draft.hotelNuitPost}
+												onChange={(e) => setField("hotelNuitPost", e.target.value)}
+											/>
+										</Field>
+										<Field label="Commission hotel post">
+											<Input
+												type="number"
+												min="0"
+												step="0.01"
+												value={draft.commissionHotelPost}
+												onChange={(e) => setField("commissionHotelPost", e.target.value)}
+											/>
+										</Field>
+									</div>
+								) : null}
+							</div>
 						</CardContent>
 					</Card>
 				</div>
+			)}
+
+			{/* PARAMETRES TAB */}
+			{tab === "parametres" && (
+				<Card>
+					<CardHeader>
+						<CardTitle>Parametres</CardTitle>
+						<CardDescription>Parametres globaux de pricing et du revenu agence.</CardDescription>
+					</CardHeader>
+					<CardContent className="grid gap-3 md:grid-cols-2">
+						<Field label="Frais admin / passager">
+							<Input
+								type="number"
+								min="0"
+								step="0.01"
+								value={constants.admin}
+								onChange={(e) => setConstants((prev) => ({ ...prev, admin: toNumber(e.target.value) }))}
+							/>
+						</Field>
+						<Field label="Frais service vols (%)">
+							<Input
+								type="number"
+								min="0"
+								step="0.1"
+								value={constants.pctVols}
+								onChange={(e) => setConstants((prev) => ({ ...prev, pctVols: toNumber(e.target.value) }))}
+							/>
+						</Field>
+						<Field label="Markup hotel max (%)">
+							<Input
+								type="number"
+								min="0"
+								step="0.1"
+								value={constants.pctMarkup}
+								onChange={(e) => setConstants((prev) => ({ ...prev, pctMarkup: toNumber(e.target.value) }))}
+							/>
+						</Field>
+						<Field label="Pourboires / nuit / pers">
+							<Input
+								type="number"
+								min="0"
+								step="0.01"
+								value={constants.pourboiresNuit}
+								onChange={(e) => setConstants((prev) => ({ ...prev, pourboiresNuit: toNumber(e.target.value) }))}
+							/>
+						</Field>
+						<Field label="Arrondi prix / pers">
+							<select
+								value={String(constants.arrondi)}
+								onChange={(e) => setConstants((prev) => ({ ...prev, arrondi: toNumber(e.target.value) }))}
+								className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
+							>
+								<option value="0">Aucun</option>
+								<option value="5">Au 5 CAD</option>
+								<option value="10">Au 10 CAD</option>
+								<option value="25">Au 25 CAD</option>
+								<option value="50">Au 50 CAD</option>
+							</select>
+						</Field>
+					</CardContent>
+				</Card>
 			)}
 
 			{/* TRANSFERTS TAB */}
@@ -1767,9 +1764,9 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 	);
 }
 
-function Field({ label, children }) {
+function Field({ label, children, className = "" }) {
 	return (
-		<div className="space-y-1.5">
+		<div className={cn("space-y-1.5", className)}>
 			<Label className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
 			{children}
 		</div>
@@ -1785,22 +1782,25 @@ function StatLine({ label, value }) {
 	);
 }
 
-function MoneyWithMode({ label, value, mode, onValue, onMode }) {
+function MoneyWithMode({ label, value, mode, onValue, onMode, className = "" }) {
 	return (
-		<Field label={label}>
-			<div className="grid grid-cols-[1fr_auto] gap-2">
+		<Field
+			label={label}
+			className={className}
+		>
+			<div className="relative w-full">
 				<Input
 					type="number"
 					min="0"
 					step="0.01"
 					value={value}
 					onChange={(e) => onValue(e.target.value)}
-					className="w-full"
+					className="w-full h-8"
 				/>
 				<select
 					value={mode}
 					onChange={(e) => onMode(e.target.value)}
-					className="flex h-8 rounded-lg border border-input bg-transparent px-2 text-sm shrink-0"
+					className="absolute right-0 top-0 bottom-0 flex h-8 rounded-r-lg border border-input bg-background px-2 text-sm"
 				>
 					<option value="pers">$/pers</option>
 					<option value="tot">$ total</option>

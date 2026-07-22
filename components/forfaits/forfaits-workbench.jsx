@@ -1795,11 +1795,12 @@ function MoneyWithMode({ label, value, mode, onValue, onMode }) {
 					step="0.01"
 					value={value}
 					onChange={(e) => onValue(e.target.value)}
+					className="w-full"
 				/>
 				<select
 					value={mode}
 					onChange={(e) => onMode(e.target.value)}
-					className="flex h-8 rounded-lg border border-input bg-transparent px-2 text-sm"
+					className="flex h-8 rounded-lg border border-input bg-transparent px-2 text-sm shrink-0"
 				>
 					<option value="pers">$/pers</option>
 					<option value="tot">$ total</option>

@@ -116,6 +116,8 @@ model User {
   notes           Note[]
   activityLogs    ActivityLog[]
   assignedTasks   TripTask[]    @relation("TaskAssignee")
+  forfaitQuotes   ForfaitQuote[]
+  forfaitQuoteRevisions ForfaitQuoteRevision[]
 }
 
 model Client {
@@ -163,6 +165,7 @@ model Client {
   reminders       Reminder[]
   activityLogs    ActivityLog[]
   loyaltyPrograms LoyaltyProgram[]
+  forfaitQuotes   ForfaitQuote[]
 }
 
 model LoyaltyProgram {
@@ -224,6 +227,78 @@ model Trip {
   /// Clients beyond the primary clientId above — e.g. a second household
   /// traveling together on the same booking.
   additionalClients TripClient[]
+  forfaitQuotes     ForfaitQuote[]
+}
+
+/// Persisted cruise package pricing dossier, linked to CRM context when known.
+model ForfaitQuote {
+  id String @id @default(cuid())
+
+  name String
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  tripId String?
+  trip   Trip? @relation(fields: [tripId], references: [id], onDelete: SetNull)
+
+  createdById String?
+  createdBy   User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  currency String @default("CAD")
+  passengers Int  @default(1)
+
+  /// Stored as cents for consistency with the rest of the app.
+  totalSaleCents Int @default(0)
+  /// Stored as cents for consistency with the rest of the app.
+  totalRevenueCents Int @default(0)
+  avgMarginPct Float @default(0)
+
+  /// Full form payload from the forfait workbench.
+  payload   Json
+  /// Calculation constants used for this quote version.
+  constants Json
+
+  /// Monotonic revision counter incremented on each update.
+  currentRevision Int @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  revisions ForfaitQuoteRevision[]
+
+  @@index([updatedAt])
+  @@index([clientId])
+  @@index([tripId])
+}
+
+/// Immutable snapshot of a ForfaitQuote at a specific revision.
+model ForfaitQuoteRevision {
+  id String @id @default(cuid())
+
+  forfaitQuoteId String
+  forfaitQuote   ForfaitQuote @relation(fields: [forfaitQuoteId], references: [id], onDelete: Cascade)
+
+  revisionNumber Int
+
+  /// Full form payload snapshot at this revision.
+  payload Json
+  /// Constants snapshot at this revision.
+  constants Json
+
+  currency String @default("CAD")
+  passengers Int  @default(1)
+  totalSaleCents Int @default(0)
+  totalRevenueCents Int @default(0)
+  avgMarginPct Float @default(0)
+
+  createdById String?
+  createdBy   User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@unique([forfaitQuoteId, revisionNumber])
+  @@index([forfaitQuoteId, createdAt])
 }
 
 /// Join row linking a Trip to a Client beyond its primary clientId.

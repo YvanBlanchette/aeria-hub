@@ -1,7 +1,7 @@
 require("dotenv/config");
 const bcrypt = require("bcryptjs");
 const { PrismaClient } = require("../app/generated/prisma");
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({});
 
 const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 

@@ -99,7 +99,7 @@ async function main() {
 		throw new Error("Input JSON must be an array of itineraries.");
 	}
 
-	const prisma = new PrismaClient();
+	const prisma = new PrismaClient({});
 
 	let upserted = 0;
 	try {

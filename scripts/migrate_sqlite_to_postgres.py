@@ -205,6 +205,7 @@ def import_table(
     insert_sql = f"INSERT INTO {target} ({col_sql}) VALUES ({placeholders})"
 
     if not dry_run:
+        cur = pg_conn.cursor()
         for batch in sqlite_rows(sqlite_conn, table, common_cols, batch_size):
             normalized_batch = []
             for row in batch:
@@ -213,8 +214,9 @@ def import_table(
                     pg_type = dst_col_map[col].data_type
                     vals.append(normalize_value(row[i], pg_type))
                 normalized_batch.append(tuple(vals))
-            pg_conn.executemany(insert_sql, normalized_batch)
+            cur.executemany(insert_sql, normalized_batch)
             inserted += len(normalized_batch)
+        cur.close()
 
     dst_count = pg_count(pg_conn, table, schema)
     return src_count, inserted, dst_count

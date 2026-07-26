@@ -24,8 +24,7 @@ const DEFAULT_CONSTANTS = {
 const TAB_ITEMS = [
 	{ id: "croisiere", label: "Croisiere" },
 	{ id: "vols", label: "Vols" },
-	{ id: "hotel", label: "Hotel" },
-	{ id: "transferts", label: "Transferts" },
+	{ id: "hotel", label: "Hotels & Transferts" },
 	{ id: "sommaire", label: "Sommaire" },
 	{ id: "parametres", label: "Parametres" },
 ];
@@ -1283,6 +1282,102 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 							</div>
 						</CardContent>
 					</Card>
+					<Card>
+						<CardHeader>
+							<CardTitle>Transferts</CardTitle>
+							<CardDescription>Segments aeroport/hotel/port avec mode total ou par personne.</CardDescription>
+						</CardHeader>
+						<CardContent className="grid gap-3 md:grid-cols-2">
+							<Field
+								label="Transferts actives"
+								className="md:col-span-2"
+							>
+								<select
+									value={String(draft.hasTransferts)}
+									onChange={(e) => setField("hasTransferts", e.target.value === "true")}
+									className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
+								>
+									{YES_NO.map((opt) => (
+										<option
+											key={opt.value}
+											value={opt.value}
+										>
+											{opt.label}
+										</option>
+									))}
+								</select>
+							</Field>
+							<MoneyWithMode
+								label="Aeroport -> Hotel"
+								value={draft.trA}
+								mode={draft.trAMode}
+								onValue={(v) => setField("trA", v)}
+								onMode={(v) => setField("trAMode", v)}
+							/>
+							<MoneyWithMode
+								label="Hotel -> Port"
+								value={draft.trB}
+								mode={draft.trBMode}
+								onValue={(v) => setField("trB", v)}
+								onMode={(v) => setField("trBMode", v)}
+							/>
+							<MoneyWithMode
+								label="Port -> Aeroport"
+								value={draft.trC}
+								mode={draft.trCMode}
+								onValue={(v) => setField("trC", v)}
+								onMode={(v) => setField("trCMode", v)}
+							/>
+							{hotelPost ? (
+								<>
+									<MoneyWithMode
+										label="Port -> Hotel post"
+										value={draft.trD}
+										mode={draft.trDMode}
+										onValue={(v) => setField("trD", v)}
+										onMode={(v) => setField("trDMode", v)}
+									/>
+									<MoneyWithMode
+										label="Hotel post -> Aeroport"
+										value={draft.trE}
+										mode={draft.trEMode}
+										onValue={(v) => setField("trE", v)}
+										onMode={(v) => setField("trEMode", v)}
+									/>
+								</>
+							) : null}
+							<Field label="Compagnie A->H">
+								<Input
+									value={draft.trAComp}
+									onChange={(e) => setField("trAComp", e.target.value)}
+								/>
+							</Field>
+							<Field label="Compagnie H->P">
+								<Input
+									value={draft.trBComp}
+									onChange={(e) => setField("trBComp", e.target.value)}
+								/>
+							</Field>
+							<Field label="Compagnie P->A">
+								<Input
+									value={draft.trCComp}
+									onChange={(e) => setField("trCComp", e.target.value)}
+								/>
+							</Field>
+							<Field
+								label="Commission transferts"
+								className="md:col-span-2"
+							>
+								<Input
+									type="number"
+									min="0"
+									step="0.01"
+									value={draft.commissionTransferts}
+									onChange={(e) => setField("commissionTransferts", e.target.value)}
+								/>
+							</Field>
+						</CardContent>
+					</Card>
 				</div>
 			)}
 
@@ -1342,96 +1437,6 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 								<option value="25">Au 25 CAD</option>
 								<option value="50">Au 50 CAD</option>
 							</select>
-						</Field>
-					</CardContent>
-				</Card>
-			)}
-
-			{/* TRANSFERTS TAB */}
-			{tab === "transferts" && (
-				<Card>
-					<CardHeader>
-						<CardTitle>Transferts</CardTitle>
-						<CardDescription>Segments aeroport/hotel/port avec mode total ou par personne.</CardDescription>
-					</CardHeader>
-					<CardContent className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-						<Field label="Transferts actives">
-							<select
-								value={String(draft.hasTransferts)}
-								onChange={(e) => setField("hasTransferts", e.target.value === "true")}
-								className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
-							>
-								{YES_NO.map((opt) => (
-									<option
-										key={opt.value}
-										value={opt.value}
-									>
-										{opt.label}
-									</option>
-								))}
-							</select>
-						</Field>
-						<MoneyWithMode
-							label="Aeroport -> Hotel"
-							value={draft.trA}
-							mode={draft.trAMode}
-							onValue={(v) => setField("trA", v)}
-							onMode={(v) => setField("trAMode", v)}
-						/>
-						<MoneyWithMode
-							label="Hotel -> Port"
-							value={draft.trB}
-							mode={draft.trBMode}
-							onValue={(v) => setField("trB", v)}
-							onMode={(v) => setField("trBMode", v)}
-						/>
-						<MoneyWithMode
-							label="Port -> Aeroport"
-							value={draft.trC}
-							mode={draft.trCMode}
-							onValue={(v) => setField("trC", v)}
-							onMode={(v) => setField("trCMode", v)}
-						/>
-						<MoneyWithMode
-							label="Port -> Hotel post"
-							value={draft.trD}
-							mode={draft.trDMode}
-							onValue={(v) => setField("trD", v)}
-							onMode={(v) => setField("trDMode", v)}
-						/>
-						<MoneyWithMode
-							label="Hotel post -> Aeroport"
-							value={draft.trE}
-							mode={draft.trEMode}
-							onValue={(v) => setField("trE", v)}
-							onMode={(v) => setField("trEMode", v)}
-						/>
-						<Field label="Compagnie A->H">
-							<Input
-								value={draft.trAComp}
-								onChange={(e) => setField("trAComp", e.target.value)}
-							/>
-						</Field>
-						<Field label="Compagnie H->P">
-							<Input
-								value={draft.trBComp}
-								onChange={(e) => setField("trBComp", e.target.value)}
-							/>
-						</Field>
-						<Field label="Compagnie P->A">
-							<Input
-								value={draft.trCComp}
-								onChange={(e) => setField("trCComp", e.target.value)}
-							/>
-						</Field>
-						<Field label="Commission transferts">
-							<Input
-								type="number"
-								min="0"
-								step="0.01"
-								value={draft.commissionTransferts}
-								onChange={(e) => setField("commissionTransferts", e.target.value)}
-							/>
 						</Field>
 					</CardContent>
 				</Card>

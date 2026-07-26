@@ -9,16 +9,16 @@
 		"lint": "eslint",
 		"postinstall": "prisma generate",
 		"db:migrate": "prisma migrate dev",
+		"db:push": "prisma db push",
 		"db:seed": "node prisma/seed.js",
-		"db:studio": "prisma studio"
+		"db:studio": "prisma studio",
+		"scrape:sync-db": "node scripts/sync_cruisemapper_to_db.mjs"
 	},
 	"dependencies": {
-		"@prisma/adapter-better-sqlite3": "^7.8.0",
 		"@prisma/client": "^7.8.0",
 		"@react-pdf/renderer": "^4.5.1",
 		"@tailwindcss/postcss": "^4",
 		"bcryptjs": "^3.0.3",
-		"better-sqlite3": "^12.11.1",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"lucide-react": "^1.25.0",

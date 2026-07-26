@@ -1,10 +1,7 @@
 require("dotenv/config");
 const bcrypt = require("bcryptjs");
 const { PrismaClient } = require("../app/generated/prisma");
-const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
-
-const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 const daysFromNow = (days) => new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 

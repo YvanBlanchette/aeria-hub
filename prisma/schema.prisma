@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 enum Role {
@@ -341,6 +341,33 @@ model TripSegment {
 
   documents   Document[]
   commissions SegmentCommission[]
+}
+
+/// Canonical store for CruiseMapper itineraries scraped offline, so the app
+/// can reuse them without scraping every time.
+model ScrapedCruiseItinerary {
+  id String @id @default(cuid())
+
+  /// Stable key derived from source attributes; used for upsert/overwrite.
+  externalKey String @unique
+
+  shipId     String?
+  shipName   String
+  cruiseLine String?
+  title      String?
+  startDate  DateTime?
+  endDate    DateTime?
+  sourceUrl  String
+  scrapedAt  DateTime?
+
+  /// Normalized itinerary payload, including port_calls.
+  payload Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shipId, startDate])
+  @@index([updatedAt])
 }
 
 /// A travel vendor (airline, cruise line, hotel chain, tour operator...)

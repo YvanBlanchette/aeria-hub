@@ -1,0 +1,382 @@
+cle,port_id,libelles,unlocode,n
+115,115,"Southampton, England",,25
+40,40,"Miami, Florida",,22
+407,407,"Juneau, Alaska",,21
+6,6,"Seattle, Washington",,20
+409,409,"Ketchikan, Revillagigedo Island Alaska",,19
+81,81,"Civitavecchia-Rome, Italy",,18
+82,82,"Barcelona, Spain",,17
+4,4,"Vancouver, BC Canada",,14
+408,408,"Skagway, Alaska",,13
+42,42,"Port Canaveral, Orlando, Florida",,13
+60,60,"Corfu Island, Kerkyra, Greece",,12
+80,80,"Piraeus-Athens, Greece",,12
+58,58,"Copenhagen, Denmark",,12
+126,126,"Sitka, Baranof Island Alaska",,12
+27,27,"Nassau, Bahamas, New Providence Island",,12
+625,625,"Naples, Italy",,11
+378,378,"Paris City, France",,11
+77,77,"Palma de Mallorca, Majorca Island Balearic Spain",,10
+392,392,"Coco Cay, Bahamas, Royal Caribbean",,10
+1705,1705,"Endicott Arm Fjord, Alaska",,10
+26,26,"Cozumel, Mexico, Riviera Maya",,10
+69,69,"Santorini Island, Thira, Greece",,9
+3,3,"Victoria BC, Vancouver Island Canada",,9
+2091,2091,"Icy Strait Point, Hoonah, Alaska",,9
+724,724,"Valletta, Malta",,8
+56,56,"Amsterdam, Netherlands North Holland",,8
+86,86,"Los Angeles, Long Beach-San Pedro, California",,8
+3975,3975,"Cologne, Koln, Germany North Rhine-Westphalia",,8
+65,65,"Lisbon, Portugal",,8
+46,46,"Tallinn, Estonia",,7
+49,49,"Helsinki, Finland",,7
+64,64,"Mykonos Island, Greece",,7
+682,682,"Kotor, Montenegro",,7
+137,137,"Dubrovnik, Croatia, Port Gruz",,7
+5468,5468,"Inside Passage, Alaska-Canada",,7
+627,627,"Cadiz, Spain, Sevilla",,7
+118,118,"Dover, England",,7
+623,623,"Kusadasi, Ephesus, Turkey",,7
+494,494,"Glacier Bay, Alaska",,7
+406,406,"Hubbard Glacier, Alaska",,7
+3984,3984,"Koblenz, Germany Rhineland-Palatinate",,7
+3609,3609,"Vienna, Wien, Austria",,7
+148,148,"Giardini Naxos-Taormina, Sicily Italy",,6
+52,52,"Warnemunde-Rostock, Germany",,6
+548,548,"Bergen, Norway",,6
+44,44,"Fort Lauderdale, Port Everglades, Florida",,6
+59,59,"Stockholm, Sweden",,6
+136,136,"Gdynia-Gdansk, Poland",,6
+116,116,"Leith-Edinburgh, Newhaven-Rosyth-Queensferry, Scotland",,6
+88,88,"Galveston, Texas",,6
+455,455,"Costa Maya, Mexico | Costa Maya, Mexico, Riviera Maya",,6
+29,29,"Roatan Island, Carnival Isla Tropicale-Coxen Hole, Honduras",,6
+545,545,"Reykjavik, Iceland",,6
+4482,4482,"Basel, Zurich, Switzerland",,6
+4000,4000,"Passau, Germany Bavaria",,6
+4091,4091,"Budapest, Hungary",,6
+coastal-cruising,,coastal cruising,,5
+101,101,"Boston, Massachusetts",,5
+17202,17202,"Souda-Chania, Crete Greece",,5
+146,146,"Ibiza, Ibiza Island Balearic Spain",,5
+564,564,"La Coruna, Spain Galicia",,5
+119,119,"Liverpool, England",,5
+3920,3920,"Kehl-Strasbourg, Germany Baden-Wurttemberg",,5
+3937,3937,"Rouen, France",,5
+219,219,"Honfleur, France",,5
+3607,3607,"Melk, Austria",,5
+3997,3997,"Nuremberg, Nurnberg, Germany Bavaria",,5
+1193,1193,"Rudesheim am Rhein, Germany Hesse",,5
+141,141,"Livorno, Florence-Pisa, Italy",,5
+5231,5231,"MSC Ocean Cay, Bahamas private island",,5
+67,67,"Ajaccio, Corsica France",,5
+4261,4261,"Kinderdijk, Netherlands South Holland",,5
+72,72,"Katakolon, Olympia, Greece",,4
+75,75,"Malaga, Spain Granada",,4
+4030,4030,Gibraltar,,4
+837,837,"Skjolden, Sognefjord, Norway",,4
+263,263,"Visby, Gotland Island Sweden",,4
+672,672,"Kirkwall, Orkney Island Scotland",,4
+43,43,"New Orleans, Port NOLA Louisiana | New Orleans, Port NOLA, Louisiana",,4
+139,139,"Rhodes Island, Greece",,4
+78,78,"Villefranche-sur-Mer, Nice, France Riviera",,4
+97,97,"Halifax, Nova Scotia Canada",,4
+3973,3973,"Breisach am Rhein, Germany Baden-Wurttemberg",,4
+3928,3928,"Vernon, France",,4
+3872,3872,"Les Andelys, France",,4
+10133,10133,"Cape Liberty Bayonne, New Jersey",,4
+68,68,"Marseille, France Riviera",,4
+38,38,"Tampa, Florida",,4
+756,756,"Haines, Alaska",,4
+73,73,"Bari, Italy",,4
+4013,4013,"Speyer, Germany Rhineland-Palatinate",,4
+4006,4006,"Regensburg, Germany Bavaria",,4
+1133,1133,"Cape Cod Canal, Massachusetts",,3
+1235,1235,"Kefalonia Island, Argostoli-Fiskardo, Greece",,3
+338,338,"Cartagena Spain, Murcia",,3
+160,160,"La Spezia, Italy Riviera",,3
+268,268,"Bornholm Island Denmark, Ronne-Gudhjem",,3
+10,10,Singapore,,3
+745,745,"Vigo, Spain Galicia",,3
+558,558,"Cobh-Cork, Ireland",,3
+114,114,"Belfast, Northern Ireland",,3
+553,553,"Greenock-Glasgow, Clydeport, Scotland",,3
+45,45,"Kiel, Germany",,3
+473,473,"Cabo San Lucas, Baja California Mexico",,3
+110,110,"Kings Wharf, Bermuda",,3
+1517,1517,"Ensenada, Baja California Mexico",,3
+1936,1936,"Puerto Plata-Amber Cove, Dominicana",,3
+703,703,"Isafjordur, Westfjords Iceland",,3
+701,701,"Lerwick, Mainland Shetland, Scotland",,3
+662,662,"Quebec City, Canada",,3
+704,704,"Prince Edward Island, Charlottetown, Canada",,3
+3667,3667,"Sydney NS, Nova Scotia Canada",,3
+811,811,"Disney Castaway Cay, Bahamas DCL private island",,3
+53,53,"Riga, Latvia",,3
+671,671,"Invergordon, Scotland",,3
+cruising-fjords-norway-norwegian,,"Norwegian fjords cruising, Norway",,3
+746,746,"Olden, Norway",,3
+1361,1361,"Flam, Norway",,3
+239,239,"Haugesund, Norway",,3
+2099,2099,"Bratislava, Slovakia",,3
+2609,2609,"Wachau Valley, Austria",,3
+3605,3605,"Durnstein, Austria",,3
+3969,3969,"Bamberg, Germany Bavaria",,3
+4025,4025,"Wurzburg, Germany Bavaria",,3
+156,156,"Alesund, Norway",,3
+61,61,"Genoa, Milan, Italy Riviera",,3
+70,70,"Messina, Sicily Italy",,3
+alaska-strait-sumner,,Sumner Strait Alaska,,3
+71,71,"Istanbul, Turkey, Galataport",,3
+1,1,"Seward, Alaska",,3
+flight,,flight,,3
+9510,9510,"St Lawrence Seaway, Canada",,3
+4662,4662,"Portland OR, Oregon",,2
+241,241,"Catania, Sicily Italy",,2
+464,464,"Basseterre St Kitts, Port Zante",,2
+604,604,"St Thomas Island USVI, Charlotte Amalie, US Virgin Islands",,2
+3198,3198,"Dundee, Scotland",,2
+48,48,"Aarhus, Denmark",,2
+526,526,"Komodo Island Indonesia, East Nusa Tenggara",,2
+697,697,"Bilbao-Getxo, Spain Biscay Basque Country",,2
+813,813,"Heraklion, Crete Greece",,2
+74,74,"Split, Croatia",,2
+413,413,"Prince Rupert BC, Kaien Island Canada",,2
+2144,2144,"Celebration Key Bahamas, Carnival Grand Bahama Island",,2
+22,22,"Brisbane, Queensland Australia",,2
+307,307,"Nynashamn, Sweden",,2
+121,121,"Key West, Florida",,2
+855,855,"Mazatlan, Sinaloa, Mexico Riviera",,2
+33,33,"Baltimore, Maryland",,2
+35,35,"Tortola Island BVI, Road Town, UK Virgin Islands",,2
+345,345,"Thessaloniki, Greece",,2
+1357,1357,"Seydisfjordur, Iceland",,2
+702,702,"Akureyri, Iceland, Lake Myvatn",,2
+20,20,"Auckland, New Zealand",,2
+1013,1013,"Las Palmas de Gran Canaria, Canary Islands",,2
+47,47,"Le Havre-Paris, France",,2
+98,98,"New York, NYC Manhattan-Brooklyn",,2
+alaska-college-fjord-glaciers-prince-sound-william,,"Prince William Sound Alaska, College Fjord Glaciers",,2
+5,5,"Whittier, Alaska",,2
+3989,3989,"Mannheim, Germany Baden-Wurttemberg",,2
+2327,2327,"Dusseldorf, Germany North Rhine-Westphalia",,2
+13656,13656,"Chateau de La Roche-Guyon, France",,2
+290,290,"Salerno, Italy",,2
+135,135,"Klaipeda, Lithuania",,2
+673,673,"Isle of Skye, Uig-Dunvegan-Armadale-Portree, Scotland",,2
+181,181,"Stavanger, Norway",,2
+1202,1202,"Linz, Austria",,2
+3992,3992,"Miltenberg, Germany Bavaria",,2
+165,165,"Hellesylt, Norway",,2
+547,547,"Geiranger, Norway",,2
+945,945,"Portimao, Portugal",,2
+140,140,"Palermo, Sicily Italy",,2
+226,226,"Palamos, Spain Costa Brava",,2
+412,412,"Wrangell AK, Alaska, Wrangell Island",,2
+4885,4885,"Tracy Arm Fjord, Alaska",,2
+alaska-inian-islands,,Inian Islands Alaska,,2
+678,678,"Valencia, Spain",,2
+9791,9791,"Philadelphia, PhilaPort, Pennsylvania",,2
+1498,1498,"Bozcaada Island, Turkey",,2
+183,183,"Izmir, Turkey",,2
+681,681,"Monte Carlo, Monaco City",,2
+55,55,"Hamburg, Germany",,2
+2,2,"San Francisco, California",,2
+57,57,"Oslo, Norway",,2
+1140,1140,"Leknes-Gravdal, Vestvagoy Island Lofoten Norway",,2
+151,151,"Tromso, Norway",,2
+11075,11075,"London-Greenwich, England",,2
+224,224,"Nafplio, Mycenae, Greece",,2
+221,221,"Toulon, France Riviera, La Seyne-sur-Mer",,2
+2187,2187,"Entre-os-Rios, Portugal",,2
+377,377,"Madrid, Spain",,2
+79,79,"Venice, Marghera-Fusina, Italy",,2
+235,235,"Sibenik, Croatia",,2
+244,244,"Crotone, Italy",,2
+3990,3990,Main-Danube Canal,,2
+11806,11806,"Le Pecq, Saint-Germain-en-Laye, France",,2
+2828,2828,"Valdez, Alaska",,2
+puget-sound-wa-washington,,"Puget Sound WA, Washington",,2
+alaska-passage-stephens,,Stephens Passage Alaska,,2
+2859,2859,"Stromboli Island, Aeolian Islands Sicily",,2
+674,674,"Portland ME, Maine",,2
+2206,2206,"Bath ME, Maine",,1
+2205,2205,"Boothbay Harbor ME, Maine",,1
+810,810,"Rockland ME, Maine",,1
+543,543,"Bar Harbor, Maine",,1
+11701,11701,"Bucksport ME, Maine",,1
+17925,17925,"Bangor ME, Maine",,1
+4647,4647,"Provincetown MA, Massachusetts",,1
+16615,16615,"Plymouth MA, Massachusetts",,1
+academy-bay-bourne-buzzards-ma-maritime-massachusetts,,"Massachusetts Maritime Academy, Bourne MA, Buzzards Bay",,1
+542,542,"Newport RI, Rhode Island",,1
+2207,2207,"Martha's Vineyard Island, Oak Bluffs, Massachusetts",,1
+2242,2242,"New Bedford MA, Massachusetts",,1
+250,250,"Bodrum, Turkey",,1
+218,218,"Kristiansand, Norway",,1
+186,186,"Maloy, Vagsoy Island Norway",,1
+4307,4307,"Vikoyri, Sognefjord, Norway",,1
+164,164,"Eidfjord, Norway Hardangerfjord",,1
+594,594,"Philipsburg St Maarten, Netherlands Antilles",,1
+320,320,"Goteborg, Gothenburg, Sweden",,1
+1314,1314,"Ventspils, Latvia",,1
+16,16,"Benoa, Bali Indonesia",,1
+indonesia-moyo-nusa-tenggara-west,,"Moyo Island Indonesia, West Nusa Tenggara",,1
+besar-indonesia-nusa-sumbawa-tenggara-west,,"Sumbawa Island Indonesia, Sumbawa Besar, West Nusa Tenggara",,1
+east-indonesia-nusa-rinca-tenggara,,"Rinca Island Indonesia, East Nusa Tenggara",,1
+924,924,"Cherbourg, France",,1
+1219,1219,"Plymouth UK, England",,1
+dunmore-east-ireland,,"Dunmore East, Ireland",,1
+112,112,"Newcastle upon Tyne, England",,1
+166,166,"Cagliari, Sardinia Italy",,1
+1237,1237,"Norfolk Island, Australia",,1
+611,611,"Nukualofa, Tongatapu Island Tonga",,1
+424,424,"Pitcairn Island, Adamstown, UK",,1
+602,602,"Suva, Viti Levu Island Fiji",,1
+4806,4806,Dravuni Island Fiji,,1
+749,749,"Port Vila, Efate Island Vanuatu",,1
+491,491,"Puerto Vallarta, Jalisco, Mexico Riviera",,1
+817,817,"La Paz, Baja California Mexico",,1
+4225,4225,Bar Montenegro,,1
+325,325,"Santa Margherita Ligure, Italy Riviera",,1
+32,32,"Havana, Cuba",,1
+miami,,Miami,,1
+8,8,"Yokohama, Tokyo, Japan Kanagawa",,1
+11,11,"Kobe-Osaka, Kyoto, Japan",,1
+581,581,"Kochi City, Japan Kochi",,1
+631,631,"Kagoshima City, Japan Kagoshima",,1
+537,537,"Nagasaki City, Japan Nagasaki",,1
+225,225,"Busan, Korea",,1
+306,306,"Kanazawa, Japan Ishikawa",,1
+474,474,"Hakodate, Japan Oshima",,1
+9017,9017,"Tokyo, Japan",,1
+24,24,"Sydney, NSW Australia",,1
+19,19,"Melbourne, Victoria Australia",,1
+613,613,"Adelaide, South Australia",,1
+18,18,"Fremantle, Perth, Western Australia",,1
+95,95,"Port Louis, Mauritius Island",,1
+92,92,"Cape Town, South Africa",,1
+587,587,"Walvis Bay, Namibia",,1
+593,593,"Mindelo, Sao Vicente Island Cape Verde",,1
+747,747,"Casablanca, Marrakesh, Morocco",,1
+50,50,"Zeebrugge, Bruges, Belgium",,1
+1063,1063,"IJmuiden, Netherlands North Holland",,1
+1143,1143,"Grundarfjordur, Iceland",,1
+544,544,"St Johns NL, Newfoundland-Labrador Canada",,1
+664,664,"Corner Brook NL, Newfoundland-Labrador Canada",,1
+693,693,"Saguenay, Quebec Canada",,1
+3733,3733,Cartagena Colombia,,1
+442,442,Panama Canal,,1
+441,441,"Manta, Ecuador",,1
+439,439,"Callao-Lima, Peru",,1
+438,438,"Pisco, Paracas-Puerto General San Martin, Peru",,1
+425,425,"Easter Island Chile, Hanga Roa",,1
+109,109,"Papeete, Tahiti Island French Polynesia",,1
+418,418,"Moorea Island, Society Islands French Polynesia",,1
+14189,14189,"Disney Lookout Cay, Lighthouse Point, Eleuthera Bahamas",,1
+25,25,"Grand Cayman Island, George Town Harbour",,1
+667,667,Falmouth Jamaica,,1
+3979,3979,"Heidelberg, Germany Baden-Wurttemberg",,1
+4007,4007,"Rhine Gorge, Germany",,1
+11775,11775,"Alkmaar, Netherlands North Holland",,1
+1370,1370,"Saaremaa Island, Kuressaare, Estonia",,1
+901,901,Kiel Canal,,1
+8996,8996,"Isle of Portland, Weymouth, Dorset England",,1
+775,775,"Stornoway, Isle of Lewis and Harris, Scotland",,1
+1733,1733,"Weissenkirchen in der Wachau, Austria",,1
+381,381,"Esztergom, Hungary",,1
+14288,14288,"Ochsenfurt, Germany Bavaria",,1
+3988,3988,"Mainz, Germany Rhineland-Palatinate",,1
+1726,1726,"Boppard, Germany Rhineland-Palatinate",,1
+3895,3895,"Mantes-la-Jolie, France",,1
+13676,13676,"Arromanches-les-Bains, France",,1
+3826,3826,"Avignon, France",,1
+3824,3824,"Arles, France",,1
+3929,3929,"Vienne, France",,1
+3837,3837,"Chalon-sur-Saone, France",,1
+3880,3880,"Lyon, France",,1
+3867,3867,"Giverny, France",,1
+2072,2072,"Puerto Banus-Marbella, Spain Costa del Sol",,1
+680,680,"Tangier, Morocco, Tanger-Ville",,1
+93,93,"La Goulette-Tunis, Tunisia",,1
+1010,1010,"Alicante, Spain",,1
+358,358,"Tarragona, Spain Costa Daurada",,1
+39,39,"San Juan, Puerto Rico",,1
+9066,9066,"Falmouth UK, England",,1
+220,220,"Olbia, Sardinia Italy",,1
+alaska-fjords-misty,,"Misty Fjords, Alaska",,1
+alaska-narrows-wrangell,,Wrangell Narrows Alaska,,1
+13325,13325,"Baranof Island, Alaska",,1
+1017,1017,"Motril, Spain Granada",,1
+1023,1023,"Great Stirrup Cay, Bahamas NCL private island",,1
+280,280,"Trieste, Italy",,1
+726,726,"Hvar Island Croatia, Stari Grad-Hvar Town",,1
+903,903,"Lesbos Island, Mytilene, Greece",,1
+259,259,"Chios Island, Greece",,1
+763,763,"Kos Island, Greece",,1
+5230,5230,"Kotka, Finland",,1
+184,184,"Skagen, Denmark",,1
+34,34,Belize City,,1
+395,395,"Grand Turk Island, Cockburn Town, Turks and Caicos",,1
+3615,3615,"Bimini Islands, Resorts World Bimini Bahamas",,1
+2159,2159,"Brussels, Belgium",,1
+948,948,"Antwerp, Belgium",,1
+222,222,"Maastricht, Netherlands Limburg",,1
+9685,9685,"Roermond, Netherlands Limburg",,1
+3974,3974,"Cochem, Germany Rhineland-Palatinate",,1
+4017,4017,"Trier, Germany Rhineland-Palatinate",,1
+274,274,"Bernkastel-Kues, Germany Rhineland-Palatinate",,1
+375,375,"Prague, Czechia",,1
+952,952,"Nordkapp-North Cape, Mageroya Island Norway",,1
+1565,1565,"Bjornoya-Bear Island, Svalbard Norway",,1
+9197,9197,"Svalbard Islands, Arctic Norway",,1
+897,897,"Longyearbyen, Spitsbergen, Svalbard Norway",,1
+3813,3813,"Bordeaux, France",,1
+1052,1052,"Belle-Ile-en-Mer, Le Palais, France",,1
+1988,1988,"Concarneau, France",,1
+1069,1069,"St Mary's Island England, Hugh Town, Scilly Isles",,1
+1050,1050,"Fowey, England",,1
+561,561,"Guernsey Island, St Peter Port, Channel Islands UK",,1
+4515,4515,"Poole, England",,1
+1941,1941,"Ostend, Belgium",,1
+1163,1163,"London-Tilbury, England",,1
+british-canada-columbia-narrows-seymour,,"Seymour Narrows Canada, British Columbia",,1
+bc-canada-charlotte-queen-sound,,"Queen Charlotte Sound BC, Canada",,1
+alaska-canal-lynn,,Lynn Canal Alaska,,1
+1151,1151,"Milos Island, Adamantas, Greece",,1
+147,147,"Alghero, Sardinia Italy",,1
+144,144,"Saint-Tropez, France Riviera",,1
+11828,11828,"Liepaja, Latvia",,1
+180,180,"Andalsnes, Norway",,1
+189,189,"Trondheim, Norway",,1
+froya-norway-sistranda,,"Froya Island Norway, Sistranda",,1
+10414,10414,"Cascais, Sintra, Portugal",,1
+9701,9701,"Coimbra, Portugal",,1
+3739,3739,"Porto-Leixoes, Oporto, Portugal",,1
+9543,9543,"Porto Antigo, Cinfaes, Portugal",,1
+2189,2189,"Caldas de Aregos, Portugal",,1
+4338,4338,"Regua, Portugal, Lamego",,1
+13787,13787,"Folgosa, Portugal",,1
+4337,4337,"Pinhao, Portugal, Favaios",,1
+4336,4336,"Pocinho, Portugal",,1
+4447,4447,"Vega de Terron-Salamanca, Spain",,1
+741,741,"Funchal, Madeira Island Portugal",,1
+1114,1114,"Santa Cruz de la Palma, Canary Islands",,1
+94,94,"Santa Cruz de Tenerife, Canary Islands",,1
+836,836,"Arrecife, Lanzarote, Canary Islands",,1
+1953,1953,"Lavrion, Greece",,1
+3606,3606,"Krems an der Donau, Austria",,1
+249,249,"Volos, Meteora, Greece",,1
+4020,4020,"Wertheim am Main, Germany Baden-Wurttemberg",,1
+1049,1049,"Djupivogur, Iceland",,1
+heimaey-iceland-islands-westman,,"Heimaey Island Iceland, Westman Islands",,1
+9180,9180,"Newhaven, England",,1
+203,203,"Honningsvag, Mageroya Island Norway",,1
+11094,11094,"Eidsdal, Norway",,1
+denmark-islands-ox,,Ox Islands Denmark,,1
+757,757,"Porto Vecchio, Corsica France",,1
+173,173,"Bastia, Corsica France",,1
+2678,2678,"Ile Rousse, Corsica France",,1
+54,54,"Rotterdam, Netherlands South Holland",,1
+13560,13560,"Dun Laoghaire, Ireland",,1
+99,99,"Montreal, Quebec Canada",,1

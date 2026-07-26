@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-07-26T03:08:17-04:00",
+  "finished_at": "2026-07-26T03:08:22-04:00",
+  "ships_total": 1,
+  "ships_fetched": 1,
+  "ships_failed": 0,
+  "ships_with_current_itinerary": 1,
+  "ships_with_schedule": 1,
+  "detailed_itineraries": 3,
+  "expanded_scheduled_itineraries": 2,
+  "scheduled_sailings": 73,
+  "total_port_calls": 8,
+  "sync_db_enabled": false,
+  "sync_db_exit_code": null,
+  "stop": "completed",
+  "http_stats": {
+    "cache": 1,
+    "net": 2,
+    "err": 0
+  }
+}

@@ -3,6 +3,7 @@ import "dotenv/config";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { PrismaClient } from "../app/generated/prisma/index.js";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 const DEFAULT_INPUT = "data/itineraires_detailles.json";
 
@@ -99,7 +100,8 @@ async function main() {
 		throw new Error("Input JSON must be an array of itineraries.");
 	}
 
-	const prisma = new PrismaClient({});
+	const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+	const prisma = new PrismaClient({ adapter });
 
 	let upserted = 0;
 	try {

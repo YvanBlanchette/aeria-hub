@@ -82,6 +82,35 @@ py scripts/cruisemapper_scraper.py --no-robots scrape --ships ships.txt --out da
 
 Run the full ingest command on a schedule (cron or systemd timer on VPS, Task Scheduler on Windows). The scraper upserts records into PostgreSQL, so reruns update existing rows.
 
+### VPS cron (weekly at night)
+
+A helper script is included: [scripts/run_cruisemapper_ingest.sh](scripts/run_cruisemapper_ingest.sh).
+
+Install once on VPS:
+
+```bash
+cd /var/www/aeria-crm
+chmod +x scripts/run_cruisemapper_ingest.sh
+```
+
+Add a weekly cron at 02:15 every Sunday:
+
+```bash
+crontab -e
+```
+
+```cron
+15 2 * * 0 /bin/bash /var/www/aeria-crm/scripts/run_cruisemapper_ingest.sh >> /var/www/aeria-crm/data/logs/cron.log 2>&1
+```
+
+Useful checks:
+
+```bash
+crontab -l
+tail -n 120 /var/www/aeria-crm/data/logs/cron.log
+ls -lh /var/www/aeria-crm/data/logs/
+```
+
 ## Migrate existing SQLite data to PostgreSQL
 
 If you already have important data in SQLite, use this one-shot script before switching production to Postgres.
@@ -115,11 +144,13 @@ py scripts/migrate_sqlite_to_postgres.py \
 ### 4) Validate
 
 The script prints per-table counts:
+
 - `src` = rows in SQLite
 - `inserted` = rows written to Postgres
 - `target_after` = rows in Postgres after import
 
 Recommended safety steps on VPS:
+
 - Backup SQLite file before migration.
 - Backup Postgres database before `--truncate` run.
 - Run dry-run first, then run real import in a maintenance window.

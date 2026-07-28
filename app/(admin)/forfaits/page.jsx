@@ -3,6 +3,9 @@ import { requireUser } from "@/lib/session";
 import { ForfaitsWorkbench } from "@/components/forfaits/forfaits-workbench";
 import airportsData from "@/data/airports.json";
 import airlinesData from "@/data/airlines.json";
+import cruiseVendorsData from "@/data/cruise-vendors.json";
+import cruiseShipsData from "@/data/cruise-ships.json";
+import cruisePortsData from "@/data/cruise-ports.json";
 
 export const metadata = {
 	title: "Forfaits - AERIA Hub",
@@ -58,10 +61,33 @@ function extractIataAirlines() {
 	return Array.from(set).sort((a, b) => a.localeCompare(b, "fr"));
 }
 
+function extractCruiseOptions(group) {
+	const rows = Object.values(group || {});
+	const dedup = new Map();
+
+	for (const row of rows) {
+		const value = String(row?.value || "").trim();
+		const label = String(row?.text || row?.value || "").trim();
+		if (!value || !label) continue;
+		if (!dedup.has(value)) {
+			dedup.set(value, {
+				id: String(row?.id || value),
+				value,
+				label,
+			});
+		}
+	}
+
+	return Array.from(dedup.values()).sort((a, b) => a.label.localeCompare(b.label, "fr"));
+}
+
 export default async function ForfaitsPage() {
 	const user = await requireUser();
 	const iataAirports = extractIataAirports();
 	const iataAirlines = extractIataAirlines();
+	const cruiseLineOptions = extractCruiseOptions(cruiseVendorsData?.v);
+	const cruiseShipOptions = extractCruiseOptions(cruiseShipsData?.s);
+	const cruisePortOptions = extractCruiseOptions(cruisePortsData?.p);
 
 	const [clients, trips, quotes, airlineSuppliers] = await Promise.all([
 		prisma.client.findMany({
@@ -148,6 +174,9 @@ export default async function ForfaitsPage() {
 			airlineSuppliers={airlineSuppliers}
 			iataAirports={iataAirports}
 			iataAirlines={iataAirlines}
+			cruiseLineOptions={cruiseLineOptions}
+			cruiseShipOptions={cruiseShipOptions}
+			cruisePortOptions={cruisePortOptions}
 		/>
 	);
 }

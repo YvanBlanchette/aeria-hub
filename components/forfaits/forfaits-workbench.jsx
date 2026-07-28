@@ -42,6 +42,36 @@ const YES_NO = [
 	{ value: "true", label: "Oui" },
 ];
 
+const CRUISE_LINE_SHIP_TERMS = {
+	AmaWaterways: ["ama"],
+	Azamara: ["azamara"],
+	"Carnival Cruise Line": ["carnival"],
+	"Celebrity Cruises": ["celebrity", "flora", "xcel"],
+	"Celebrity River": ["celebrity"],
+	"Celestyal Cruises": ["celestyal"],
+	"Costa Cruise Lines": ["costa"],
+	Cunard: ["queen anne", "queen elizabeth", "queen mary", "queen victoria"],
+	"Disney Cruise Line": ["disney"],
+	"Holland America Line": ["eurodam", "koningsdam", "nieuw", "noordam", "oosterdam", "rotterdam", "volendam", "westerdam", "zaandam", "zuiderdam"],
+	"HX Expeditions": ["fram", "fridtjof", "maud", "otto sverdrup", "roald amundsen", "spitsbergen", "trollfjord"],
+	"MSC Cruises": ["msc"],
+	"Norwegian Cruise Line": ["norwegian", "pride of america"],
+	"Princess Cruises": ["princess"],
+	"Royal Caribbean International": ["of the seas"],
+	"Seabourn Cruise Line": ["seabourn"],
+	"Silversea Cruises": ["silver"],
+	"Virgin Voyages": ["lady"],
+	"Avalon Waterways River Cruises": ["avalon"],
+};
+
+function matchesCruiseLineShip(shipLabel, cruiseLineLabel) {
+	if (!cruiseLineLabel) return true;
+	const terms = CRUISE_LINE_SHIP_TERMS[cruiseLineLabel] || [];
+	if (terms.length === 0) return false;
+	const normalizedShip = String(shipLabel || "").toLowerCase();
+	return terms.some((term) => normalizedShip.includes(term));
+}
+
 function createFlightSegment() {
 	return {
 		airline: "",
@@ -415,7 +445,17 @@ function setByPath(target, path, rawValue) {
 	}
 }
 
-export function ForfaitsWorkbench({ clients, trips, initialProjects, airlineSuppliers = [], iataAirports = [], iataAirlines = [] }) {
+export function ForfaitsWorkbench({
+	clients,
+	trips,
+	initialProjects,
+	airlineSuppliers = [],
+	iataAirports = [],
+	iataAirlines = [],
+	cruiseLineOptions = [],
+	cruiseShipOptions = [],
+	cruisePortOptions = [],
+}) {
 	const [hotelPre, setHotelPre] = useState(() => makeDefaultDraft().hasPre);
 	const [hotelPost, setHotelPost] = useState(() => makeDefaultDraft().hasPost);
 	const [tab, setTab] = useState("croisiere");
@@ -535,6 +575,46 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects, airlineSupp
 			}))
 			.filter((row) => row.code.length === 3 && row.name);
 	}, [iataAirports]);
+
+	const normalizedCruiseLineOptions = useMemo(() => {
+		return (Array.isArray(cruiseLineOptions) ? cruiseLineOptions : [])
+			.map((option) => ({
+				id: String(option?.id || option?.value || option?.label || ""),
+				value: String(option?.label || option?.value || ""),
+				label: String(option?.label || option?.value || ""),
+			}))
+			.filter((option) => option.value && option.label);
+	}, [cruiseLineOptions]);
+
+	const normalizedCruiseShipOptions = useMemo(() => {
+		return (Array.isArray(cruiseShipOptions) ? cruiseShipOptions : [])
+			.map((option) => ({
+				id: String(option?.id || option?.value || option?.label || ""),
+				value: String(option?.label || option?.value || ""),
+				label: String(option?.label || option?.value || ""),
+			}))
+			.filter((option) => option.value && option.label);
+	}, [cruiseShipOptions]);
+
+	const normalizedCruisePortOptions = useMemo(() => {
+		return (Array.isArray(cruisePortOptions) ? cruisePortOptions : [])
+			.map((option) => ({
+				id: String(option?.id || option?.value || option?.label || ""),
+				value: String(option?.label || option?.value || ""),
+				label: String(option?.label || option?.value || ""),
+			}))
+			.filter((option) => option.value && option.label);
+	}, [cruisePortOptions]);
+
+	const selectedCruiseLine = useMemo(() => {
+		return normalizedCruiseLineOptions.find((option) => option.value === draft.compagnie || option.label === draft.compagnie) || null;
+	}, [draft.compagnie, normalizedCruiseLineOptions]);
+
+	const filteredCruiseShipOptions = useMemo(() => {
+		const lineLabel = selectedCruiseLine?.label || draft.compagnie;
+		if (!lineLabel) return normalizedCruiseShipOptions;
+		return normalizedCruiseShipOptions.filter((ship) => matchesCruiseLineShip(ship.label, lineLabel));
+	}, [draft.compagnie, normalizedCruiseShipOptions, selectedCruiseLine]);
 
 	const volsAllerSegments = useMemo(() => normalizeFlightSegments(draft.volsAllerSegments), [draft.volsAllerSegments]);
 	const volsRetourSegments = useMemo(() => normalizeFlightSegments(draft.volsRetourSegments), [draft.volsRetourSegments]);
@@ -991,16 +1071,6 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects, airlineSupp
 							Outil integree de planification de forfaits croisière, suivi de marge et sauvegarde de dossiers.
 						</p>
 					</div>
-					<div className="grid min-w-55 grid-cols-1 gap-2 text-sm">
-						<div className="rounded-xl border border-border bg-background/70 px-3 py-2">
-							<p className="text-[11px] uppercase tracking-wide text-muted-foreground">Categories actives</p>
-							<p className="text-lg font-semibold">{resultRows.length}</p>
-						</div>
-						<div className="rounded-xl border border-border bg-background/70 px-3 py-2">
-							<p className="text-[11px] uppercase tracking-wide text-muted-foreground">Marge moyenne</p>
-							<p className="text-lg font-semibold">{summary.margeMoy.toFixed(1)}%</p>
-						</div>
-					</div>
 				</CardHeader>
 				<CardContent className="grid gap-4 md:grid-cols-3">
 					<div className="space-y-2">
@@ -1086,31 +1156,47 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects, airlineSupp
 						</CardHeader>
 						<CardContent className="grid gap-3 md:grid-cols-2">
 							<Field label="Compagnie">
-								<Input
+								<CruiseSearchSelect
 									value={draft.compagnie}
-									onChange={(e) => setField("compagnie", e.target.value)}
-									placeholder="Ex: Royal Caribbean, MSC, Celebrity, etc."
+									onValueChange={(value) => {
+										setField("compagnie", value);
+										setField("navire", "");
+									}}
+									options={normalizedCruiseLineOptions}
+									placeholder="Selectionner compagnie"
+									searchPlaceholder="Rechercher compagnie..."
+									emptyMessage="Aucune compagnie trouvee."
 								/>
 							</Field>
 							<Field label="Navire">
-								<Input
+								<CruiseSearchSelect
 									value={draft.navire}
-									onChange={(e) => setField("navire", e.target.value)}
-									placeholder="Ex: Royal Princess, Legend of the Seas, etc."
+									onValueChange={(value) => setField("navire", value)}
+									options={filteredCruiseShipOptions}
+									placeholder={draft.compagnie ? "Selectionner navire" : "Selectionner compagnie d'abord"}
+									searchPlaceholder="Rechercher navire..."
+									emptyMessage={draft.compagnie ? "Aucun navire trouve pour cette compagnie." : "Selectionne une compagnie d'abord."}
+									disabled={!draft.compagnie}
 								/>
 							</Field>
 							<Field label="Port depart">
-								<Input
+								<CruiseSearchSelect
 									value={draft.portDepart}
-									onChange={(e) => setField("portDepart", e.target.value)}
-									placeholder="Ex: Miami, New York, etc."
+									onValueChange={(value) => setField("portDepart", value)}
+									options={normalizedCruisePortOptions}
+									placeholder="Selectionner port depart"
+									searchPlaceholder="Rechercher port depart..."
+									emptyMessage="Aucun port trouve."
 								/>
 							</Field>
 							<Field label="Port arrivee">
-								<Input
+								<CruiseSearchSelect
 									value={draft.portArrivee}
-									onChange={(e) => setField("portArrivee", e.target.value)}
-									placeholder="Ex: Rome, Barcelone, etc."
+									onValueChange={(value) => setField("portArrivee", value)}
+									options={normalizedCruisePortOptions}
+									placeholder="Selectionner port arrivee"
+									searchPlaceholder="Rechercher port arrivee..."
+									emptyMessage="Aucun port trouve."
 								/>
 							</Field>
 							<Field label="Date debut croisiere">
@@ -1976,6 +2062,92 @@ function MoneyWithMode({ label, value, mode, onValue, onMode, className = "" }) 
 	);
 }
 
+function CruiseSearchSelect({ value, onValueChange, options, placeholder, searchPlaceholder, emptyMessage, disabled = false }) {
+	const [open, setOpen] = useState(false);
+	const [query, setQuery] = useState("");
+
+	const selected = useMemo(() => {
+		return (Array.isArray(options) ? options : []).find((option) => option.value === value) || null;
+	}, [options, value]);
+
+	const filtered = useMemo(() => {
+		const list = Array.isArray(options) ? options : [];
+		if (!query.trim()) return list.slice(0, 120);
+		const q = query.trim().toLowerCase();
+		return list.filter((option) => option.label.toLowerCase().includes(q)).slice(0, 120);
+	}, [options, query]);
+
+	return (
+		<Popover
+			open={open}
+			onOpenChange={(next) => {
+				if (!disabled) setOpen(next);
+			}}
+		>
+			<PopoverTrigger asChild>
+				<Button
+					type="button"
+					variant="outline"
+					role="combobox"
+					disabled={disabled}
+					className="h-8 w-full justify-between rounded-lg border-input bg-transparent px-3 py-1 text-sm font-normal"
+				>
+					<span className={cn("truncate text-left", !value && "text-muted-foreground")}>{selected?.label || value || placeholder}</span>
+					<ChevronDown className="size-4 shrink-0 opacity-60" />
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent
+				align="start"
+				className="w-(--radix-popover-trigger-width) rounded-xl border-border/70 p-0 shadow-xl"
+			>
+				<div className="p-2">
+					<Input
+						autoFocus
+						value={query}
+						onChange={(event) => setQuery(event.target.value)}
+						placeholder={searchPlaceholder}
+						className="h-9"
+					/>
+				</div>
+				<div className="max-h-72 overflow-y-auto p-1 pt-0">
+					{value ? (
+						<button
+							type="button"
+							onClick={() => {
+								onValueChange("");
+								setOpen(false);
+								setQuery("");
+							}}
+							className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-muted-foreground hover:bg-muted/60"
+						>
+							Clear selection
+						</button>
+					) : null}
+					{filtered.length === 0 ? <p className="p-3 text-sm text-muted-foreground">{emptyMessage}</p> : null}
+					{filtered.map((option) => {
+						const isSelected = value === option.value;
+						return (
+							<button
+								key={option.id || option.value}
+								type="button"
+								onClick={() => {
+									onValueChange(option.value);
+									setOpen(false);
+									setQuery("");
+								}}
+								className={cn("flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm hover:bg-muted/60", isSelected && "bg-muted/70")}
+							>
+								<Check className={cn("size-4 shrink-0", isSelected ? "opacity-100" : "opacity-0")} />
+								<span className="flex-1 truncate">{option.label}</span>
+							</button>
+						);
+					})}
+				</div>
+			</PopoverContent>
+		</Popover>
+	);
+}
+
 function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airportOptions, onAdd, onRemove, onUpdate }) {
 	return (
 		<div className="space-y-2 rounded-xl border border-border/70 p-3">
@@ -2103,7 +2275,7 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 				);
 			})}
 
-			{airportOptions?.length ? null : <p className="text-xs text-muted-foreground">Aucune liste d'aeroports IATA chargee.</p>}
+			{airportOptions?.length ? null : <p className="text-xs text-muted-foreground">Aucune liste d&apos;aeroports IATA chargee.</p>}
 		</div>
 	);
 }

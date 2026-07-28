@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Calculator, Copy, Download, FileText, FolderOpen, Save, Trash2, Upload } from "lucide-react";
+import { Calculator, Check, ChevronDown, Copy, Download, FileText, FolderOpen, Plus, Save, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,55 @@ const YES_NO = [
 	{ value: "true", label: "Oui" },
 ];
 
+function createFlightSegment() {
+	return {
+		airline: "",
+		operator: "",
+		fromIata: "",
+		departTime: "",
+		arriveTime: "",
+		toIata: "",
+	};
+}
+
+function normalizeFlightSegments(value) {
+	const list = Array.isArray(value) ? value : [];
+	if (list.length === 0) return [createFlightSegment()];
+	return list.map((item) => ({ ...createFlightSegment(), ...(item || {}) }));
+}
+
+function normalizeIata(value) {
+	return String(value || "")
+		.toUpperCase()
+		.replace(/[^A-Z]/g, "")
+		.slice(0, 3);
+}
+
+function parseTimeToMinutes(value) {
+	if (!/^\d{2}:\d{2}$/.test(String(value || ""))) return null;
+	const [h, m] = value.split(":").map((part) => Number.parseInt(part, 10));
+	if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+	if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+	return h * 60 + m;
+}
+
+function minutesDiff(start, end) {
+	const startMin = parseTimeToMinutes(start);
+	const endMin = parseTimeToMinutes(end);
+	if (startMin === null || endMin === null) return null;
+	const raw = endMin - startMin;
+	return raw >= 0 ? raw : raw + 24 * 60;
+}
+
+function formatDuration(minutes) {
+	if (!Number.isFinite(minutes) || minutes < 0) return "-";
+	const h = Math.floor(minutes / 60);
+	const m = minutes % 60;
+	if (h <= 0) return `${m} min`;
+	if (m === 0) return `${h} h`;
+	return `${h} h ${m} min`;
+}
+
 function makeDefaultDraft() {
 	return {
 		projectName: "",
@@ -52,6 +102,7 @@ function makeDefaultDraft() {
 		portArrivee: "",
 		croisiereDebut: "",
 		croisiereFin: "",
+		croisiereNotes: "",
 		pax: 2,
 		nuits: 7,
 		pourboiresInclus: false,
@@ -72,6 +123,8 @@ function makeDefaultDraft() {
 		hotelPostDebut: "",
 		hotelPostFin: "",
 		volsDetails: "",
+		volsAllerSegments: [createFlightSegment()],
+		volsRetourSegments: [createFlightSegment()],
 		vols: "",
 		volsMode: "pers",
 		bagAller: "",
@@ -362,7 +415,7 @@ function setByPath(target, path, rawValue) {
 	}
 }
 
-export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
+export function ForfaitsWorkbench({ clients, trips, initialProjects, airlineSuppliers = [], iataAirports = [], iataAirlines = [] }) {
 	const [hotelPre, setHotelPre] = useState(() => makeDefaultDraft().hasPre);
 	const [hotelPost, setHotelPost] = useState(() => makeDefaultDraft().hasPost);
 	const [tab, setTab] = useState("croisiere");
@@ -461,6 +514,31 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 		return trips.find((trip) => trip.id === draft.tripId) || null;
 	}, [draft.tripId, trips]);
 
+	const airlineOptions = useMemo(() => {
+		const fromSuppliers = Array.isArray(airlineSuppliers) ? airlineSuppliers.map((row) => row?.name).filter(Boolean) : [];
+		const merged = [...fromSuppliers, ...(Array.isArray(iataAirlines) ? iataAirlines : [])];
+		return Array.from(new Set(merged.map((name) => String(name).trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, "fr"));
+	}, [airlineSuppliers, iataAirlines]);
+
+	const airportOptions = useMemo(() => {
+		const list = Array.isArray(iataAirports) ? iataAirports : [];
+		return list
+			.map((row) => ({
+				code: String(row?.code || "")
+					.toUpperCase()
+					.trim(),
+				name: String(row?.name || "").trim(),
+				city: String(row?.city || "").trim(),
+				country: String(row?.country || "")
+					.toUpperCase()
+					.trim(),
+			}))
+			.filter((row) => row.code.length === 3 && row.name);
+	}, [iataAirports]);
+
+	const volsAllerSegments = useMemo(() => normalizeFlightSegments(draft.volsAllerSegments), [draft.volsAllerSegments]);
+	const volsRetourSegments = useMemo(() => normalizeFlightSegments(draft.volsRetourSegments), [draft.volsRetourSegments]);
+
 	function setField(field, value) {
 		setDraft((prev) => ({ ...prev, [field]: value }));
 	}
@@ -473,6 +551,39 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 				[key]: value,
 			},
 		}));
+	}
+
+	function setFlightSegments(direction, updater) {
+		const key = direction === "retour" ? "volsRetourSegments" : "volsAllerSegments";
+		setDraft((prev) => {
+			const current = normalizeFlightSegments(prev[key]);
+			const nextRaw = typeof updater === "function" ? updater(current) : updater;
+			return {
+				...prev,
+				[key]: normalizeFlightSegments(nextRaw),
+			};
+		});
+	}
+
+	function updateFlightSegment(direction, index, field, value) {
+		setFlightSegments(direction, (segments) =>
+			segments.map((segment, i) => {
+				if (i !== index) return segment;
+				const nextValue = field === "fromIata" || field === "toIata" ? normalizeIata(value) : value;
+				return { ...segment, [field]: nextValue };
+			}),
+		);
+	}
+
+	function addFlightSegment(direction) {
+		setFlightSegments(direction, (segments) => [...segments, createFlightSegment()]);
+	}
+
+	function removeFlightSegment(direction, index) {
+		setFlightSegments(direction, (segments) => {
+			if (segments.length <= 1) return [createFlightSegment()];
+			return segments.filter((_, i) => i !== index);
+		});
 	}
 
 	async function refreshRevisions(projectId) {
@@ -1000,6 +1111,45 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 									placeholder="Ex: Miami, New York, etc."
 								/>
 							</Field>
+							<Field label="Port arrivee">
+								<Input
+									value={draft.portArrivee}
+									onChange={(e) => setField("portArrivee", e.target.value)}
+									placeholder="Ex: Rome, Barcelone, etc."
+								/>
+							</Field>
+							<Field label="Date debut croisiere">
+								<Input
+									type="date"
+									value={draft.croisiereDebut}
+									onChange={(e) => setField("croisiereDebut", e.target.value)}
+								/>
+							</Field>
+							<Field label="Date fin croisiere">
+								<Input
+									type="date"
+									value={draft.croisiereFin}
+									onChange={(e) => setField("croisiereFin", e.target.value)}
+								/>
+							</Field>
+							<Field label="Nombre passagers">
+								<Input
+									type="number"
+									min="1"
+									step="1"
+									value={draft.pax}
+									onChange={(e) => setField("pax", e.target.value)}
+								/>
+							</Field>
+							<Field label="Nuits croisiere">
+								<Input
+									type="number"
+									min="0"
+									step="1"
+									value={draft.nuits}
+									onChange={(e) => setField("nuits", e.target.value)}
+								/>
+							</Field>
 							<Field label="Pourboires manuels (si non inclus)">
 								<Input
 									type="number"
@@ -1032,6 +1182,17 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 									step="0.0001"
 									value={draft.taux}
 									onChange={(e) => setField("taux", e.target.value)}
+								/>
+							</Field>
+							<Field
+								label="Notes croisiere (affichees au PDF)"
+								className="md:col-span-2"
+							>
+								<Textarea
+									rows={4}
+									value={draft.croisiereNotes}
+									onChange={(e) => setField("croisiereNotes", e.target.value)}
+									placeholder="Ex: Cette croisiere inclut les repas principaux, spectacles et taxes portuaires."
 								/>
 							</Field>
 						</CardContent>
@@ -1085,30 +1246,44 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 				<Card>
 					<CardHeader>
 						<CardTitle>Vols et bagages</CardTitle>
-						<CardDescription>Prend en charge les montants par personne ou total groupe.</CardDescription>
+						<CardDescription>Segmente les vols aller/retour avec durees et escales calculees automatiquement.</CardDescription>
 					</CardHeader>
-					<CardContent className="grid gap-3 md:grid-cols-2">
-						<Field
-							label="Details vols"
-							className="pb-6"
-						>
-							<Textarea
-								value={draft.volsDetails}
-								onChange={(e) => setField("volsDetails", e.target.value)}
-								className="shadow-inner h-full placeholder:opacity-60"
-								placeholder="Ex: AC822 - Montréal à Miami - 08:00 - 11:30"
-							/>
-						</Field>
-						<div className="flex flex-col gap-3 w-full">
+					<CardContent className="space-y-5">
+						{/* VOLS ALLER */}
+						<FlightSegmentsEditor
+							title="Vol aller"
+							direction="aller"
+							segments={volsAllerSegments}
+							airlineOptions={airlineOptions}
+							airportOptions={airportOptions}
+							onAdd={addFlightSegment}
+							onRemove={removeFlightSegment}
+							onUpdate={updateFlightSegment}
+						/>
+
+						{/* VOLS RETOUR */}
+						<FlightSegmentsEditor
+							title="Vol retour"
+							direction="retour"
+							segments={volsRetourSegments}
+							airlineOptions={airlineOptions}
+							airportOptions={airportOptions}
+							onAdd={addFlightSegment}
+							onRemove={removeFlightSegment}
+							onUpdate={updateFlightSegment}
+						/>
+
+						{/* TARIFICATION VOLS */}
+						<div className="grid gap-3 md:grid-cols-2">
 							<MoneyWithMode
 								label="Cout vols"
 								value={draft.vols}
 								mode={draft.volsMode}
 								onValue={(v) => setField("vols", v)}
 								onMode={(v) => setField("volsMode", v)}
-								className="w-full"
+								className="w-full md:col-span-2"
 							/>
-							<div className="flex items-center gap-3 w-full">
+							<div className="flex items-center gap-3 w-full md:col-span-2">
 								<MoneyWithMode
 									label="Bagages aller"
 									value={draft.bagAller}
@@ -1127,15 +1302,6 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects }) {
 								/>
 							</div>
 						</div>
-						{/* <Field label="Ajustement commission vols">
-							<Input
-								type="number"
-								min="0"
-								step="0.01"
-								value={draft.commissionVols}
-								onChange={(e) => setField("commissionVols", e.target.value)}
-							/>
-						</Field> */}
 					</CardContent>
 				</Card>
 			)}
@@ -1812,5 +1978,217 @@ function MoneyWithMode({ label, value, mode, onValue, onMode, className = "" }) 
 				</select>
 			</div>
 		</Field>
+	);
+}
+
+function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airportOptions, onAdd, onRemove, onUpdate }) {
+	return (
+		<div className="space-y-2 rounded-xl border border-border/70 p-3">
+			<div className="flex items-center justify-between gap-3">
+				<div>
+					<p className="text-sm font-semibold">{title}</p>
+					<p className="text-xs text-muted-foreground">Ajouter un ou plusieurs segments. Duree de vol et escales se calculent automatiquement.</p>
+				</div>
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					onClick={() => onAdd(direction)}
+				>
+					<Plus className="size-4" /> Segment
+				</Button>
+			</div>
+
+			{segments.map((segment, index) => {
+				const duration = minutesDiff(segment.departTime, segment.arriveTime);
+				const prev = index > 0 ? segments[index - 1] : null;
+				const layover = prev ? minutesDiff(prev.arriveTime, segment.departTime) : null;
+
+				return (
+					<div
+						key={`${direction}-${index}`}
+						className="space-y-2 rounded-lg border border-border/60 bg-muted/15 p-3"
+					>
+						<div className="flex items-center justify-between">
+							<p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Segment {index + 1}</p>
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onClick={() => onRemove(direction, index)}
+								disabled={segments.length <= 1}
+							>
+								<Trash2 className="size-4" />
+							</Button>
+						</div>
+
+						<div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+							<Field label="Compagnie aerienne">
+								<select
+									value={segment.airline}
+									onChange={(e) => onUpdate(direction, index, "airline", e.target.value)}
+									className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
+								>
+									<option value="">Selectionner</option>
+									{airlineOptions.map((option) => (
+										<option
+											key={`airline-${option}`}
+											value={option}
+										>
+											{option}
+										</option>
+									))}
+								</select>
+							</Field>
+
+							<Field label="Operateur">
+								<select
+									value={segment.operator}
+									onChange={(e) => onUpdate(direction, index, "operator", e.target.value)}
+									className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
+								>
+									<option value="">Selectionner</option>
+									{airlineOptions.map((option) => (
+										<option
+											key={`operator-${option}`}
+											value={option}
+										>
+											{option}
+										</option>
+									))}
+								</select>
+							</Field>
+
+							<Field label="Aeroport depart (IATA)">
+								<AirportIataPicker
+									value={segment.fromIata}
+									onValueChange={(nextValue) => onUpdate(direction, index, "fromIata", nextValue)}
+									airports={airportOptions}
+									placeholder="Selectionner aeroport depart"
+								/>
+							</Field>
+
+							<Field label="Heure depart">
+								<Input
+									type="time"
+									value={segment.departTime}
+									onChange={(e) => onUpdate(direction, index, "departTime", e.target.value)}
+								/>
+							</Field>
+
+							<Field label="Heure arrivee">
+								<Input
+									type="time"
+									value={segment.arriveTime}
+									onChange={(e) => onUpdate(direction, index, "arriveTime", e.target.value)}
+								/>
+							</Field>
+
+							<Field label="Aeroport arrivee (IATA)">
+								<AirportIataPicker
+									value={segment.toIata}
+									onValueChange={(nextValue) => onUpdate(direction, index, "toIata", nextValue)}
+									airports={airportOptions}
+									placeholder="Selectionner aeroport arrivee"
+								/>
+							</Field>
+						</div>
+
+						<div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
+							<div className="rounded-md border border-border/60 bg-background/70 px-2 py-1.5">
+								<p className="uppercase tracking-wide">Temps de vol</p>
+								<p className="font-medium text-foreground">{formatDuration(duration)}</p>
+							</div>
+							<div className="rounded-md border border-border/60 bg-background/70 px-2 py-1.5">
+								<p className="uppercase tracking-wide">Escale</p>
+								<p className="font-medium text-foreground">{index === 0 ? "-" : formatDuration(layover)}</p>
+							</div>
+						</div>
+					</div>
+				);
+			})}
+
+			{airportOptions?.length ? null : <p className="text-xs text-muted-foreground">Aucune liste d'aeroports IATA chargee.</p>}
+		</div>
+	);
+}
+
+function AirportIataPicker({ value, onValueChange, airports, placeholder }) {
+	const [open, setOpen] = useState(false);
+	const [query, setQuery] = useState("");
+
+	const selected = useMemo(() => {
+		const target = normalizeIata(value);
+		return (Array.isArray(airports) ? airports : []).find((airport) => airport.code === target) || null;
+	}, [airports, value]);
+
+	const filtered = useMemo(() => {
+		const list = Array.isArray(airports) ? airports : [];
+		if (!query.trim()) return list.slice(0, 120);
+		const q = query.trim().toLowerCase();
+		return list
+			.filter((airport) => {
+				const searchable = `${airport.code} ${airport.city || ""} ${airport.name || ""} ${airport.country || ""}`.toLowerCase();
+				return searchable.includes(q);
+			})
+			.slice(0, 120);
+	}, [airports, query]);
+
+	const label = selected ? `${selected.code} - ${selected.city || selected.name}` : normalizeIata(value);
+
+	return (
+		<Popover
+			open={open}
+			onOpenChange={setOpen}
+		>
+			<PopoverTrigger asChild>
+				<Button
+					type="button"
+					variant="outline"
+					role="combobox"
+					className="h-8 w-full justify-between rounded-lg border-input bg-transparent px-3 py-1 text-sm font-normal"
+				>
+					<span className={cn("truncate text-left", !value && "text-muted-foreground")}>{value ? label : placeholder}</span>
+					<ChevronDown className="size-4 shrink-0 opacity-60" />
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent
+				align="start"
+				className="w-(--radix-popover-trigger-width) rounded-xl border-border/70 p-0 shadow-xl"
+			>
+				<div className="p-2">
+					<Input
+						autoFocus
+						value={query}
+						onChange={(event) => setQuery(event.target.value)}
+						placeholder="Rechercher par IATA, ville, aeroport..."
+						className="h-9"
+					/>
+				</div>
+				<div className="max-h-72 overflow-y-auto p-1 pt-0">
+					{filtered.length === 0 ? <p className="p-3 text-sm text-muted-foreground">Aucun aeroport trouve.</p> : null}
+					{filtered.map((airport) => {
+						const isSelected = normalizeIata(value) === airport.code;
+						return (
+							<button
+								key={`${airport.code}-${airport.country || "XX"}`}
+								type="button"
+								onClick={() => {
+									onValueChange(airport.code);
+									setOpen(false);
+									setQuery("");
+								}}
+								className={cn("flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm hover:bg-muted/60", isSelected && "bg-muted/70")}
+							>
+								<Check className={cn("size-4 shrink-0", isSelected ? "opacity-100" : "opacity-0")} />
+								<span className="w-12 shrink-0 font-semibold">{airport.code}</span>
+								<span className="flex-1 truncate">{airport.city ? `${airport.city} - ${airport.name}` : airport.name}</span>
+								<span className="shrink-0 text-xs text-muted-foreground">{airport.country || "-"}</span>
+							</button>
+						);
+					})}
+				</div>
+			</PopoverContent>
+		</Popover>
 	);
 }

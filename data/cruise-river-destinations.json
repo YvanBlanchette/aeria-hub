@@ -1,0 +1,192 @@
+{
+  "d": {
+    "0": {
+      "id": "d-0",
+      "value": "",
+      "text": "All Destinations",
+      "s": [],
+      "displayClass": "country"
+    },
+    "2": {
+      "id": "d-2",
+      "value": "2",
+      "text": "Africa",
+      "s": [],
+      "displayClass": "country"
+    },
+    "8": {
+      "id": "d-8",
+      "value": "8",
+      "text": "Alaska",
+      "s": [],
+      "displayClass": "country"
+    },
+    "3": {
+      "id": "d-3",
+      "value": "3",
+      "text": "Asia",
+      "s": {
+        "4": {
+          "id": "d-3-s-4",
+          "value": "4",
+          "text": "China",
+          "displayClass": "region"
+        },
+        "5": {
+          "id": "d-3-s-5",
+          "value": "5",
+          "text": "India",
+          "displayClass": "region"
+        },
+        "7": {
+          "id": "d-3-s-7",
+          "value": "7",
+          "text": "Myanmar (Burma)",
+          "displayClass": "region"
+        },
+        "6": {
+          "id": "d-3-s-6",
+          "value": "6",
+          "text": "Vietnam and Cambodia",
+          "displayClass": "region"
+        }
+      },
+      "displayClass": "country"
+    },
+    "1": {
+      "id": "d-1",
+      "value": "1",
+      "text": "Europe",
+      "s": [],
+      "displayClass": "country"
+    },
+    "9": {
+      "id": "d-9",
+      "value": "9",
+      "text": "Hawaii",
+      "s": [],
+      "displayClass": "country"
+    },
+    "10": {
+      "id": "d-10",
+      "value": "10",
+      "text": "Mexico",
+      "s": [],
+      "displayClass": "country"
+    },
+    "13": {
+      "id": "d-13",
+      "value": "13",
+      "text": "New England",
+      "s": [],
+      "displayClass": "country"
+    },
+    "12": {
+      "id": "d-12",
+      "value": "12",
+      "text": "Pacific Northwest",
+      "s": [],
+      "displayClass": "country"
+    },
+    "17": {
+      "id": "d-17",
+      "value": "17",
+      "text": "South America",
+      "s": {
+        "16": {
+          "id": "d-17-s-16",
+          "value": "16",
+          "text": "Ecuador",
+          "displayClass": "region"
+        }
+      },
+      "displayClass": "country"
+    },
+    "14": {
+      "id": "d-14",
+      "value": "14",
+      "text": "U. S. Atlantic Coast",
+      "s": [],
+      "displayClass": "country"
+    },
+    "15": {
+      "id": "d-15",
+      "value": "15",
+      "text": "U. S. River",
+      "s": [],
+      "displayClass": "country"
+    }
+  },
+  "f": [
+    {
+      "d": "0",
+      "s": []
+    },
+    {
+      "d": "2",
+      "s": []
+    },
+    {
+      "d": "8",
+      "s": []
+    },
+    {
+      "d": "3",
+      "s": [
+        {
+          "d": "4",
+          "s": []
+        },
+        {
+          "d": "5",
+          "s": []
+        },
+        {
+          "d": "7",
+          "s": []
+        },
+        {
+          "d": "6",
+          "s": []
+        }
+      ]
+    },
+    {
+      "d": "1",
+      "s": []
+    },
+    {
+      "d": "9",
+      "s": []
+    },
+    {
+      "d": "10",
+      "s": []
+    },
+    {
+      "d": "13",
+      "s": []
+    },
+    {
+      "d": "12",
+      "s": []
+    },
+    {
+      "d": "17",
+      "s": [
+        {
+          "d": "16",
+          "s": []
+        }
+      ]
+    },
+    {
+      "d": "14",
+      "s": []
+    },
+    {
+      "d": "15",
+      "s": []
+    }
+  ]
+}

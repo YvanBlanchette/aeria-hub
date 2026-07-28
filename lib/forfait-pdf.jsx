@@ -111,6 +111,12 @@ function ForfaitDocument({ payload }) {
 					<Text style={styles.rowLabel}>Passagers / nuits totales</Text>
 					<Text style={styles.rowValue}>{`${base.pax || 0} pax / ${base.totalNuits || 0} nuits`}</Text>
 				</View>
+				{draft.croisiereNotes ? (
+					<>
+						<Text style={styles.sectionTitle}>Notes croisiere</Text>
+						<Text>{String(draft.croisiereNotes)}</Text>
+					</>
+				) : null}
 
 				<Text style={styles.sectionTitle}>Prix par categorie</Text>
 				{rows.length === 0 ? (

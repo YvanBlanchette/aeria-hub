@@ -1,15 +1,69 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { ForfaitsWorkbench } from "@/components/forfaits/forfaits-workbench";
+import airportsData from "@/data/airports.json";
+import airlinesData from "@/data/airlines.json";
 
 export const metadata = {
 	title: "Forfaits - AERIA Hub",
 };
 
+function extractIataAirports() {
+	const rows = Array.isArray(airportsData?.airports) ? airportsData.airports : [];
+	const normalized = rows
+		.map((row) => ({
+			code: String(row?.code || "")
+				.toUpperCase()
+				.trim(),
+			name: String(row?.name || "").trim(),
+			city: String(row?.city || "").trim(),
+			country: String(row?.country || "")
+				.toUpperCase()
+				.trim(),
+		}))
+		.filter((row) => row.code.length === 3 && row.name);
+
+	const byCode = new Map();
+	for (const row of normalized) {
+		if (!byCode.has(row.code)) byCode.set(row.code, row);
+	}
+
+	const countryRank = (country) => {
+		if (country === "CA") return 0;
+		if (country === "US") return 1;
+		return 2;
+	};
+
+	return Array.from(byCode.values()).sort((a, b) => {
+		const rankDiff = countryRank(a.country) - countryRank(b.country);
+		if (rankDiff !== 0) return rankDiff;
+		const cityDiff = a.city.localeCompare(b.city, "fr");
+		if (cityDiff !== 0) return cityDiff;
+		return a.code.localeCompare(b.code, "fr");
+	});
+}
+
+function extractIataAirlines() {
+	const set = new Set();
+	const rows = Array.isArray(airlinesData) ? airlinesData : [];
+
+	for (const row of rows) {
+		const names = String(row?.Statistics?.Carriers?.Names || "").split(",");
+		for (const name of names) {
+			const clean = name.trim();
+			if (clean) set.add(clean);
+		}
+	}
+
+	return Array.from(set).sort((a, b) => a.localeCompare(b, "fr"));
+}
+
 export default async function ForfaitsPage() {
 	const user = await requireUser();
+	const iataAirports = extractIataAirports();
+	const iataAirlines = extractIataAirlines();
 
-	const [clients, trips, quotes] = await Promise.all([
+	const [clients, trips, quotes, airlineSuppliers] = await Promise.all([
 		prisma.client.findMany({
 			orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
 			select: { id: true, firstName: true, lastName: true },
@@ -46,6 +100,11 @@ export default async function ForfaitsPage() {
 				_count: { select: { revisions: true } },
 				updatedAt: true,
 			},
+		}),
+		prisma.supplier.findMany({
+			where: { category: "AIRLINE" },
+			orderBy: { name: "asc" },
+			select: { id: true, name: true },
 		}),
 	]);
 
@@ -86,6 +145,9 @@ export default async function ForfaitsPage() {
 			clients={clientOptions}
 			trips={tripOptions}
 			initialProjects={initialProjects}
+			airlineSuppliers={airlineSuppliers}
+			iataAirports={iataAirports}
+			iataAirlines={iataAirlines}
 		/>
 	);
 }

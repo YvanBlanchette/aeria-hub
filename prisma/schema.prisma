@@ -452,6 +452,7 @@ model CruisePort {
   @@index([name])
 }
 
+/// Normalized IATA airport catalog used in the forfaits flight builder.
 /**
  * A portion of the commission owed to the agency for a segment. Most
  * segments have a single portion due at the trip's end date (client

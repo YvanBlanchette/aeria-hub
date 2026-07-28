@@ -1262,15 +1262,6 @@ export function ForfaitsWorkbench({
 									))}
 								</select>
 							</Field>
-							<Field label="Taux USD/CAD">
-								<Input
-									type="number"
-									min="0"
-									step="0.0001"
-									value={draft.taux}
-									onChange={(e) => setField("taux", e.target.value)}
-								/>
-							</Field>
 							<Field
 								label="Notes croisiere (affichees au PDF)"
 								className="md:col-span-2"
@@ -1690,6 +1681,15 @@ export function ForfaitsWorkbench({
 								<option value="25">Au 25 CAD</option>
 								<option value="50">Au 50 CAD</option>
 							</select>
+						</Field>
+						<Field label="Taux USD/CAD">
+							<Input
+								type="number"
+								min="0"
+								step="0.0001"
+								value={draft.taux}
+								onChange={(e) => setField("taux", e.target.value)}
+							/>
 						</Field>
 					</CardContent>
 				</Card>

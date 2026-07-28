@@ -592,6 +592,8 @@ export function ForfaitsWorkbench({
 				id: String(option?.id || option?.value || option?.label || ""),
 				value: String(option?.label || option?.value || ""),
 				label: String(option?.label || option?.value || ""),
+				lineId: option?.lineId ? String(option.lineId) : null,
+				lineName: option?.lineName ? String(option.lineName) : null,
 			}))
 			.filter((option) => option.value && option.label);
 	}, [cruiseShipOptions]);
@@ -612,7 +614,15 @@ export function ForfaitsWorkbench({
 
 	const filteredCruiseShipOptions = useMemo(() => {
 		const lineLabel = selectedCruiseLine?.label || draft.compagnie;
+		const lineId = selectedCruiseLine?.id || null;
 		if (!lineLabel) return normalizedCruiseShipOptions;
+
+		const linked = lineId ? normalizedCruiseShipOptions.filter((ship) => ship.lineId === lineId) : [];
+		if (linked.length > 0) return linked;
+
+		const linkedByName = normalizedCruiseShipOptions.filter((ship) => ship.lineName && ship.lineName === lineLabel);
+		if (linkedByName.length > 0) return linkedByName;
+
 		return normalizedCruiseShipOptions.filter((ship) => matchesCruiseLineShip(ship.label, lineLabel));
 	}, [draft.compagnie, normalizedCruiseShipOptions, selectedCruiseLine]);
 
@@ -1058,10 +1068,6 @@ export function ForfaitsWorkbench({
 
 	return (
 		<div className="space-y-6">
-			{/* HERO */}
-			<div className="rounded-3xl border border-border/70 bg-card/85 p-5 shadow-sm backdrop-blur-sm sm:p-6"></div>
-
-			{/* CRM CONTEXT */}
 			<Card>
 				<CardHeader className="flex flex-wrap items-start justify-between gap-3">
 					<div className="max-w-3xl space-y-2">

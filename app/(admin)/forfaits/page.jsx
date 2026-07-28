@@ -81,13 +81,77 @@ function extractCruiseOptions(group) {
 	return Array.from(dedup.values()).sort((a, b) => a.label.localeCompare(b.label, "fr"));
 }
 
+async function loadCruiseCatalogFromDb() {
+	const lineRows = await prisma.supplier.findMany({
+		where: { category: "CRUISE" },
+		orderBy: { name: "asc" },
+		select: { id: true, name: true },
+	});
+
+	if (lineRows.length === 0) return null;
+
+	const shipRows = prisma.cruiseShip?.findMany
+		? await prisma.cruiseShip.findMany({
+				orderBy: { name: "asc" },
+				select: {
+					id: true,
+					name: true,
+					supplierId: true,
+					supplier: { select: { name: true } },
+				},
+			})
+		: [];
+
+	const portRows = prisma.cruisePort?.findMany
+		? await prisma.cruisePort.findMany({
+				orderBy: [{ name: "asc" }, { country: "asc" }],
+				select: { id: true, name: true, displayText: true, country: true },
+			})
+		: [];
+
+	const cruiseLineOptions = lineRows.map((line) => ({
+		id: line.id,
+		value: line.name,
+		label: line.name,
+	}));
+
+	const cruiseShipOptions = shipRows.map((ship) => ({
+		id: ship.id,
+		value: ship.name,
+		label: ship.name,
+		lineId: ship.supplierId || null,
+		lineName: ship.supplier?.name || null,
+	}));
+
+	const cruisePortOptions = portRows.map((port) => ({
+		id: port.id,
+		value: port.displayText || port.name,
+		label: port.displayText || port.name,
+		country: port.country || null,
+	}));
+
+	return {
+		cruiseLineOptions,
+		cruiseShipOptions,
+		cruisePortOptions,
+	};
+}
+
 export default async function ForfaitsPage() {
 	const user = await requireUser();
 	const iataAirports = extractIataAirports();
 	const iataAirlines = extractIataAirlines();
-	const cruiseLineOptions = extractCruiseOptions(cruiseVendorsData?.v);
-	const cruiseShipOptions = extractCruiseOptions(cruiseShipsData?.s);
-	const cruisePortOptions = extractCruiseOptions(cruisePortsData?.p);
+
+	let cruiseCatalog = null;
+	try {
+		cruiseCatalog = await loadCruiseCatalogFromDb();
+	} catch {
+		cruiseCatalog = null;
+	}
+
+	const cruiseLineOptions = cruiseCatalog?.cruiseLineOptions || extractCruiseOptions(cruiseVendorsData?.v);
+	const cruiseShipOptions = cruiseCatalog?.cruiseShipOptions || extractCruiseOptions(cruiseShipsData?.s);
+	const cruisePortOptions = cruiseCatalog?.cruisePortOptions || extractCruiseOptions(cruisePortsData?.p);
 
 	const [clients, trips, quotes, airlineSuppliers] = await Promise.all([
 		prisma.client.findMany({

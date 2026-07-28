@@ -387,6 +387,44 @@ model Supplier {
   updatedAt DateTime @updatedAt
 
   segments TripSegment[]
+  cruiseShips CruiseShip[]
+}
+
+/// Normalized cruise ship catalog (ocean + river), optionally linked to a
+/// CRUISE supplier (cruise line).
+model CruiseShip {
+  id String @id @default(cuid())
+
+  /// Optional source identifier from JSON/provider payload.
+  sourceValue String? @unique
+  name        String
+
+  supplierId String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([supplierId, name])
+  @@index([name])
+  @@index([supplierId])
+}
+
+/// Normalized cruise port catalog used in the forfaits cruise builder.
+model CruisePort {
+  id String @id @default(cuid())
+
+  /// Optional source identifier from JSON/provider payload.
+  sourceValue String? @unique
+  name        String
+  displayText String?
+  country     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, country])
+  @@index([name])
 }
 
 /**

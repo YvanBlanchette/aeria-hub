@@ -120,6 +120,29 @@ model User {
   assignedTasks   TripTask[]    @relation("TaskAssignee")
   forfaitQuotes   ForfaitQuote[]
   forfaitQuoteRevisions ForfaitQuoteRevision[]
+  googleCalendarConnection GoogleCalendarConnection?
+}
+
+model GoogleCalendarConnection {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  googleEmail String?
+  scope       String?
+
+  accessToken  String
+  refreshToken String
+  expiryDate   DateTime?
+
+  lastSyncAt    DateTime?
+  lastSyncError String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Client {

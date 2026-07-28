@@ -1,4 +1,17 @@
-import { LayoutDashboard, Users, Plane, Calculator, Percent, FileText, Receipt, Inbox, Building2, MessageSquareText, Settings } from "lucide-react";
+import {
+	LayoutDashboard,
+	Users,
+	Plane,
+	Calculator,
+	Percent,
+	FileText,
+	Receipt,
+	Inbox,
+	Building2,
+	MessageSquareText,
+	Settings,
+	CalendarDays,
+} from "lucide-react";
 
 /** Sidebar navigation entries. `href: null` renders a disabled "coming soon" item. */
 export const navItems = [
@@ -9,6 +22,7 @@ export const navItems = [
 	{ label: "Commissions", labelKey: "nav.commissions", href: "/commissions", icon: Percent },
 	{ label: "Quotes", labelKey: "nav.quotes", href: "/quotes", icon: FileText },
 	{ label: "Invoices", labelKey: "nav.invoices", href: "/invoices", icon: Receipt },
+	{ label: "Calendar", labelKey: "nav.calendar", href: "/calendar", icon: CalendarDays },
 	{ label: "Inquiries", labelKey: "nav.inquiries", href: null, icon: Inbox },
 	{ label: "Suppliers", labelKey: "nav.suppliers", href: "/suppliers", icon: Building2 },
 	{ label: "Client Requests", labelKey: "nav.clientRequests", href: null, icon: MessageSquareText },

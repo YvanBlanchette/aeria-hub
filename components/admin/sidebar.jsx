@@ -15,14 +15,9 @@ export function Sidebar() {
 					href="/dashboard"
 					className="flex items-center gap-3 rounded-2xl px-1 py-1.5 transition-colors hover:bg-sidebar-accent/60"
 				>
-					<div className="flex size-11 items-center justify-center rounded-2xl bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground shadow-lg shadow-black/10">
-						Æ
-					</div>
 					<div className="min-w-0">
-						{/* <p className="truncate text-base font-semibold tracking-tight text-sidebar-foreground">ÆRIA Hub</p> */}
-						{/* <p className="text-[11px] uppercase tracking-[0.28em] text-sidebar-foreground/55">{t("ui.travelCrm", "Travel CRM")}</p> */}
 						<Image
-							src="/branding/aeria-hub-white-horizontal.svg"
+							src="/branding/aeria-hub-logo-white-horizontal.svg"
 							alt="ÆRIA Hub Logo"
 							width={100}
 							height={100}

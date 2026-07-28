@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="1000"><metadata><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><rdf:Description><dc:creator>RealFaviconGenerator</dc:creator><dc:source>https://realfavicongenerator.net</dc:source></rdf:Description></rdf:RDF></metadata><style>
+    #light-icon {
+      display: inline;
+    }
+    #dark-icon {
+      display: none;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      #light-icon {
+        display: none;
+      }
+      #dark-icon {
+        display: inline;
+      }
+    }
+  </style><g id="light-icon"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="1000"><g><g transform="matrix(11.492931846914146,0,0,11.492931846914146,5.684341886080802e-14,39.70807953108846)"><svg xmlns="http://www.w3.org/2000/svg" id="Layer_1" viewBox="0 0 87.01 80.1" width="87.01" height="80.1"><defs><style>.cls-1{stroke:#000;stroke-miterlimit:10;}.cls-2{fill:#e2a13f;}</style></defs><rect class="cls-2" x="10.16" y="6.55" width="67" height="67" rx="10.66" ry="10.66"></rect><path class="cls-1" d="m53.75,76.78v-34.47h25.07v-4.51h-25.09v-5.54h.02V3.32h29.85V.5h-42.24L.82,79.6h3.51l12.6-24.32h24.09v24.32h45.49v-2.82h-32.77,0Zm-12.72-24.32h-22.68L41.03,8.84v43.62Z"></path></svg></g></g></svg></g><g id="dark-icon"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="1000"><g><g transform="matrix(11.492931846914146,0,0,11.492931846914146,5.684341886080802e-14,39.70807953108846)"><svg xmlns="http://www.w3.org/2000/svg" id="Layer_1" viewBox="0 0 87.01 80.1" width="87.01" height="80.1"><defs><style>.cls-1{fill:#e2a13f;}.cls-2{fill:#fff;stroke:#fff;stroke-miterlimit:10;}</style></defs><rect class="cls-1" x="10.16" y="6.55" width="67" height="67" rx="10.66" ry="10.66"></rect><path class="cls-2" d="m53.75,76.78v-34.47h25.07v-4.51h-25.09v-5.54h.02V3.32h29.85V.5h-42.24L.82,79.6h3.51l12.6-24.32h24.09v24.32h45.49v-2.82h-32.77,0Zm-12.72-24.32h-22.68L41.03,8.84v43.62Z"></path></svg></g></g></svg></g></svg>

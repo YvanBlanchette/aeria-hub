@@ -18,7 +18,7 @@ export async function GET(request) {
 	const cookieState = request.cookies.get("aeria_google_oauth_state")?.value;
 
 	if (!code || !state || !cookieState || state !== cookieState) {
-		return NextResponse.redirect(new URL("/calendar?google=state_error", request.url));
+		return NextResponse.redirect(new URL("/settings?google=state_error", request.url));
 	}
 
 	try {
@@ -26,10 +26,10 @@ export async function GET(request) {
 		const tokenPayload = await exchangeCodeForTokens(code, origin);
 		await upsertGoogleConnection(session.user.id, tokenPayload);
 
-		const response = NextResponse.redirect(new URL("/calendar?google=connected", request.url));
+		const response = NextResponse.redirect(new URL("/settings?google=connected", request.url));
 		response.cookies.set("aeria_google_oauth_state", "", { maxAge: 0, path: "/" });
 		return response;
 	} catch {
-		return NextResponse.redirect(new URL("/calendar?google=connect_error", request.url));
+		return NextResponse.redirect(new URL("/settings?google=connect_error", request.url));
 	}
 }

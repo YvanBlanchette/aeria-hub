@@ -10,6 +10,7 @@ export async function disconnectGoogleCalendar() {
 	const user = await requireUser();
 	await prisma.googleCalendarConnection.deleteMany({ where: { userId: user.id } });
 	revalidatePath("/calendar");
+	revalidatePath("/settings");
 }
 
 export async function syncGoogleCalendar() {
@@ -17,4 +18,5 @@ export async function syncGoogleCalendar() {
 	const events = await buildCrmCalendarEvents();
 	await syncEventsToGoogleCalendar(user.id, events);
 	revalidatePath("/calendar");
+	revalidatePath("/settings");
 }

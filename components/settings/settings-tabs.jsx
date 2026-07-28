@@ -31,8 +31,9 @@ import { InviteAgentDialog } from "@/components/settings/invite-agent-dialog";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/components/i18n/locale-provider";
+import { disconnectGoogleCalendar, syncGoogleCalendar } from "@/app/(admin)/calendar/actions";
 
-export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
+export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary, googleCalendarConnection, googleStatus }) {
 	const { t } = useLocale();
 
 	const quickLinks = [
@@ -145,6 +146,55 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 				value="system"
 				className="space-y-4 pt-4"
 			>
+				<Card>
+					<CardHeader>
+						<CardTitle>{t("calendar.google.title", "Google Calendar")}</CardTitle>
+						<CardDescription>
+							{t("calendar.google.notConnected", "Connect Google Calendar to mirror important CRM dates into your primary calendar.")}
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="flex flex-wrap items-center gap-3">
+						{googleCalendarConnection ? (
+							<>
+								<p className="text-sm text-muted-foreground">
+									{t("calendar.google.connectedAs", "Connected as")} {googleCalendarConnection.googleEmail || user.email}
+								</p>
+								<form action={syncGoogleCalendar}>
+									<Button type="submit">{t("calendar.google.sync", "Sync CRM events to Google")}</Button>
+								</form>
+								<form action={disconnectGoogleCalendar}>
+									<Button
+										type="submit"
+										variant="outline"
+									>
+										{t("calendar.google.disconnect", "Disconnect")}
+									</Button>
+								</form>
+								{googleCalendarConnection.lastSyncAt && (
+									<p className="text-xs text-muted-foreground">
+										{t("calendar.google.lastSync", "Last sync")}: {formatDate(googleCalendarConnection.lastSyncAt)}
+									</p>
+								)}
+								{googleCalendarConnection.lastSyncError && <p className="text-xs text-destructive">{googleCalendarConnection.lastSyncError}</p>}
+							</>
+						) : (
+							<Button asChild>
+								<a href="/api/google-calendar/connect">{t("calendar.google.connect", "Connect Google Calendar")}</a>
+							</Button>
+						)}
+
+						{googleStatus === "connected" && <p className="text-sm text-emerald-600">Google Calendar connected.</p>}
+						{googleStatus === "connect_error" && (
+							<p className="text-sm text-destructive">Google connection failed. Verify OAuth credentials and redirect URI.</p>
+						)}
+						{googleStatus === "state_error" && <p className="text-sm text-destructive">Google OAuth state mismatch. Try again.</p>}
+
+						<p className="text-xs text-muted-foreground">
+							{t("calendar.google.cronHint", "For automatic daily sync, call /api/cron/google-calendar-sync with Authorization: Bearer CRON_SECRET.")}
+						</p>
+					</CardContent>
+				</Card>
+
 				<Card>
 					<CardHeader>
 						<CardTitle>{t("settings.language.title", "Language")}</CardTitle>

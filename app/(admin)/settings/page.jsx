@@ -8,8 +8,9 @@ export const metadata = {
 	title: "Settings — ÆRIA Hub",
 };
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }) {
 	const sessionUser = await requireUser();
+	const params = (await searchParams) || {};
 	const now = new Date();
 	const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 	const startOfMonth = new Date(now);
@@ -19,6 +20,11 @@ export default async function SettingsPage() {
 	const user = await prisma.user.findUnique({
 		where: { id: sessionUser.id },
 		select: { id: true, name: true, email: true, role: true, avatarUrl: true },
+	});
+
+	const googleCalendarConnection = await prisma.googleCalendarConnection.findUnique({
+		where: { userId: sessionUser.id },
+		select: { googleEmail: true, lastSyncAt: true, lastSyncError: true },
 	});
 
 	const isAdmin = user.role === "ADMIN";
@@ -119,6 +125,8 @@ export default async function SettingsPage() {
 				isAdmin={isAdmin}
 				teamUsers={teamUsers}
 				workspaceSummary={workspaceSummary}
+				googleCalendarConnection={googleCalendarConnection}
+				googleStatus={typeof params.google === "string" ? params.google : null}
 			/>
 		</div>
 	);

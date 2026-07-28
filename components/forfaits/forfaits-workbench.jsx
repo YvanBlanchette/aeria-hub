@@ -2305,7 +2305,7 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 								<SmartSelect
 									value={segment.airline}
 									onValueChange={(value) => onUpdate(direction, index, "airline", value)}
-									options={airlineSelectOptions}
+									options={airlineOptions}
 									placeholder={tr(locale, "Selectionner", "Select")}
 									searchPlaceholder={tr(locale, "Rechercher compagnie...", "Search airline...")}
 									emptyMessage={tr(locale, "Aucune compagnie trouvee.", "No airline found.")}
@@ -2317,7 +2317,7 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 								<SmartSelect
 									value={segment.operator}
 									onValueChange={(value) => onUpdate(direction, index, "operator", value)}
-									options={airlineSelectOptions}
+									options={airlineOptions}
 									placeholder={tr(locale, "Selectionner", "Select")}
 									searchPlaceholder={tr(locale, "Rechercher operateur...", "Search operator...")}
 									emptyMessage={tr(locale, "Aucun operateur trouve.", "No operator found.")}

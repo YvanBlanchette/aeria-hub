@@ -2398,7 +2398,18 @@ function SmartSelect({
 }) {
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
-	const list = useMemo(() => (Array.isArray(options) ? options : []), [options]);
+	const list = useMemo(() => {
+		return (Array.isArray(options) ? options : [])
+			.map((option) => {
+				if (typeof option === "string") {
+					return { value: option, label: option };
+				}
+				const value = String(option?.value ?? option?.label ?? "");
+				const label = String(option?.label ?? option?.value ?? "");
+				return { ...option, value, label };
+			})
+			.filter((option) => option.value && option.label);
+	}, [options]);
 	const useSearch = list.length > threshold;
 
 	const selected = useMemo(() => list.find((option) => option.value === value) || null, [list, value]);

@@ -1,26 +1,24 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { ForfaitsWorkbench } from "@/components/forfaits/forfaits-workbench";
-import airportsData from "@/data/airports.json";
-import airlinesData from "@/data/airlines.json";
-import cruiseVendorsData from "@/data/cruise-vendors.json";
-import cruiseShipsData from "@/data/cruise-ships.json";
-import cruisePortsData from "@/data/cruise-ports.json";
 
 export const metadata = {
 	title: "Forfaits - AERIA Hub",
 };
 
-function extractIataAirports() {
-	const rows = Array.isArray(airportsData?.airports) ? airportsData.airports : [];
-	const normalized = rows
+function quoteIdent(value) {
+	return `"${String(value).replace(/"/g, '""')}"`;
+}
+
+function normalizeAndSortAirports(rows) {
+	const normalized = (Array.isArray(rows) ? rows : [])
 		.map((row) => ({
-			code: String(row?.code || "")
+			code: String(row?.code ?? "")
 				.toUpperCase()
 				.trim(),
-			name: String(row?.name || "").trim(),
-			city: String(row?.city || "").trim(),
-			country: String(row?.country || "")
+			name: String(row?.name ?? "").trim(),
+			city: String(row?.city ?? "").trim(),
+			country: String(row?.country ?? "")
 				.toUpperCase()
 				.trim(),
 		}))
@@ -46,39 +44,63 @@ function extractIataAirports() {
 	});
 }
 
-function extractIataAirlines() {
-	const set = new Set();
-	const rows = Array.isArray(airlinesData) ? airlinesData : [];
-
-	for (const row of rows) {
-		const names = String(row?.Statistics?.Carriers?.Names || "").split(",");
-		for (const name of names) {
-			const clean = name.trim();
-			if (clean) set.add(clean);
-		}
+function pickColumn(columnMap, aliases) {
+	for (const alias of aliases) {
+		const found = columnMap.get(alias.toLowerCase());
+		if (found) return found;
 	}
-
-	return Array.from(set).sort((a, b) => a.localeCompare(b, "fr"));
+	return null;
 }
 
-function extractCruiseOptions(group) {
-	const rows = Object.values(group || {});
-	const dedup = new Map();
+async function loadAirportsFromDb() {
+	const tableRows = await prisma.$queryRawUnsafe(`
+		SELECT table_schema, table_name, column_name
+		FROM information_schema.columns
+		WHERE lower(table_name) IN ('airports', 'airport')
+		AND table_schema NOT IN ('pg_catalog', 'information_schema')
+	`);
 
-	for (const row of rows) {
-		const value = String(row?.value || "").trim();
-		const label = String(row?.text || row?.value || "").trim();
-		if (!value || !label) continue;
-		if (!dedup.has(value)) {
-			dedup.set(value, {
-				id: String(row?.id || value),
-				value,
-				label,
-			});
-		}
+	if (!Array.isArray(tableRows) || tableRows.length === 0) {
+		return [];
 	}
 
-	return Array.from(dedup.values()).sort((a, b) => a.label.localeCompare(b.label, "fr"));
+	const grouped = new Map();
+	for (const row of tableRows) {
+		const schema = String(row.table_schema || "");
+		const table = String(row.table_name || "");
+		const column = String(row.column_name || "");
+		if (!schema || !table || !column) continue;
+		const key = `${schema}.${table}`;
+		if (!grouped.has(key)) {
+			grouped.set(key, { schema, table, columns: new Set() });
+		}
+		grouped.get(key).columns.add(column);
+	}
+
+	const candidates = Array.from(grouped.values());
+	if (candidates.length === 0) return [];
+
+	const selected = candidates.find((item) => item.schema === "public") || candidates[0];
+	const columnMap = new Map(Array.from(selected.columns).map((column) => [column.toLowerCase(), column]));
+
+	const codeCol = pickColumn(columnMap, ["code", "iata", "iata_code", "airport_code", "code_iata", "iataairport"]);
+	const nameCol = pickColumn(columnMap, ["name", "airport", "airport_name", "full_name", "label", "nom", "nom_aeroport"]);
+	if (!codeCol || !nameCol) return [];
+
+	const cityCol = pickColumn(columnMap, ["city", "ville", "city_name", "municipality", "commune"]);
+	const countryCol = pickColumn(columnMap, ["country", "pays", "country_code", "iso_country", "country_iso"]);
+
+	const selectItems = [
+		`${quoteIdent(codeCol)} AS code`,
+		`${quoteIdent(nameCol)} AS name`,
+		cityCol ? `${quoteIdent(cityCol)} AS city` : `NULL::text AS city`,
+		countryCol ? `${quoteIdent(countryCol)} AS country` : `NULL::text AS country`,
+	].join(", ");
+
+	const tableRef = `${quoteIdent(selected.schema)}.${quoteIdent(selected.table)}`;
+	const rows = await prisma.$queryRawUnsafe(`SELECT ${selectItems} FROM ${tableRef}`);
+
+	return normalizeAndSortAirports(rows);
 }
 
 async function loadCruiseCatalogFromDb() {
@@ -87,8 +109,6 @@ async function loadCruiseCatalogFromDb() {
 		orderBy: { name: "asc" },
 		select: { id: true, name: true },
 	});
-
-	if (lineRows.length === 0) return null;
 
 	const shipRows = prisma.cruiseShip?.findMany
 		? await prisma.cruiseShip.findMany({
@@ -139,21 +159,8 @@ async function loadCruiseCatalogFromDb() {
 
 export default async function ForfaitsPage() {
 	const user = await requireUser();
-	const iataAirports = extractIataAirports();
-	const iataAirlines = extractIataAirlines();
 
-	let cruiseCatalog = null;
-	try {
-		cruiseCatalog = await loadCruiseCatalogFromDb();
-	} catch {
-		cruiseCatalog = null;
-	}
-
-	const cruiseLineOptions = cruiseCatalog?.cruiseLineOptions || extractCruiseOptions(cruiseVendorsData?.v);
-	const cruiseShipOptions = cruiseCatalog?.cruiseShipOptions || extractCruiseOptions(cruiseShipsData?.s);
-	const cruisePortOptions = cruiseCatalog?.cruisePortOptions || extractCruiseOptions(cruisePortsData?.p);
-
-	const [clients, trips, quotes, airlineSuppliers] = await Promise.all([
+	const [clients, trips, quotes, airlineSuppliers, iataAirports, cruiseCatalog] = await Promise.all([
 		prisma.client.findMany({
 			orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
 			select: { id: true, firstName: true, lastName: true },
@@ -196,7 +203,15 @@ export default async function ForfaitsPage() {
 			orderBy: { name: "asc" },
 			select: { id: true, name: true },
 		}),
+		loadAirportsFromDb().catch(() => []),
+		loadCruiseCatalogFromDb().catch(() => ({
+			cruiseLineOptions: [],
+			cruiseShipOptions: [],
+			cruisePortOptions: [],
+		})),
 	]);
+
+	const iataAirlines = airlineSuppliers.map((row) => row.name).filter(Boolean);
 
 	const clientOptions = clients.map((c) => ({
 		id: c.id,
@@ -238,9 +253,9 @@ export default async function ForfaitsPage() {
 			airlineSuppliers={airlineSuppliers}
 			iataAirports={iataAirports}
 			iataAirlines={iataAirlines}
-			cruiseLineOptions={cruiseLineOptions}
-			cruiseShipOptions={cruiseShipOptions}
-			cruisePortOptions={cruisePortOptions}
+			cruiseLineOptions={cruiseCatalog.cruiseLineOptions}
+			cruiseShipOptions={cruiseCatalog.cruiseShipOptions}
+			cruisePortOptions={cruiseCatalog.cruisePortOptions}
 		/>
 	);
 }

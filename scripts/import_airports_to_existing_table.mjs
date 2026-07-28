@@ -35,12 +35,12 @@ async function loadTableColumns(client) {
 	const result = await client.query(`
 		SELECT table_schema, table_name, column_name
 		FROM information_schema.columns
-		WHERE lower(table_name) = 'airports'
+		WHERE lower(table_name) IN ('airports', 'airport')
 		AND table_schema NOT IN ('pg_catalog', 'information_schema')
 	`);
 
 	if (result.rows.length === 0) {
-		throw new Error("No table named 'airports' was found in this database.");
+		throw new Error("No table named 'airports' or 'airport' was found in this database.");
 	}
 
 	const grouped = new Map();

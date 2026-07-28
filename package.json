@@ -12,6 +12,7 @@
 		"db:push": "prisma db push",
 		"db:seed": "node prisma/seed.js",
 		"db:import-cruise-catalog": "node scripts/import_cruise_catalog_to_db.mjs",
+		"db:import-airlines": "node scripts/import_airlines_to_db.mjs",
 		"db:import-airports": "node scripts/import_airports_to_existing_table.mjs",
 		"db:studio": "prisma studio",
 		"scrape:sync-db": "node scripts/sync_cruisemapper_to_db.mjs"

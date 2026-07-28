@@ -559,6 +559,10 @@ export function ForfaitsWorkbench({
 		return trips.filter((trip) => trip.clientId === draft.clientId);
 	}, [draft.clientId, trips]);
 
+	const clientSelectOptions = useMemo(() => clients.map((client) => ({ value: client.id, label: client.name })), [clients]);
+
+	const tripSelectOptions = useMemo(() => filteredTrips.map((trip) => ({ value: trip.id, label: `${trip.name} - ${trip.clientName}` })), [filteredTrips]);
+
 	const selectedTrip = useMemo(() => {
 		return trips.find((trip) => trip.id === draft.tripId) || null;
 	}, [draft.tripId, trips]);
@@ -568,6 +572,8 @@ export function ForfaitsWorkbench({
 		const merged = [...fromSuppliers, ...(Array.isArray(iataAirlines) ? iataAirlines : [])];
 		return Array.from(new Set(merged.map((name) => String(name).trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, "fr"));
 	}, [airlineSuppliers, iataAirlines]);
+
+	const airlineSelectOptions = useMemo(() => airlineOptions.map((option) => ({ value: option, label: option })), [airlineOptions]);
 
 	const airportOptions = useMemo(() => {
 		const list = Array.isArray(iataAirports) ? iataAirports : [];
@@ -1121,48 +1127,35 @@ export function ForfaitsWorkbench({
 					</div>
 					<div className="space-y-2">
 						<Label htmlFor="clientId">{tr(locale, "Client", "Client")}</Label>
-						<select
+						<SmartSelect
 							id="clientId"
 							value={draft.clientId}
-							onChange={(event) => {
-								const clientId = event.target.value;
+							onValueChange={(clientId) => {
 								setDraft((prev) => ({
 									...prev,
 									clientId,
 									tripId: prev.tripId && trips.some((trip) => trip.id === prev.tripId && trip.clientId === clientId) ? prev.tripId : "",
 								}));
 							}}
-							className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-						>
-							<option value="">{tr(locale, "Aucun client", "No client")}</option>
-							{clients.map((client) => (
-								<option
-									key={client.id}
-									value={client.id}
-								>
-									{client.name}
-								</option>
-							))}
-						</select>
+							options={clientSelectOptions}
+							placeholder={tr(locale, "Aucun client", "No client")}
+							searchPlaceholder={tr(locale, "Rechercher client...", "Search client...")}
+							emptyMessage={tr(locale, "Aucun client trouve.", "No client found.")}
+							locale={locale}
+						/>
 					</div>
 					<div className="space-y-2">
 						<Label htmlFor="tripId">{tr(locale, "Voyage", "Trip")}</Label>
-						<select
+						<SmartSelect
 							id="tripId"
 							value={draft.tripId}
-							onChange={(event) => setField("tripId", event.target.value)}
-							className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-						>
-							<option value="">{tr(locale, "Aucun voyage", "No trip")}</option>
-							{filteredTrips.map((trip) => (
-								<option
-									key={trip.id}
-									value={trip.id}
-								>
-									{trip.name} - {trip.clientName}
-								</option>
-							))}
-						</select>
+							onValueChange={(value) => setField("tripId", value)}
+							options={tripSelectOptions}
+							placeholder={tr(locale, "Aucun voyage", "No trip")}
+							searchPlaceholder={tr(locale, "Rechercher voyage...", "Search trip...")}
+							emptyMessage={tr(locale, "Aucun voyage trouve.", "No trip found.")}
+							locale={locale}
+						/>
 					</div>
 				</CardContent>
 			</Card>
@@ -1357,22 +1350,22 @@ export function ForfaitsWorkbench({
 										/>
 									</Field>
 								))}
-								<Field
-									label={tr(locale, "Notes croisiere", "Cruise notes")}
-									className="md:col-span-2"
-								>
-									<Textarea
-										rows={4}
-										value={draft.croisiereNotes}
-										onChange={(e) => setField("croisiereNotes", e.target.value)}
-										placeholder={tr(
-											locale,
-											"Ex: Cette croisiere inclut les repas principaux, spectacles et taxes portuaires.",
-											"Example: This cruise includes main meals, shows, and port taxes.",
-										)}
-									/>
-								</Field>
 							</div>
+							<Field
+								label={tr(locale, "Notes croisiere", "Cruise notes")}
+								className="md:col-span-2"
+							>
+								<Textarea
+									rows={4}
+									value={draft.croisiereNotes}
+									onChange={(e) => setField("croisiereNotes", e.target.value)}
+									placeholder={tr(
+										locale,
+										"Ex: Cette croisiere inclut les repas principaux, spectacles et taxes portuaires.",
+										"Example: This cruise includes main meals, shows, and port taxes.",
+									)}
+								/>
+							</Field>
 						</CardContent>
 					</Card>
 				</div>
@@ -2309,39 +2302,27 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 
 						<div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
 							<Field label={tr(locale, "Compagnie aerienne", "Airline")}>
-								<select
+								<SmartSelect
 									value={segment.airline}
-									onChange={(e) => onUpdate(direction, index, "airline", e.target.value)}
-									className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
-								>
-									<option value="">{tr(locale, "Selectionner", "Select")}</option>
-									{airlineOptions.map((option) => (
-										<option
-											key={`airline-${option}`}
-											value={option}
-										>
-											{option}
-										</option>
-									))}
-								</select>
+									onValueChange={(value) => onUpdate(direction, index, "airline", value)}
+									options={airlineSelectOptions}
+									placeholder={tr(locale, "Selectionner", "Select")}
+									searchPlaceholder={tr(locale, "Rechercher compagnie...", "Search airline...")}
+									emptyMessage={tr(locale, "Aucune compagnie trouvee.", "No airline found.")}
+									locale={locale}
+								/>
 							</Field>
 
 							<Field label={tr(locale, "Operateur", "Operator")}>
-								<select
+								<SmartSelect
 									value={segment.operator}
-									onChange={(e) => onUpdate(direction, index, "operator", e.target.value)}
-									className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
-								>
-									<option value="">{tr(locale, "Selectionner", "Select")}</option>
-									{airlineOptions.map((option) => (
-										<option
-											key={`operator-${option}`}
-											value={option}
-										>
-											{option}
-										</option>
-									))}
-								</select>
+									onValueChange={(value) => onUpdate(direction, index, "operator", value)}
+									options={airlineSelectOptions}
+									placeholder={tr(locale, "Selectionner", "Select")}
+									searchPlaceholder={tr(locale, "Rechercher operateur...", "Search operator...")}
+									emptyMessage={tr(locale, "Aucun operateur trouve.", "No operator found.")}
+									locale={locale}
+								/>
 							</Field>
 
 							<Field label={tr(locale, "Aeroport depart (IATA)", "Departure airport (IATA)")}>
@@ -2399,6 +2380,130 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 				<p className="text-xs text-muted-foreground">{tr(locale, "Aucune liste d'aeroports IATA chargee.", "No IATA airport list loaded.")}</p>
 			)}
 		</div>
+	);
+}
+
+function SmartSelect({
+	id,
+	value,
+	onValueChange,
+	options,
+	placeholder,
+	searchPlaceholder,
+	emptyMessage,
+	locale = "fr",
+	className,
+	disabled = false,
+	threshold = 10,
+}) {
+	const [open, setOpen] = useState(false);
+	const [query, setQuery] = useState("");
+	const list = useMemo(() => (Array.isArray(options) ? options : []), [options]);
+	const useSearch = list.length > threshold;
+
+	const selected = useMemo(() => list.find((option) => option.value === value) || null, [list, value]);
+
+	const filtered = useMemo(() => {
+		if (!useSearch) return list;
+		if (!query.trim()) return list.slice(0, 150);
+		const q = query.trim().toLowerCase();
+		return list.filter((option) => option.label.toLowerCase().includes(q)).slice(0, 150);
+	}, [list, query, useSearch]);
+
+	if (!useSearch) {
+		return (
+			<select
+				id={id}
+				value={value}
+				onChange={(event) => onValueChange(event.target.value)}
+				disabled={disabled}
+				className={cn(
+					"flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+					className,
+				)}
+			>
+				<option value="">{placeholder}</option>
+				{list.map((option) => (
+					<option
+						key={`${id || "smart"}-${option.value}`}
+						value={option.value}
+					>
+						{option.label}
+					</option>
+				))}
+			</select>
+		);
+	}
+
+	return (
+		<Popover
+			open={open}
+			onOpenChange={(next) => {
+				if (!disabled) setOpen(next);
+			}}
+		>
+			<PopoverTrigger asChild>
+				<Button
+					type="button"
+					variant="outline"
+					role="combobox"
+					disabled={disabled}
+					className={cn("h-8 w-full justify-between rounded-lg border-input bg-transparent px-3 py-1 text-sm font-normal", className)}
+				>
+					<span className={cn("truncate text-left", !value && "text-muted-foreground")}>{selected?.label || placeholder}</span>
+					<ChevronDown className="size-4 shrink-0 opacity-60" />
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent
+				align="start"
+				className="w-(--radix-popover-trigger-width) rounded-xl border-border/70 p-0 shadow-xl"
+			>
+				<div className="p-2">
+					<Input
+						autoFocus
+						value={query}
+						onChange={(event) => setQuery(event.target.value)}
+						placeholder={searchPlaceholder || tr(locale, "Rechercher...", "Search...")}
+						className="h-9"
+					/>
+				</div>
+				<div className="max-h-72 overflow-y-auto p-1 pt-0">
+					<button
+						type="button"
+						onClick={() => {
+							onValueChange("");
+							setOpen(false);
+							setQuery("");
+						}}
+						className={cn("flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm hover:bg-muted/60", !value && "bg-muted/70")}
+					>
+						<Check className={cn("size-4 shrink-0", !value ? "opacity-100" : "opacity-0")} />
+						<span className="truncate">{placeholder}</span>
+					</button>
+					{filtered.length === 0 ? (
+						<p className="p-3 text-sm text-muted-foreground">{emptyMessage || tr(locale, "Aucune option trouvee.", "No option found.")}</p>
+					) : null}
+					{filtered.map((option) => {
+						const isSelected = value === option.value;
+						return (
+							<button
+								key={`${id || "smart"}-${option.value}`}
+								type="button"
+								onClick={() => {
+									onValueChange(option.value);
+									setOpen(false);
+									setQuery("");
+								}}
+								className={cn("flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm hover:bg-muted/60", isSelected && "bg-muted/70")}
+							>
+								<Check className={cn("size-4 shrink-0", isSelected ? "opacity-100" : "opacity-0")} />
+								<span className="flex-1 truncate">{option.label}</span>
+							</button>
+						);
+					})}
+				</div>
+			</PopoverContent>
+		</Popover>
 	);
 }
 

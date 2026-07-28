@@ -33,26 +33,68 @@ async function readAirportsJson() {
 
 async function loadTableColumns(client) {
 	const result = await client.query(`
-		SELECT column_name
+		SELECT table_schema, table_name, column_name
 		FROM information_schema.columns
-		WHERE table_schema = 'public' AND table_name = 'airports'
+		WHERE lower(table_name) = 'airports'
+		AND table_schema NOT IN ('pg_catalog', 'information_schema')
 	`);
-	return new Set(result.rows.map((r) => r.column_name));
+
+	if (result.rows.length === 0) {
+		throw new Error("No table named 'airports' was found in this database.");
+	}
+
+	const grouped = new Map();
+	for (const row of result.rows) {
+		const key = `${row.table_schema}.${row.table_name}`;
+		if (!grouped.has(key)) {
+			grouped.set(key, {
+				schema: row.table_schema,
+				table: row.table_name,
+				columns: new Set(),
+			});
+		}
+		grouped.get(key).columns.add(row.column_name);
+	}
+
+	const candidates = Array.from(grouped.values());
+	const selected = candidates.find((item) => item.schema === "public") || candidates[0];
+
+	return {
+		schema: selected.schema,
+		table: selected.table,
+		columns: selected.columns,
+	};
 }
 
 function resolveColumns(columnsSet) {
-	const codeCol = columnsSet.has("code") ? "code" : columnsSet.has("iata") ? "iata" : null;
-	const nameCol = columnsSet.has("name") ? "name" : null;
-	const cityCol = columnsSet.has("city") ? "city" : null;
-	const countryCol = columnsSet.has("country") ? "country" : null;
-	const latCol = columnsSet.has("lat") ? "lat" : columnsSet.has("latitude") ? "latitude" : null;
-	const lonCol = columnsSet.has("lon") ? "lon" : columnsSet.has("lng") ? "lng" : columnsSet.has("longitude") ? "longitude" : null;
+	const byLower = new Map(Array.from(columnsSet).map((col) => [String(col).toLowerCase(), col]));
+	const pick = (...aliases) => {
+		for (const alias of aliases) {
+			const found = byLower.get(alias.toLowerCase());
+			if (found) return found;
+		}
+		return null;
+	};
+
+	const codeCol = pick("code", "iata", "iata_code", "airport_code", "code_iata", "iataairport");
+	const nameCol = pick("name", "airport", "airport_name", "full_name", "label", "nom", "nom_aeroport");
+	const cityCol = pick("city", "ville", "city_name", "municipality", "commune");
+	const countryCol = pick("country", "pays", "country_code", "iso_country", "country_iso");
+	const latCol = pick("lat", "latitude", "y");
+	const lonCol = pick("lon", "lng", "longitude", "x");
 
 	if (!codeCol || !nameCol) {
-		throw new Error("Table public.airports must contain at least code (or iata) and name columns.");
+		const list = Array.from(columnsSet)
+			.sort((a, b) => String(a).localeCompare(String(b)))
+			.join(", ");
+		throw new Error(`Airports table is missing required columns. Resolved code=${codeCol || "none"}, name=${nameCol || "none"}. Available columns: [${list}]`);
 	}
 
 	return { codeCol, nameCol, cityCol, countryCol, latCol, lonCol };
+}
+
+function quoteIdent(value) {
+	return `"${String(value).replace(/"/g, '""')}"`;
 }
 
 async function importAirports() {
@@ -73,8 +115,14 @@ async function importAirports() {
 	let updated = 0;
 
 	try {
-		const columnsSet = await loadTableColumns(client);
-		const cols = resolveColumns(columnsSet);
+		const tableInfo = await loadTableColumns(client);
+		const cols = resolveColumns(tableInfo.columns);
+		const tableRef = `${quoteIdent(tableInfo.schema)}.${quoteIdent(tableInfo.table)}`;
+
+		console.log(`Using table ${tableInfo.schema}.${tableInfo.table}`);
+		console.log(
+			`Resolved columns: code=${cols.codeCol}, name=${cols.nameCol}, city=${cols.cityCol || "none"}, country=${cols.countryCol || "none"}, lat=${cols.latCol || "none"}, lon=${cols.lonCol || "none"}`,
+		);
 
 		for (const airport of airports) {
 			const payload = {};
@@ -94,9 +142,9 @@ async function importAirports() {
 				const updateValues = mutableFields.map((field) => payload[field]);
 				const updateCodeParam = `$${updateValues.length + 1}`;
 				const updateSql = `
-					UPDATE public.airports
+					UPDATE ${tableRef}
 					SET ${updateSet}
-					WHERE UPPER(TRIM(COALESCE(\"${cols.codeCol}\", ''))) = ${updateCodeParam}
+					WHERE UPPER(TRIM(COALESCE(CAST(\"${cols.codeCol}\" AS TEXT), ''))) = ${updateCodeParam}
 				`;
 
 				const updateResult = await client.query(updateSql, [...updateValues, airport.code]);
@@ -109,7 +157,7 @@ async function importAirports() {
 			const insertValues = fields.map((field) => payload[field]);
 			const insertPlaceholders = fields.map((_, i) => `$${i + 1}`).join(", ");
 			const insertSql = `
-				INSERT INTO public.airports (${fields.map((f) => `\"${f}\"`).join(", ")})
+				INSERT INTO ${tableRef} (${fields.map((f) => `\"${f}\"`).join(", ")})
 				VALUES (${insertPlaceholders})
 			`;
 

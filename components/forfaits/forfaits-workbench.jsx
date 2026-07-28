@@ -979,11 +979,14 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects, airlineSupp
 	return (
 		<div className="space-y-6">
 			{/* HERO */}
-			<div className="rounded-3xl border border-border/70 bg-card/85 p-5 shadow-sm backdrop-blur-sm sm:p-6">
-				<div className="flex flex-wrap items-start justify-between gap-3">
+			<div className="rounded-3xl border border-border/70 bg-card/85 p-5 shadow-sm backdrop-blur-sm sm:p-6"></div>
+
+			{/* CRM CONTEXT */}
+			<Card>
+				<CardHeader className="flex flex-wrap items-start justify-between gap-3">
 					<div className="max-w-3xl space-y-2">
 						<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">Forfaits engine</p>
-						<h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem]">Calculateur de forfaits croisiere</h1>
+						<CardTitle className="text-2xl font-semibold tracking-tight sm:text-[2rem]">Calculateur de forfaits croisiere</CardTitle>
 						<p className="text-sm leading-6 text-muted-foreground">
 							Outil integree de planification de forfaits croisière, suivi de marge et sauvegarde de dossiers.
 						</p>
@@ -998,14 +1001,6 @@ export function ForfaitsWorkbench({ clients, trips, initialProjects, airlineSupp
 							<p className="text-lg font-semibold">{summary.margeMoy.toFixed(1)}%</p>
 						</div>
 					</div>
-				</div>
-			</div>
-
-			{/* CRM CONTEXT */}
-			<Card>
-				<CardHeader>
-					<CardTitle>Contexte CRM</CardTitle>
-					<CardDescription>Associe ton forfait a un client et un voyage existants pour garder le suivi commercial coherent.</CardDescription>
 				</CardHeader>
 				<CardContent className="grid gap-4 md:grid-cols-3">
 					<div className="space-y-2">

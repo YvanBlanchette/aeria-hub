@@ -1315,21 +1315,6 @@ export function ForfaitsWorkbench({
 									))}
 								</select>
 							</Field>
-							<Field
-								label={tr(locale, "Notes croisiere (affichees au PDF)", "Cruise notes (shown in PDF)")}
-								className="md:col-span-2"
-							>
-								<Textarea
-									rows={4}
-									value={draft.croisiereNotes}
-									onChange={(e) => setField("croisiereNotes", e.target.value)}
-									placeholder={tr(
-										locale,
-										"Ex: Cette croisiere inclut les repas principaux, spectacles et taxes portuaires.",
-										"Example: This cruise includes main meals, shows, and port taxes.",
-									)}
-								/>
-							</Field>
 						</CardContent>
 					</Card>
 
@@ -1372,6 +1357,21 @@ export function ForfaitsWorkbench({
 										/>
 									</Field>
 								))}
+								<Field
+									label={tr(locale, "Notes croisiere", "Cruise notes")}
+									className="md:col-span-2"
+								>
+									<Textarea
+										rows={4}
+										value={draft.croisiereNotes}
+										onChange={(e) => setField("croisiereNotes", e.target.value)}
+										placeholder={tr(
+											locale,
+											"Ex: Cette croisiere inclut les repas principaux, spectacles et taxes portuaires.",
+											"Example: This cruise includes main meals, shows, and port taxes.",
+										)}
+									/>
+								</Field>
 							</div>
 						</CardContent>
 					</Card>

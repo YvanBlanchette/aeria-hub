@@ -21,7 +21,7 @@ export function Sidebar() {
 							alt="ÆRIA Hub Logo"
 							width={100}
 							height={100}
-							className="h-24 w-auto"
+							className="h-18 w-auto"
 						/>
 					</div>
 				</Link>

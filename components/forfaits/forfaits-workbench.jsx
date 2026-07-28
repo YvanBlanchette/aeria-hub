@@ -1303,7 +1303,7 @@ export function ForfaitsWorkbench({
 								<select
 									value={String(draft.usdCab)}
 									onChange={(e) => setField("usdCab", e.target.value === "true")}
-									className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
+									className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
 								>
 									{yesNoOptions.map((opt) => (
 										<option
@@ -1382,7 +1382,7 @@ export function ForfaitsWorkbench({
 			{tab === "vols" && (
 				<Card>
 					<CardHeader>
-						<CardTitle>{tr(locale, "Vols et bagages", "Flights and baggage")}</CardTitle>
+						{/* <CardTitle>{tr(locale, "Vols et bagages", "Flights")}</CardTitle> */}
 						<CardDescription>
 							{tr(
 								locale,
@@ -2256,13 +2256,13 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 			<div className="flex items-center justify-between gap-3">
 				<div>
 					<p className="text-sm font-semibold">{title}</p>
-					<p className="text-xs text-muted-foreground">
+					{/* <p className="text-xs text-muted-foreground">
 						{tr(
 							locale,
 							"Ajouter un ou plusieurs segments. Duree de vol et escales se calculent automatiquement.",
 							"Add one or more segments. Flight duration and layovers are calculated automatically.",
 						)}
-					</p>
+					</p> */}
 				</div>
 				<Button
 					type="button"

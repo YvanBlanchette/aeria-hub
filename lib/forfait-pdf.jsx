@@ -89,7 +89,7 @@ function ForfaitDocument({ payload }) {
 				style={styles.page}
 			>
 				<View style={styles.header}>
-					<Text style={styles.title}>Soumission forfait croisiere</Text>
+					<Text style={styles.title}>Devis forfait croisiere</Text>
 					<Text style={styles.subtitle}>AERIA Hub · genere le {dt(new Date())}</Text>
 					<Text style={styles.subtitle}>{draft.projectName || "Projet sans titre"}</Text>
 				</View>

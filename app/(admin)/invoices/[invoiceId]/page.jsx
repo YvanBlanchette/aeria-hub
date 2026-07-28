@@ -9,6 +9,8 @@ import { InvoiceEditDialog } from "@/components/invoices/invoice-edit-dialog";
 import { DeleteInvoiceButton } from "@/components/invoices/delete-invoice-button";
 import { InvoiceLineItemFormDialog } from "@/components/invoices/invoice-line-item-form-dialog";
 import { InvoiceLineItemsTable } from "@/components/invoices/invoice-line-items-table";
+import { LocaleText } from "@/components/i18n/locale-text";
+import { tServer } from "@/lib/i18n-server";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +23,27 @@ const STATUS_VARIANT = {
 	CANCELLED: "destructive",
 };
 
+function statusLabel(status, t) {
+	switch (status) {
+		case "DRAFT":
+			return t("invoices.status.draft", "Draft");
+		case "SENT":
+			return t("invoices.status.sent", "Sent");
+		case "PARTIALLY_PAID":
+			return t("invoices.status.partiallyPaid", "Partially paid");
+		case "PAID":
+			return t("invoices.status.paid", "Paid");
+		case "OVERDUE":
+			return t("invoices.status.overdue", "Overdue");
+		case "CANCELLED":
+			return t("invoices.status.cancelled", "Cancelled");
+		default:
+			return status;
+	}
+}
+
 export default async function InvoiceDetailPage({ params }) {
+	const t = tServer;
 	const { invoiceId } = await params;
 
 	const invoice = await prisma.invoice.findUnique({
@@ -41,10 +63,15 @@ export default async function InvoiceDetailPage({ params }) {
 			<div className="rounded-3xl border border-border/70 bg-card/85 p-5 shadow-sm backdrop-blur-sm sm:p-6">
 				<div className="flex flex-wrap items-start justify-between gap-4">
 					<div className="space-y-2">
-						<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">Invoice record</p>
+						<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
+							<LocaleText
+								messageKey="invoices.detail.kicker"
+								fallback="Invoice record"
+							/>
+						</p>
 						<div className="flex items-center gap-2">
 							<h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem]">{invoice.invoiceNumber}</h1>
-							<Badge variant={STATUS_VARIANT[invoice.status] || "secondary"}>{invoice.status}</Badge>
+							<Badge variant={STATUS_VARIANT[invoice.status] || "secondary"}>{statusLabel(invoice.status, t)}</Badge>
 						</div>
 						<p className="text-sm leading-6 text-muted-foreground">
 							<Link
@@ -77,7 +104,10 @@ export default async function InvoiceDetailPage({ params }) {
 								rel="noopener noreferrer"
 							>
 								<Download className="size-4" />
-								Download PDF
+								<LocaleText
+									messageKey="invoices.detail.downloadPdf"
+									fallback="Download PDF"
+								/>
 							</a>
 						</Button>
 						<InvoiceEditDialog
@@ -85,7 +115,10 @@ export default async function InvoiceDetailPage({ params }) {
 							trigger={
 								<Button variant="outline">
 									<Pencil className="size-4" />
-									Edit
+									<LocaleText
+										messageKey="invoices.detail.edit"
+										fallback="Edit"
+									/>
 								</Button>
 							}
 						/>
@@ -100,23 +133,48 @@ export default async function InvoiceDetailPage({ params }) {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Financial summary</CardTitle>
+					<CardTitle>
+						<LocaleText
+							messageKey="invoices.detail.summary"
+							fallback="Financial summary"
+						/>
+					</CardTitle>
 				</CardHeader>
 				<CardContent className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-4">
 					<div>
-						<dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Issued</dt>
+						<dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+							<LocaleText
+								messageKey="invoices.list.issued"
+								fallback="Issued"
+							/>
+						</dt>
 						<dd className="mt-0.5 text-sm">{formatDate(invoice.issueDate)}</dd>
 					</div>
 					<div>
-						<dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Due</dt>
+						<dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+							<LocaleText
+								messageKey="invoices.list.due"
+								fallback="Due"
+							/>
+						</dt>
 						<dd className="mt-0.5 text-sm">{invoice.dueDate ? formatDate(invoice.dueDate) : "—"}</dd>
 					</div>
 					<div>
-						<dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Paid</dt>
+						<dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+							<LocaleText
+								messageKey="invoices.detail.paid"
+								fallback="Paid"
+							/>
+						</dt>
 						<dd className="mt-0.5 text-sm">{formatCurrency(invoice.amountPaid)}</dd>
 					</div>
 					<div>
-						<dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Balance</dt>
+						<dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+							<LocaleText
+								messageKey="invoices.detail.balance"
+								fallback="Balance"
+							/>
+						</dt>
 						<dd className={cn("mt-0.5 text-sm font-medium", balance > 0 && "text-destructive")}>{formatCurrency(balance)}</dd>
 					</div>
 				</CardContent>
@@ -124,12 +182,22 @@ export default async function InvoiceDetailPage({ params }) {
 
 			<Card>
 				<CardHeader className="flex flex-row items-center justify-between space-y-0">
-					<CardTitle>Line items</CardTitle>
+					<CardTitle>
+						<LocaleText
+							messageKey="invoices.detail.lineItems"
+							fallback="Line items"
+						/>
+					</CardTitle>
 					<InvoiceLineItemFormDialog invoiceId={invoice.id} />
 				</CardHeader>
 				<CardContent className="space-y-3">
 					{invoice.lineItems.length === 0 ? (
-						<p className="text-sm text-muted-foreground">No line items yet.</p>
+						<p className="text-sm text-muted-foreground">
+							<LocaleText
+								messageKey="invoices.detail.noLineItems"
+								fallback="No line items yet."
+							/>
+						</p>
 					) : (
 						<InvoiceLineItemsTable
 							lineItems={invoice.lineItems}
@@ -138,7 +206,7 @@ export default async function InvoiceDetailPage({ params }) {
 					)}
 
 					<div className="flex justify-end border-t border-border pt-3">
-						<p className="text-sm font-medium">Total: {formatCurrency(invoice.amount)}</p>
+						<p className="text-sm font-medium">{t("invoices.detail.total", "Total: {amount}").replace("{amount}", formatCurrency(invoice.amount))}</p>
 					</div>
 				</CardContent>
 			</Card>

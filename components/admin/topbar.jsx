@@ -18,10 +18,12 @@ import {
 import { MobileSidebar } from "./mobile-sidebar";
 import { logout } from "@/lib/actions/session-actions";
 import { initials } from "@/lib/format";
+import { useLocale } from "@/components/i18n/locale-provider";
 
 export function Topbar({ user }) {
 	const router = useRouter();
 	const { resolvedTheme, setTheme } = useTheme();
+	const { t } = useLocale();
 
 	function handleSearch(event) {
 		event.preventDefault();
@@ -41,7 +43,7 @@ export function Topbar({ user }) {
 					<Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 					<Input
 						name="q"
-						placeholder="Search clients..."
+						placeholder={t("topbar.searchClients", "Search clients...")}
 						className="h-10 rounded-full border-border/80 bg-background/80 pl-8 shadow-sm backdrop-blur"
 					/>
 				</form>
@@ -56,7 +58,7 @@ export function Topbar({ user }) {
 					>
 						<Sun className="size-4 dark:hidden" />
 						<Moon className="hidden size-4 dark:block" />
-						<span className="sr-only">Toggle theme</span>
+						<span className="sr-only">{t("topbar.toggleTheme", "Toggle theme")}</span>
 					</Button>
 
 					<DropdownMenu>
@@ -66,16 +68,16 @@ export function Topbar({ user }) {
 								variant="ghost"
 							>
 								<Bell className="size-4" />
-								<span className="sr-only">Notifications</span>
+								<span className="sr-only">{t("topbar.notifications", "Notifications")}</span>
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent
 							align="end"
 							className="w-64"
 						>
-							<DropdownMenuLabel>Notifications</DropdownMenuLabel>
+							<DropdownMenuLabel>{t("topbar.notifications", "Notifications")}</DropdownMenuLabel>
 							<DropdownMenuSeparator />
-							<p className="px-2 py-4 text-center text-sm text-muted-foreground">You&apos;re all caught up.</p>
+							<p className="px-2 py-4 text-center text-sm text-muted-foreground">{t("topbar.caughtUp", "You're all caught up.")}</p>
 						</DropdownMenuContent>
 					</DropdownMenu>
 
@@ -105,12 +107,12 @@ export function Topbar({ user }) {
 							<DropdownMenuItem asChild>
 								<Link href="/settings">
 									<Settings className="size-4" />
-									Settings
+									{t("topbar.settings", "Settings")}
 								</Link>
 							</DropdownMenuItem>
 							<DropdownMenuItem onSelect={() => logout()}>
 								<LogOut className="size-4" />
-								Log out
+								{t("topbar.logout", "Log out")}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>

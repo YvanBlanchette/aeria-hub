@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { LocaleProvider } from "@/components/i18n/locale-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -44,7 +45,7 @@ export default function RootLayout({ children }) {
 					enableSystem={false}
 					disableTransitionOnChange
 				>
-					{children}
+					<LocaleProvider>{children}</LocaleProvider>
 				</ThemeProvider>
 			</body>
 		</html>

@@ -5,45 +5,77 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { changePassword } from "@/app/(admin)/settings/actions";
 
 export function PasswordForm() {
-  const [error, formAction, pending] = useActionState(changePassword, undefined);
-  const wasPending = useRef(false);
-  const formRef = useRef(null);
+	const { t } = useLocale();
+	const [error, formAction, pending] = useActionState(changePassword, undefined);
+	const wasPending = useRef(false);
+	const formRef = useRef(null);
 
-  useEffect(() => {
-    if (wasPending.current && !pending && !error) {
-      toast.success("Password updated");
-      formRef.current?.reset();
-    }
-    wasPending.current = pending;
-  }, [pending, error]);
+	useEffect(() => {
+		if (wasPending.current && !pending && !error) {
+			toast.success(t("settings.security.passwordUpdated", "Password updated"));
+			formRef.current?.reset();
+		}
+		wasPending.current = pending;
+	}, [pending, error]);
 
-  return (
-    <form ref={formRef} action={formAction} className="max-w-sm space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="currentPassword">Current password</Label>
-        <Input id="currentPassword" name="currentPassword" type="password" autoComplete="current-password" required />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="newPassword">New password</Label>
-        <Input id="newPassword" name="newPassword" type="password" autoComplete="new-password" minLength={8} required />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirm new password</Label>
-        <Input id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" minLength={8} required />
-      </div>
+	return (
+		<form
+			ref={formRef}
+			action={formAction}
+			className="max-w-sm space-y-4"
+		>
+			<div className="space-y-2">
+				<Label htmlFor="currentPassword">{t("settings.security.currentPassword", "Current password")}</Label>
+				<Input
+					id="currentPassword"
+					name="currentPassword"
+					type="password"
+					autoComplete="current-password"
+					required
+				/>
+			</div>
+			<div className="space-y-2">
+				<Label htmlFor="newPassword">{t("settings.security.newPassword", "New password")}</Label>
+				<Input
+					id="newPassword"
+					name="newPassword"
+					type="password"
+					autoComplete="new-password"
+					minLength={8}
+					required
+				/>
+			</div>
+			<div className="space-y-2">
+				<Label htmlFor="confirmPassword">{t("settings.security.confirmNewPassword", "Confirm new password")}</Label>
+				<Input
+					id="confirmPassword"
+					name="confirmPassword"
+					type="password"
+					autoComplete="new-password"
+					minLength={8}
+					required
+				/>
+			</div>
 
-      {error && (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      )}
+			{error && (
+				<p
+					className="text-sm text-destructive"
+					role="alert"
+				>
+					{error}
+				</p>
+			)}
 
-      <Button type="submit" disabled={pending}>
-        {pending ? "Updating..." : "Update password"}
-      </Button>
-    </form>
-  );
+			<Button
+				type="submit"
+				disabled={pending}
+			>
+				{pending ? t("settings.security.updating", "Updating...") : t("settings.security.updatePassword", "Update password")}
+			</Button>
+		</form>
+	);
 }

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
 const CONSTANTS_KEY = "aeria.forfaits.constants.v1";
@@ -22,24 +23,13 @@ const DEFAULT_CONSTANTS = {
 	arrondi: 0,
 };
 
-const TAB_ITEMS = [
-	{ id: "croisiere", label: "Croisiere" },
-	{ id: "vols", label: "Vols" },
-	{ id: "hotel", label: "Hotels & Transferts" },
-	{ id: "sommaire", label: "Sommaire" },
-	{ id: "parametres", label: "Parametres" },
-];
+const TAB_ITEMS = [{ id: "croisiere" }, { id: "vols" }, { id: "hotel" }, { id: "sommaire" }, { id: "parametres" }];
 
 const CABINS = [
 	{ id: "INT", label: "Interieure" },
 	{ id: "EXT", label: "Exterieure" },
 	{ id: "BAL", label: "Balcon" },
 	{ id: "SUI", label: "Suite" },
-];
-
-const YES_NO = [
-	{ value: "false", label: "Non" },
-	{ value: "true", label: "Oui" },
 ];
 
 const CRUISE_LINE_SHIP_TERMS = {
@@ -63,6 +53,10 @@ const CRUISE_LINE_SHIP_TERMS = {
 	"Virgin Voyages": ["lady"],
 	"Avalon Waterways River Cruises": ["avalon"],
 };
+
+function tr(locale, fr, en) {
+	return locale === "en" ? en : fr;
+}
 
 function matchesCruiseLineShip(shipLabel, cruiseLineLabel) {
 	if (!cruiseLineLabel) return true;
@@ -456,6 +450,14 @@ export function ForfaitsWorkbench({
 	cruiseShipOptions = [],
 	cruisePortOptions = [],
 }) {
+	const { locale } = useLocale();
+	const yesNoOptions = useMemo(
+		() => [
+			{ value: "false", label: tr(locale, "Non", "No") },
+			{ value: "true", label: tr(locale, "Oui", "Yes") },
+		],
+		[locale],
+	);
 	const [hotelPre, setHotelPre] = useState(() => makeDefaultDraft().hasPre);
 	const [hotelPost, setHotelPost] = useState(() => makeDefaultDraft().hasPost);
 	const [tab, setTab] = useState("croisiere");
@@ -536,14 +538,21 @@ export function ForfaitsWorkbench({
 		const totalVente = resultRows.reduce((sum, row) => sum + row.calc.total, 0);
 		const totalRevenu = resultRows.reduce((sum, row) => sum + row.revenu, 0);
 		const margeMoy = totalVente > 0 ? (totalRevenu / totalVente) * 100 : 0;
-		const health = margeMoy >= 16 ? "Forte" : margeMoy >= 10 ? "Solide" : margeMoy >= 6 ? "A surveiller" : "Faible";
+		const health =
+			margeMoy >= 16
+				? tr(locale, "Forte", "Strong")
+				: margeMoy >= 10
+					? tr(locale, "Solide", "Solid")
+					: margeMoy >= 6
+						? tr(locale, "A surveiller", "Watch")
+						: tr(locale, "Faible", "Low");
 		return {
 			totalVente,
 			totalRevenu,
 			margeMoy,
 			health,
 		};
-	}, [resultRows]);
+	}, [locale, resultRows]);
 
 	const filteredTrips = useMemo(() => {
 		if (!draft.clientId) return trips;
@@ -715,13 +724,13 @@ export function ForfaitsWorkbench({
 		setHotelPost(nextDraft.hasPost);
 		setRevisions([]);
 		setSelectedProjectId("");
-		setNotice("Nouveau dossier initialise.");
+		setNotice(tr(locale, "Nouveau dossier initialise.", "New project initialized."));
 	}
 
 	function buildMutationBody(projectIdOverride) {
 		return {
 			id: projectIdOverride || selectedProjectId || undefined,
-			name: (draft.projectName || "").trim() || "Dossier sans titre",
+			name: (draft.projectName || "").trim() || tr(locale, "Dossier sans titre", "Untitled project"),
 			clientId: draft.clientId || null,
 			tripId: draft.tripId || null,
 			payload: draft,
@@ -761,9 +770,9 @@ export function ForfaitsWorkbench({
 			});
 			setSelectedProjectId(normalized.id);
 			refreshRevisions(normalized.id);
-			setNotice(`Projet enregistre: ${normalized.name}`);
+			setNotice(`${tr(locale, "Projet enregistre", "Project saved")}: ${normalized.name}`);
 		} catch {
-			setNotice("Enregistrement impossible. Verifie la connexion et reessaie.");
+			setNotice(tr(locale, "Enregistrement impossible. Verifie la connexion et reessaie.", "Could not save. Check your connection and try again."));
 		} finally {
 			setBusy(false);
 		}
@@ -779,7 +788,7 @@ export function ForfaitsWorkbench({
 		setConstants({ ...DEFAULT_CONSTANTS, ...(project.constants || {}) });
 		setSelectedProjectId(project.id);
 		refreshRevisions(project.id);
-		setNotice(`Projet charge: ${project.name}`);
+		setNotice(`${tr(locale, "Projet charge", "Project loaded")}: ${project.name}`);
 	}
 
 	async function duplicateProject(projectId) {
@@ -789,7 +798,7 @@ export function ForfaitsWorkbench({
 		setBusy(true);
 		try {
 			const body = {
-				name: `${project.name} (copie)`,
+				name: `${project.name} (${tr(locale, "copie", "copy")})`,
 				clientId: project.clientId || null,
 				tripId: project.tripId || null,
 				payload: project.payload || project.draft || makeDefaultDraft(),
@@ -812,9 +821,9 @@ export function ForfaitsWorkbench({
 				draft: data.project.payload || makeDefaultDraft(),
 			};
 			setProjects((prev) => [duplicated, ...prev]);
-			setNotice("Copie creee.");
+			setNotice(tr(locale, "Copie creee.", "Copy created."));
 		} catch {
-			setNotice("Duplication impossible.");
+			setNotice(tr(locale, "Duplication impossible.", "Could not duplicate project."));
 		} finally {
 			setBusy(false);
 		}
@@ -828,9 +837,9 @@ export function ForfaitsWorkbench({
 
 			setProjects((prev) => prev.filter((item) => item.id !== projectId));
 			if (selectedProjectId === projectId) setSelectedProjectId("");
-			setNotice("Projet supprime.");
+			setNotice(tr(locale, "Projet supprime.", "Project deleted."));
 		} catch {
-			setNotice("Suppression impossible.");
+			setNotice(tr(locale, "Suppression impossible.", "Could not delete project."));
 		} finally {
 			setBusy(false);
 		}
@@ -852,7 +861,7 @@ export function ForfaitsWorkbench({
 		a.click();
 		document.body.removeChild(a);
 		setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-		setNotice("Export JSON telecharge.");
+		setNotice(tr(locale, "Export JSON telecharge.", "JSON export downloaded."));
 	}
 
 	function exportCsv() {
@@ -872,7 +881,7 @@ export function ForfaitsWorkbench({
 		a.click();
 		document.body.removeChild(a);
 		setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-		setNotice("Export CSV telecharge.");
+		setNotice(tr(locale, "Export CSV telecharge.", "CSV export downloaded."));
 	}
 
 	async function exportExcel() {
@@ -881,19 +890,28 @@ export function ForfaitsWorkbench({
 			const wb = XLSX.utils.book_new();
 
 			const overviewRows = [
-				["Projet", draft.projectName || "Sans titre"],
-				["Client", clients.find((c) => c.id === draft.clientId)?.name || "-"],
-				["Voyage", selectedTrip?.name || "-"],
-				["Passagers", base.pax],
-				["Nuits croisiere", base.nuits],
-				["Nuits totales", base.totalNuits],
-				["Vente estimee", summary.totalVente],
-				["Revenu estime", summary.totalRevenu],
-				["Marge moyenne (%)", Number(summary.margeMoy.toFixed(2))],
+				[tr(locale, "Projet", "Project"), draft.projectName || tr(locale, "Sans titre", "Untitled")],
+				[tr(locale, "Client", "Client"), clients.find((c) => c.id === draft.clientId)?.name || "-"],
+				[tr(locale, "Voyage", "Trip"), selectedTrip?.name || "-"],
+				[tr(locale, "Passagers", "Passengers"), base.pax],
+				[tr(locale, "Nuits croisiere", "Cruise nights"), base.nuits],
+				[tr(locale, "Nuits totales", "Total nights"), base.totalNuits],
+				[tr(locale, "Vente estimee", "Estimated sales"), summary.totalVente],
+				[tr(locale, "Revenu estime", "Estimated revenue"), summary.totalRevenu],
+				[tr(locale, "Marge moyenne (%)", "Average margin (%)"), Number(summary.margeMoy.toFixed(2))],
 			];
 
 			const pricingRows = [
-				["Categorie", "Facture cabine", "Prix / personne", "Prix / pers / nuit", "Total groupe", "TAAP pre", "TAAP post", "Perte absorbee / pers"],
+				[
+					tr(locale, "Categorie", "Category"),
+					tr(locale, "Facture cabine", "Cabin invoice"),
+					tr(locale, "Prix / personne", "Price / person"),
+					tr(locale, "Prix / pers / nuit", "Price / person / night"),
+					tr(locale, "Total groupe", "Group total"),
+					tr(locale, "TAAP pre", "TAAP pre"),
+					tr(locale, "TAAP post", "TAAP post"),
+					tr(locale, "Perte absorbee / pers", "Absorbed loss / person"),
+				],
 				...resultRows.map((row) => [
 					row.label,
 					row.facture,
@@ -907,16 +925,21 @@ export function ForfaitsWorkbench({
 			];
 
 			const revenueRows = [
-				["Categorie", "Commission croisiere", "Revenu total", "Marge (%)"],
+				[
+					tr(locale, "Categorie", "Category"),
+					tr(locale, "Commission croisiere", "Cruise commission"),
+					tr(locale, "Revenu total", "Total revenue"),
+					tr(locale, "Marge (%)", "Margin (%)"),
+				],
 				...resultRows.map((row) => [row.label, row.commCroisiere, row.revenu, Number(row.margePct.toFixed(2))]),
 			];
 
 			const inputsRows = flattenDraftToCsvRows(draft);
 
-			XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(overviewRows), "Overview");
-			XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pricingRows), "Pricing");
-			XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(revenueRows), "Revenue");
-			XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(inputsRows), "Inputs");
+			XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(overviewRows), tr(locale, "Apercu", "Overview"));
+			XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pricingRows), tr(locale, "Tarification", "Pricing"));
+			XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(revenueRows), tr(locale, "Revenu", "Revenue"));
+			XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(inputsRows), tr(locale, "Entrees", "Inputs"));
 
 			const safe = (draft.projectName || "forfait")
 				.replace(/[^a-zA-Z0-9- ]/g, "")
@@ -924,9 +947,9 @@ export function ForfaitsWorkbench({
 				.replace(/\s+/g, "-")
 				.toLowerCase();
 			XLSX.writeFile(wb, `${safe || "forfait"}-interne.xlsx`);
-			setNotice("Export Excel interne telecharge.");
+			setNotice(tr(locale, "Export Excel interne telecharge.", "Internal Excel export downloaded."));
 		} catch {
-			setNotice("Export Excel impossible.");
+			setNotice(tr(locale, "Export Excel impossible.", "Could not export Excel."));
 		}
 	}
 
@@ -963,19 +986,19 @@ export function ForfaitsWorkbench({
 			a.click();
 			document.body.removeChild(a);
 			setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-			setNotice("PDF client telecharge.");
+			setNotice(tr(locale, "PDF client telecharge.", "Client PDF downloaded."));
 		} catch {
-			setNotice("Export PDF impossible.");
+			setNotice(tr(locale, "Export PDF impossible.", "Could not export PDF."));
 		}
 	}
 
 	async function convertToQuote() {
 		if (!selectedProjectId) {
-			setNotice("Enregistre d'abord le forfait pour le convertir en quote.");
+			setNotice(tr(locale, "Enregistre d'abord le forfait pour le convertir en devis.", "Save the package before converting it to a quote."));
 			return;
 		}
 		if (!draft.tripId) {
-			setNotice("Selectionne un voyage avant conversion en quote.");
+			setNotice(tr(locale, "Selectionne un voyage avant conversion en devis.", "Select a trip before converting to a quote."));
 			return;
 		}
 
@@ -987,16 +1010,16 @@ export function ForfaitsWorkbench({
 			});
 			const data = await response.json().catch(() => ({}));
 			if (!response.ok) {
-				setNotice(data?.error || "Conversion en quote impossible.");
+				setNotice(data?.error || tr(locale, "Conversion en devis impossible.", "Could not convert to quote."));
 				return;
 			}
 
-			setNotice("Quote cree avec succes. Ouverture de l'onglet quotes du voyage.");
+			setNotice(tr(locale, "Devis cree avec succes. Ouverture de l'onglet devis du voyage.", "Quote created successfully. Opening the trip quotes tab."));
 			if (data?.redirectTo) {
 				window.location.assign(data.redirectTo);
 			}
 		} catch {
-			setNotice("Conversion en quote impossible.");
+			setNotice(tr(locale, "Conversion en devis impossible.", "Could not convert to quote."));
 		} finally {
 			setBusy(false);
 		}
@@ -1004,23 +1027,25 @@ export function ForfaitsWorkbench({
 
 	async function copySummary() {
 		const lines = [];
-		lines.push(`Projet: ${draft.projectName || "Sans titre"}`);
-		if (selectedTrip) lines.push(`Voyage: ${selectedTrip.name} (${selectedTrip.clientName})`);
-		lines.push(`Passagers: ${base.pax}`);
-		lines.push(`Nuits total: ${base.totalNuits}`);
-		lines.push(`Vente estimee (toutes categories): ${fmtCad(summary.totalVente)}`);
-		lines.push(`Revenu estime (toutes categories): ${fmtCad(summary.totalRevenu)}`);
-		lines.push(`Marge moyenne: ${summary.margeMoy.toFixed(1)}% (${summary.health})`);
+		lines.push(`${tr(locale, "Projet", "Project")}: ${draft.projectName || tr(locale, "Sans titre", "Untitled")}`);
+		if (selectedTrip) lines.push(`${tr(locale, "Voyage", "Trip")}: ${selectedTrip.name} (${selectedTrip.clientName})`);
+		lines.push(`${tr(locale, "Passagers", "Passengers")}: ${base.pax}`);
+		lines.push(`${tr(locale, "Nuits total", "Total nights")}: ${base.totalNuits}`);
+		lines.push(`${tr(locale, "Vente estimee (toutes categories)", "Estimated sales (all categories)")}: ${fmtCad(summary.totalVente)}`);
+		lines.push(`${tr(locale, "Revenu estime (toutes categories)", "Estimated revenue (all categories)")}: ${fmtCad(summary.totalRevenu)}`);
+		lines.push(`${tr(locale, "Marge moyenne", "Average margin")}: ${summary.margeMoy.toFixed(1)}% (${summary.health})`);
 		lines.push("");
 		resultRows.forEach((row) => {
-			lines.push(`- ${row.label}: ${fmtCad(row.calc.prixPers)} / pers | ${fmtCad(row.calc.total)} total | marge ${row.margePct.toFixed(1)}%`);
+			lines.push(
+				`- ${row.label}: ${fmtCad(row.calc.prixPers)} / ${tr(locale, "pers", "person")} | ${fmtCad(row.calc.total)} ${tr(locale, "total", "total")} | ${tr(locale, "marge", "margin")} ${row.margePct.toFixed(1)}%`,
+			);
 		});
 
 		try {
 			await navigator.clipboard.writeText(lines.join("\n"));
-			setNotice("Synthese copiee dans le presse-papiers.");
+			setNotice(tr(locale, "Synthese copiee dans le presse-papiers.", "Summary copied to clipboard."));
 		} catch {
-			setNotice("Copie impossible depuis ce navigateur.");
+			setNotice(tr(locale, "Copie impossible depuis ce navigateur.", "Copy is not available in this browser."));
 		}
 	}
 
@@ -1034,15 +1059,15 @@ export function ForfaitsWorkbench({
 			const nextDraft = parsed?.draft;
 			const nextConstants = parsed?.constants;
 			if (!nextDraft || !nextConstants) {
-				setNotice("Fichier JSON invalide.");
+				setNotice(tr(locale, "Fichier JSON invalide.", "Invalid JSON file."));
 				return;
 			}
 			setDraft({ ...makeDefaultDraft(), ...nextDraft });
 			setConstants({ ...DEFAULT_CONSTANTS, ...nextConstants });
 			setSelectedProjectId("");
-			setNotice("JSON importe.");
+			setNotice(tr(locale, "JSON importe.", "JSON imported."));
 		} catch {
-			setNotice("Import JSON impossible.");
+			setNotice(tr(locale, "Import JSON impossible.", "Could not import JSON."));
 		}
 	}
 
@@ -1060,9 +1085,9 @@ export function ForfaitsWorkbench({
 			});
 			setDraft(seed);
 			setSelectedProjectId("");
-			setNotice("CSV importe.");
+			setNotice(tr(locale, "CSV importe.", "CSV imported."));
 		} catch {
-			setNotice("Import CSV impossible.");
+			setNotice(tr(locale, "Import CSV impossible.", "Could not import CSV."));
 		}
 	}
 
@@ -1071,25 +1096,31 @@ export function ForfaitsWorkbench({
 			<Card>
 				<CardHeader className="flex flex-wrap items-start justify-between gap-3">
 					<div className="max-w-3xl space-y-2">
-						<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">Forfaits engine</p>
-						<CardTitle className="text-2xl font-semibold tracking-tight sm:text-[2rem]">Calculateur de forfaits croisiere</CardTitle>
+						<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">{tr(locale, "Moteur forfaits", "Packages engine")}</p>
+						<CardTitle className="text-2xl font-semibold tracking-tight sm:text-[2rem]">
+							{tr(locale, "Calculateur de forfaits croisiere", "Cruise package calculator")}
+						</CardTitle>
 						<p className="text-sm leading-6 text-muted-foreground">
-							Outil integree de planification de forfaits croisière, suivi de marge et sauvegarde de dossiers.
+							{tr(
+								locale,
+								"Outil integree de planification de forfaits croisiere, suivi de marge et sauvegarde de dossiers.",
+								"Integrated cruise package planning tool with margin tracking and project persistence.",
+							)}
 						</p>
 					</div>
 				</CardHeader>
 				<CardContent className="grid gap-4 md:grid-cols-3">
 					<div className="space-y-2">
-						<Label htmlFor="projectName">Nom du dossier</Label>
+						<Label htmlFor="projectName">{tr(locale, "Nom du dossier", "Project name")}</Label>
 						<Input
 							id="projectName"
 							value={draft.projectName}
 							onChange={(event) => setField("projectName", event.target.value)}
-							placeholder="Ex: Caraibes - Famille Tremblay"
+							placeholder={tr(locale, "Ex: Caraibes - Famille Tremblay", "Example: Caribbean - Tremblay Family")}
 						/>
 					</div>
 					<div className="space-y-2">
-						<Label htmlFor="clientId">Client</Label>
+						<Label htmlFor="clientId">{tr(locale, "Client", "Client")}</Label>
 						<select
 							id="clientId"
 							value={draft.clientId}
@@ -1103,7 +1134,7 @@ export function ForfaitsWorkbench({
 							}}
 							className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
 						>
-							<option value="">Aucun client</option>
+							<option value="">{tr(locale, "Aucun client", "No client")}</option>
 							{clients.map((client) => (
 								<option
 									key={client.id}
@@ -1115,14 +1146,14 @@ export function ForfaitsWorkbench({
 						</select>
 					</div>
 					<div className="space-y-2">
-						<Label htmlFor="tripId">Voyage</Label>
+						<Label htmlFor="tripId">{tr(locale, "Voyage", "Trip")}</Label>
 						<select
 							id="tripId"
 							value={draft.tripId}
 							onChange={(event) => setField("tripId", event.target.value)}
 							className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
 						>
-							<option value="">Aucun voyage</option>
+							<option value="">{tr(locale, "Aucun voyage", "No trip")}</option>
 							{filteredTrips.map((trip) => (
 								<option
 									key={trip.id}
@@ -1147,7 +1178,15 @@ export function ForfaitsWorkbench({
 						className="rounded-xl"
 						onClick={() => setTab(item.id)}
 					>
-						{item.label}
+						{item.id === "croisiere"
+							? tr(locale, "Croisiere", "Cruise")
+							: item.id === "vols"
+								? tr(locale, "Vols", "Flights")
+								: item.id === "hotel"
+									? tr(locale, "Hotels & Transferts", "Hotels & Transfers")
+									: item.id === "sommaire"
+										? tr(locale, "Sommaire", "Summary")
+										: tr(locale, "Parametres", "Parameters")}
 					</Button>
 				))}
 			</div>
@@ -1157,11 +1196,17 @@ export function ForfaitsWorkbench({
 				<div className="grid gap-4 lg:grid-cols-2">
 					<Card>
 						<CardHeader>
-							<CardTitle>Cadre du voyage</CardTitle>
-							<CardDescription>Infos croisiere, passagers, taux de change et categories cabine.</CardDescription>
+							<CardTitle>{tr(locale, "Cadre du voyage", "Trip setup")}</CardTitle>
+							<CardDescription>
+								{tr(
+									locale,
+									"Infos croisiere, passagers, taux de change et categories cabine.",
+									"Cruise info, passengers, exchange rate, and cabin categories.",
+								)}
+							</CardDescription>
 						</CardHeader>
 						<CardContent className="grid gap-3 md:grid-cols-2">
-							<Field label="Compagnie">
+							<Field label={tr(locale, "Compagnie", "Cruise line")}>
 								<CruiseSearchSelect
 									value={draft.compagnie}
 									onValueChange={(value) => {
@@ -1169,57 +1214,65 @@ export function ForfaitsWorkbench({
 										setField("navire", "");
 									}}
 									options={normalizedCruiseLineOptions}
-									placeholder="Selectionner compagnie"
-									searchPlaceholder="Rechercher compagnie..."
-									emptyMessage="Aucune compagnie trouvee."
+									placeholder={tr(locale, "Selectionner compagnie", "Select cruise line")}
+									searchPlaceholder={tr(locale, "Rechercher compagnie...", "Search cruise line...")}
+									emptyMessage={tr(locale, "Aucune compagnie trouvee.", "No cruise line found.")}
 								/>
 							</Field>
-							<Field label="Navire">
+							<Field label={tr(locale, "Navire", "Ship")}>
 								<CruiseSearchSelect
 									value={draft.navire}
 									onValueChange={(value) => setField("navire", value)}
 									options={filteredCruiseShipOptions}
-									placeholder={draft.compagnie ? "Selectionner navire" : "Selectionner compagnie d'abord"}
-									searchPlaceholder="Rechercher navire..."
-									emptyMessage={draft.compagnie ? "Aucun navire trouve pour cette compagnie." : "Selectionne une compagnie d'abord."}
+									placeholder={
+										draft.compagnie
+											? tr(locale, "Selectionner navire", "Select ship")
+											: tr(locale, "Selectionner compagnie d'abord", "Select cruise line first")
+									}
+									searchPlaceholder={tr(locale, "Rechercher navire...", "Search ship...")}
+									emptyMessage={
+										draft.compagnie
+											? tr(locale, "Aucun navire trouve pour cette compagnie.", "No ship found for this line.")
+											: tr(locale, "Selectionne une compagnie d'abord.", "Select a cruise line first.")
+									}
 									disabled={!draft.compagnie}
 								/>
 							</Field>
-							<Field label="Port depart">
+							<Field label={tr(locale, "Port depart", "Departure port")}>
 								<CruiseSearchSelect
 									value={draft.portDepart}
 									onValueChange={(value) => setField("portDepart", value)}
 									options={normalizedCruisePortOptions}
-									placeholder="Selectionner port depart"
-									searchPlaceholder="Rechercher port depart..."
-									emptyMessage="Aucun port trouve."
+									placeholder={tr(locale, "Selectionner port depart", "Select departure port")}
+									searchPlaceholder={tr(locale, "Rechercher port depart...", "Search departure port...")}
+									emptyMessage={tr(locale, "Aucun port trouve.", "No port found.")}
 								/>
 							</Field>
-							<Field label="Port arrivee">
+							<Field label={tr(locale, "Port arrivee", "Arrival port")}>
 								<CruiseSearchSelect
 									value={draft.portArrivee}
 									onValueChange={(value) => setField("portArrivee", value)}
 									options={normalizedCruisePortOptions}
-									placeholder="Selectionner port arrivee"
-									searchPlaceholder="Rechercher port arrivee..."
-									emptyMessage="Aucun port trouve."
+									placeholder={tr(locale, "Selectionner port arrivee", "Select arrival port")}
+									searchPlaceholder={tr(locale, "Rechercher port arrivee...", "Search arrival port...")}
+									emptyMessage={tr(locale, "Aucun port trouve.", "No port found.")}
 								/>
 							</Field>
-							<Field label="Date debut croisiere">
+							<Field label={tr(locale, "Date debut croisiere", "Cruise start date")}>
 								<Input
 									type="date"
 									value={draft.croisiereDebut}
 									onChange={(e) => setField("croisiereDebut", e.target.value)}
 								/>
 							</Field>
-							<Field label="Date fin croisiere">
+							<Field label={tr(locale, "Date fin croisiere", "Cruise end date")}>
 								<Input
 									type="date"
 									value={draft.croisiereFin}
 									onChange={(e) => setField("croisiereFin", e.target.value)}
 								/>
 							</Field>
-							<Field label="Nombre passagers">
+							<Field label={tr(locale, "Nombre passagers", "Number of passengers")}>
 								<Input
 									type="number"
 									min="1"
@@ -1228,7 +1281,7 @@ export function ForfaitsWorkbench({
 									onChange={(e) => setField("pax", e.target.value)}
 								/>
 							</Field>
-							<Field label="Nuits croisiere">
+							<Field label={tr(locale, "Nuits croisiere", "Cruise nights")}>
 								<Input
 									type="number"
 									min="0"
@@ -1237,7 +1290,7 @@ export function ForfaitsWorkbench({
 									onChange={(e) => setField("nuits", e.target.value)}
 								/>
 							</Field>
-							<Field label="Pourboires manuels (si non inclus)">
+							<Field label={tr(locale, "Pourboires manuels (si non inclus)", "Manual gratuities (if not included)")}>
 								<Input
 									type="number"
 									min="0"
@@ -1246,13 +1299,13 @@ export function ForfaitsWorkbench({
 									onChange={(e) => setField("pourboiresManuel", e.target.value)}
 								/>
 							</Field>
-							<Field label="Convertir USD en CAD">
+							<Field label={tr(locale, "Convertir USD en CAD", "Convert USD to CAD")}>
 								<select
 									value={String(draft.usdCab)}
 									onChange={(e) => setField("usdCab", e.target.value === "true")}
 									className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
 								>
-									{YES_NO.map((opt) => (
+									{yesNoOptions.map((opt) => (
 										<option
 											key={opt.value}
 											value={opt.value}
@@ -1263,14 +1316,18 @@ export function ForfaitsWorkbench({
 								</select>
 							</Field>
 							<Field
-								label="Notes croisiere (affichees au PDF)"
+								label={tr(locale, "Notes croisiere (affichees au PDF)", "Cruise notes (shown in PDF)")}
 								className="md:col-span-2"
 							>
 								<Textarea
 									rows={4}
 									value={draft.croisiereNotes}
 									onChange={(e) => setField("croisiereNotes", e.target.value)}
-									placeholder="Ex: Cette croisiere inclut les repas principaux, spectacles et taxes portuaires."
+									placeholder={tr(
+										locale,
+										"Ex: Cette croisiere inclut les repas principaux, spectacles et taxes portuaires.",
+										"Example: This cruise includes main meals, shows, and port taxes.",
+									)}
 								/>
 							</Field>
 						</CardContent>
@@ -1278,15 +1335,17 @@ export function ForfaitsWorkbench({
 
 					<Card>
 						<CardHeader>
-							<CardTitle>Cabines et commissions croisiere</CardTitle>
-							<CardDescription>Prix brut cabine et commission croisiere par categorie.</CardDescription>
+							<CardTitle>{tr(locale, "Cabines et commissions croisiere", "Cruise cabins and commissions")}</CardTitle>
+							<CardDescription>
+								{tr(locale, "Prix brut cabine et commission croisiere par categorie.", "Gross cabin fare and cruise commission by category.")}
+							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">
 							<div className="grid gap-3 md:grid-cols-2">
 								{CABINS.map((cab) => (
 									<Field
 										key={cab.id}
-										label={`${cab.label} - cout cabine`}
+										label={`${cab.label} - ${tr(locale, "cout cabine", "cabin cost")}`}
 									>
 										<Input
 											type="number"
@@ -1302,7 +1361,7 @@ export function ForfaitsWorkbench({
 								{CABINS.map((cab) => (
 									<Field
 										key={`k_${cab.id}`}
-										label={`${cab.label} - commission`}
+										label={`${cab.label} - ${tr(locale, "commission", "commission")}`}
 									>
 										<Input
 											type="number"
@@ -1323,13 +1382,20 @@ export function ForfaitsWorkbench({
 			{tab === "vols" && (
 				<Card>
 					<CardHeader>
-						<CardTitle>Vols et bagages</CardTitle>
-						<CardDescription>Segmente les vols aller/retour avec durees et escales calculees automatiquement.</CardDescription>
+						<CardTitle>{tr(locale, "Vols et bagages", "Flights and baggage")}</CardTitle>
+						<CardDescription>
+							{tr(
+								locale,
+								"Segmente les vols aller/retour avec durees et escales calculees automatiquement.",
+								"Split outbound/return flights with automatic duration and layover calculation.",
+							)}
+						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-5">
 						{/* VOLS ALLER */}
 						<FlightSegmentsEditor
-							title="Vol aller"
+							title={tr(locale, "Vol aller", "Outbound flight")}
+							locale={locale}
 							direction="aller"
 							segments={volsAllerSegments}
 							airlineOptions={airlineOptions}
@@ -1341,7 +1407,8 @@ export function ForfaitsWorkbench({
 
 						{/* VOLS RETOUR */}
 						<FlightSegmentsEditor
-							title="Vol retour"
+							title={tr(locale, "Vol retour", "Return flight")}
+							locale={locale}
 							direction="retour"
 							segments={volsRetourSegments}
 							airlineOptions={airlineOptions}
@@ -1354,7 +1421,7 @@ export function ForfaitsWorkbench({
 						{/* TARIFICATION VOLS */}
 						<div className="grid gap-3 md:grid-cols-2">
 							<MoneyWithMode
-								label="Cout vols"
+								label={tr(locale, "Cout vols", "Flight cost")}
 								value={draft.vols}
 								mode={draft.volsMode}
 								onValue={(v) => setField("vols", v)}
@@ -1363,7 +1430,7 @@ export function ForfaitsWorkbench({
 							/>
 							<div className="flex items-center gap-3 w-full md:col-span-2">
 								<MoneyWithMode
-									label="Bagages aller"
+									label={tr(locale, "Bagages aller", "Outbound baggage")}
 									value={draft.bagAller}
 									mode={draft.bagAllerMode}
 									onValue={(v) => setField("bagAller", v)}
@@ -1371,7 +1438,7 @@ export function ForfaitsWorkbench({
 									className="flex-1 min-w-0"
 								/>
 								<MoneyWithMode
-									label="Bagages retour"
+									label={tr(locale, "Bagages retour", "Return baggage")}
 									value={draft.bagRetour}
 									mode={draft.bagRetourMode}
 									onValue={(v) => setField("bagRetour", v)}
@@ -1389,8 +1456,8 @@ export function ForfaitsWorkbench({
 				<div className="grid gap-4 lg:grid-cols-2">
 					<Card>
 						<CardHeader>
-							<CardTitle>Hôtels</CardTitle>
-							<CardDescription>Ajouter les séjours et des nuits facturées.</CardDescription>
+							<CardTitle>{tr(locale, "Hotels", "Hotels")}</CardTitle>
+							<CardDescription>{tr(locale, "Ajouter les sejours et des nuits facturees.", "Add hotel stays and billed nights.")}</CardDescription>
 						</CardHeader>
 						<CardContent className="grid gap-3 md:grid-cols-2">
 							<div className="space-y-4 md:col-span-2">
@@ -1399,12 +1466,12 @@ export function ForfaitsWorkbench({
 										checked={hotelPre}
 										onCheckedChange={toggleHotelPre}
 									/>
-									Séjour pre-croisière
+									{tr(locale, "Sejour pre-croisiere", "Pre-cruise stay")}
 								</label>
 								{hotelPre ? (
 									<div className="grid gap-3 md:grid-cols-2">
 										<Field
-											label="Hôtel Pre-croisière"
+											label={tr(locale, "Hotel pre-croisiere", "Pre-cruise hotel")}
 											className="md:col-span-2"
 										>
 											<Input
@@ -1414,14 +1481,14 @@ export function ForfaitsWorkbench({
 										</Field>
 
 										<div className="md:col-span-2 grid gap-3 md:grid-cols-3">
-											<Field label="Date arrivee pre">
+											<Field label={tr(locale, "Date arrivee pre", "Pre-stay check-in date")}>
 												<Input
 													type="date"
 													value={draft.hotelDebut}
 													onChange={(e) => setField("hotelDebut", e.target.value)}
 												/>
 											</Field>
-											<Field label="Nuits pre">
+											<Field label={tr(locale, "Nuits pre", "Pre-stay nights")}>
 												<Input
 													type="number"
 													min="0"
@@ -1429,7 +1496,7 @@ export function ForfaitsWorkbench({
 													onChange={(e) => setField("nuitsHotel", e.target.value)}
 												/>
 											</Field>
-											<Field label="Date depart pre">
+											<Field label={tr(locale, "Date depart pre", "Pre-stay check-out date")}>
 												<Input
 													type="date"
 													value={draft.hotelFin}
@@ -1437,7 +1504,7 @@ export function ForfaitsWorkbench({
 												/>
 											</Field>
 										</div>
-										<Field label="Cout hotel pre / nuit">
+										<Field label={tr(locale, "Cout hotel pre / nuit", "Pre-stay hotel cost / night")}>
 											<Input
 												type="number"
 												min="0"
@@ -1446,7 +1513,7 @@ export function ForfaitsWorkbench({
 												onChange={(e) => setField("hotelNuit", e.target.value)}
 											/>
 										</Field>
-										<Field label="Commission hotel pre">
+										<Field label={tr(locale, "Commission hotel pre", "Pre-stay hotel commission")}>
 											<Input
 												type="number"
 												min="0"
@@ -1465,12 +1532,12 @@ export function ForfaitsWorkbench({
 										checked={hotelPost}
 										onCheckedChange={toggleHotelPost}
 									/>
-									Séjour post-croisière
+									{tr(locale, "Sejour post-croisiere", "Post-cruise stay")}
 								</label>
 								{hotelPost ? (
 									<div className="grid gap-3 md:grid-cols-2">
 										<Field
-											label="Hôtel Post-croisière"
+											label={tr(locale, "Hotel post-croisiere", "Post-cruise hotel")}
 											className="md:col-span-2"
 										>
 											<Input
@@ -1480,14 +1547,14 @@ export function ForfaitsWorkbench({
 										</Field>
 
 										<div className="md:col-span-2 grid gap-3 md:grid-cols-3">
-											<Field label="Date arrivee post">
+											<Field label={tr(locale, "Date arrivee post", "Post-stay check-in date")}>
 												<Input
 													type="date"
 													value={draft.hotelPostDebut}
 													onChange={(e) => setField("hotelPostDebut", e.target.value)}
 												/>
 											</Field>
-											<Field label="Nuits post">
+											<Field label={tr(locale, "Nuits post", "Post-stay nights")}>
 												<Input
 													type="number"
 													min="0"
@@ -1495,7 +1562,7 @@ export function ForfaitsWorkbench({
 													onChange={(e) => setField("nuitsHotelPost", e.target.value)}
 												/>
 											</Field>
-											<Field label="Date depart post">
+											<Field label={tr(locale, "Date depart post", "Post-stay check-out date")}>
 												<Input
 													type="date"
 													value={draft.hotelPostFin}
@@ -1503,7 +1570,7 @@ export function ForfaitsWorkbench({
 												/>
 											</Field>
 										</div>
-										<Field label="Cout hotel post / nuit">
+										<Field label={tr(locale, "Cout hotel post / nuit", "Post-stay hotel cost / night")}>
 											<Input
 												type="number"
 												min="0"
@@ -1512,7 +1579,7 @@ export function ForfaitsWorkbench({
 												onChange={(e) => setField("hotelNuitPost", e.target.value)}
 											/>
 										</Field>
-										<Field label="Commission hotel post">
+										<Field label={tr(locale, "Commission hotel post", "Post-stay hotel commission")}>
 											<Input
 												type="number"
 												min="0"
@@ -1528,12 +1595,14 @@ export function ForfaitsWorkbench({
 					</Card>
 					<Card>
 						<CardHeader>
-							<CardTitle>Transferts</CardTitle>
-							<CardDescription>Segments aeroport/hotel/port avec mode total ou par personne.</CardDescription>
+							<CardTitle>{tr(locale, "Transferts", "Transfers")}</CardTitle>
+							<CardDescription>
+								{tr(locale, "Segments aeroport/hotel/port avec mode total ou par personne.", "Airport/hotel/port segments in total or per-person mode.")}
+							</CardDescription>
 						</CardHeader>
 						<CardContent className="grid gap-3 md:grid-cols-2">
 							<Field
-								label="Transferts actives"
+								label={tr(locale, "Transferts actives", "Transfers enabled")}
 								className="md:col-span-2"
 							>
 								<select
@@ -1541,7 +1610,7 @@ export function ForfaitsWorkbench({
 									onChange={(e) => setField("hasTransferts", e.target.value === "true")}
 									className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
 								>
-									{YES_NO.map((opt) => (
+									{yesNoOptions.map((opt) => (
 										<option
 											key={opt.value}
 											value={opt.value}
@@ -1552,21 +1621,21 @@ export function ForfaitsWorkbench({
 								</select>
 							</Field>
 							<MoneyWithMode
-								label="Aeroport -> Hotel"
+								label={tr(locale, "Aeroport -> Hotel", "Airport -> Hotel")}
 								value={draft.trA}
 								mode={draft.trAMode}
 								onValue={(v) => setField("trA", v)}
 								onMode={(v) => setField("trAMode", v)}
 							/>
 							<MoneyWithMode
-								label="Hotel -> Port"
+								label={tr(locale, "Hotel -> Port", "Hotel -> Port")}
 								value={draft.trB}
 								mode={draft.trBMode}
 								onValue={(v) => setField("trB", v)}
 								onMode={(v) => setField("trBMode", v)}
 							/>
 							<MoneyWithMode
-								label="Port -> Aeroport"
+								label={tr(locale, "Port -> Aeroport", "Port -> Airport")}
 								value={draft.trC}
 								mode={draft.trCMode}
 								onValue={(v) => setField("trC", v)}
@@ -1575,14 +1644,14 @@ export function ForfaitsWorkbench({
 							{hotelPost ? (
 								<>
 									<MoneyWithMode
-										label="Port -> Hotel post"
+										label={tr(locale, "Port -> Hotel post", "Port -> Post-stay hotel")}
 										value={draft.trD}
 										mode={draft.trDMode}
 										onValue={(v) => setField("trD", v)}
 										onMode={(v) => setField("trDMode", v)}
 									/>
 									<MoneyWithMode
-										label="Hotel post -> Aeroport"
+										label={tr(locale, "Hotel post -> Aeroport", "Post-stay hotel -> Airport")}
 										value={draft.trE}
 										mode={draft.trEMode}
 										onValue={(v) => setField("trE", v)}
@@ -1590,26 +1659,26 @@ export function ForfaitsWorkbench({
 									/>
 								</>
 							) : null}
-							<Field label="Compagnie A->H">
+							<Field label={tr(locale, "Compagnie A->H", "Carrier A->H")}>
 								<Input
 									value={draft.trAComp}
 									onChange={(e) => setField("trAComp", e.target.value)}
 								/>
 							</Field>
-							<Field label="Compagnie H->P">
+							<Field label={tr(locale, "Compagnie H->P", "Carrier H->P")}>
 								<Input
 									value={draft.trBComp}
 									onChange={(e) => setField("trBComp", e.target.value)}
 								/>
 							</Field>
-							<Field label="Compagnie P->A">
+							<Field label={tr(locale, "Compagnie P->A", "Carrier P->A")}>
 								<Input
 									value={draft.trCComp}
 									onChange={(e) => setField("trCComp", e.target.value)}
 								/>
 							</Field>
 							<Field
-								label="Commission transferts"
+								label={tr(locale, "Commission transferts", "Transfer commission")}
 								className="md:col-span-2"
 							>
 								<Input
@@ -1629,11 +1698,13 @@ export function ForfaitsWorkbench({
 			{tab === "parametres" && (
 				<Card>
 					<CardHeader>
-						<CardTitle>Parametres</CardTitle>
-						<CardDescription>Parametres globaux de pricing et du revenu agence.</CardDescription>
+						<CardTitle>{tr(locale, "Parametres", "Parameters")}</CardTitle>
+						<CardDescription>
+							{tr(locale, "Parametres globaux de pricing et du revenu agence.", "Global pricing and agency revenue parameters.")}
+						</CardDescription>
 					</CardHeader>
 					<CardContent className="grid gap-3 md:grid-cols-2">
-						<Field label="Frais admin / passager">
+						<Field label={tr(locale, "Frais admin / passager", "Admin fee / passenger")}>
 							<Input
 								type="number"
 								min="0"
@@ -1642,7 +1713,7 @@ export function ForfaitsWorkbench({
 								onChange={(e) => setConstants((prev) => ({ ...prev, admin: toNumber(e.target.value) }))}
 							/>
 						</Field>
-						<Field label="Frais service vols (%)">
+						<Field label={tr(locale, "Frais service vols (%)", "Flight service fee (%)")}>
 							<Input
 								type="number"
 								min="0"
@@ -1651,7 +1722,7 @@ export function ForfaitsWorkbench({
 								onChange={(e) => setConstants((prev) => ({ ...prev, pctVols: toNumber(e.target.value) }))}
 							/>
 						</Field>
-						<Field label="Markup hotel max (%)">
+						<Field label={tr(locale, "Markup hotel max (%)", "Max hotel markup (%)")}>
 							<Input
 								type="number"
 								min="0"
@@ -1660,7 +1731,7 @@ export function ForfaitsWorkbench({
 								onChange={(e) => setConstants((prev) => ({ ...prev, pctMarkup: toNumber(e.target.value) }))}
 							/>
 						</Field>
-						<Field label="Pourboires / nuit / pers">
+						<Field label={tr(locale, "Pourboires / nuit / pers", "Gratuities / night / person")}>
 							<Input
 								type="number"
 								min="0"
@@ -1669,20 +1740,20 @@ export function ForfaitsWorkbench({
 								onChange={(e) => setConstants((prev) => ({ ...prev, pourboiresNuit: toNumber(e.target.value) }))}
 							/>
 						</Field>
-						<Field label="Arrondi prix / pers">
+						<Field label={tr(locale, "Arrondi prix / pers", "Price rounding / person")}>
 							<select
 								value={String(constants.arrondi)}
 								onChange={(e) => setConstants((prev) => ({ ...prev, arrondi: toNumber(e.target.value) }))}
 								className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
 							>
-								<option value="0">Aucun</option>
-								<option value="5">Au 5 CAD</option>
-								<option value="10">Au 10 CAD</option>
-								<option value="25">Au 25 CAD</option>
-								<option value="50">Au 50 CAD</option>
+								<option value="0">{tr(locale, "Aucun", "None")}</option>
+								<option value="5">{tr(locale, "Au 5 CAD", "To nearest 5 CAD")}</option>
+								<option value="10">{tr(locale, "Au 10 CAD", "To nearest 10 CAD")}</option>
+								<option value="25">{tr(locale, "Au 25 CAD", "To nearest 25 CAD")}</option>
+								<option value="50">{tr(locale, "Au 50 CAD", "To nearest 50 CAD")}</option>
 							</select>
 						</Field>
-						<Field label="Taux USD/CAD">
+						<Field label={tr(locale, "Taux USD/CAD", "USD/CAD rate")}>
 							<Input
 								type="number"
 								min="0"
@@ -1700,12 +1771,14 @@ export function ForfaitsWorkbench({
 				<div className="grid gap-4 lg:grid-cols-2">
 					<Card>
 						<CardHeader>
-							<CardTitle>Dossier et export</CardTitle>
-							<CardDescription>Enregistre, duplique, importe et exporte ton dossier de forfait.</CardDescription>
+							<CardTitle>{tr(locale, "Dossier et export", "Project and export")}</CardTitle>
+							<CardDescription>
+								{tr(locale, "Enregistre, duplique, importe et exporte ton dossier de forfait.", "Save, duplicate, import, and export your package project.")}
+							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-3">
 							<div className="grid gap-3 md:grid-cols-2">
-								<Field label="Depot / personne">
+								<Field label={tr(locale, "Depot / personne", "Deposit / person")}>
 									<Input
 										type="number"
 										min="0"
@@ -1714,14 +1787,14 @@ export function ForfaitsWorkbench({
 										onChange={(e) => setField("depot", e.target.value)}
 									/>
 								</Field>
-								<Field label="Date limite depot">
+								<Field label={tr(locale, "Date limite depot", "Deposit due date")}>
 									<Input
 										type="date"
 										value={draft.depotDate}
 										onChange={(e) => setField("depotDate", e.target.value)}
 									/>
 								</Field>
-								<Field label="Date limite solde">
+								<Field label={tr(locale, "Date limite solde", "Final payment due date")}>
 									<Input
 										type="date"
 										value={draft.soldeDate}
@@ -1729,7 +1802,7 @@ export function ForfaitsWorkbench({
 									/>
 								</Field>
 							</div>
-							<Field label="Notes internes">
+							<Field label={tr(locale, "Notes internes", "Internal notes")}>
 								<Textarea
 									rows={5}
 									value={draft.notes}
@@ -1743,7 +1816,7 @@ export function ForfaitsWorkbench({
 									onClick={saveProject}
 									disabled={busy}
 								>
-									<Save /> Enregistrer
+									<Save /> {tr(locale, "Enregistrer", "Save")}
 								</Button>
 								<Button
 									type="button"
@@ -1751,14 +1824,14 @@ export function ForfaitsWorkbench({
 									onClick={resetAll}
 									disabled={busy}
 								>
-									<Calculator /> Nouveau
+									<Calculator /> {tr(locale, "Nouveau", "New")}
 								</Button>
 								<Button
 									type="button"
 									variant="outline"
 									onClick={exportPdf}
 								>
-									<FileText /> Export PDF client
+									<FileText /> {tr(locale, "Export PDF client", "Client PDF export")}
 								</Button>
 								<Button
 									type="button"
@@ -1766,49 +1839,49 @@ export function ForfaitsWorkbench({
 									onClick={convertToQuote}
 									disabled={busy || !selectedProjectId || !draft.tripId}
 								>
-									<FileText /> Convertir en Quote
+									<FileText /> {tr(locale, "Convertir en devis", "Convert to quote")}
 								</Button>
 								<Button
 									type="button"
 									variant="outline"
 									onClick={exportExcel}
 								>
-									<Download /> Export Excel interne
+									<Download /> {tr(locale, "Export Excel interne", "Internal Excel export")}
 								</Button>
 								<Button
 									type="button"
 									variant="outline"
 									onClick={exportJson}
 								>
-									<Download /> Export JSON
+									<Download /> {tr(locale, "Export JSON", "Export JSON")}
 								</Button>
 								<Button
 									type="button"
 									variant="outline"
 									onClick={exportCsv}
 								>
-									<Download /> Export CSV
+									<Download /> {tr(locale, "Export CSV", "Export CSV")}
 								</Button>
 								<Button
 									type="button"
 									variant="outline"
 									onClick={() => importJsonRef.current?.click()}
 								>
-									<Upload /> Import JSON
+									<Upload /> {tr(locale, "Import JSON", "Import JSON")}
 								</Button>
 								<Button
 									type="button"
 									variant="outline"
 									onClick={() => importCsvRef.current?.click()}
 								>
-									<Upload /> Import CSV
+									<Upload /> {tr(locale, "Import CSV", "Import CSV")}
 								</Button>
 								<Button
 									type="button"
 									variant="secondary"
 									onClick={copySummary}
 								>
-									<Copy /> Copier synthese
+									<Copy /> {tr(locale, "Copier synthese", "Copy summary")}
 								</Button>
 								<input
 									ref={importJsonRef}
@@ -1832,12 +1905,14 @@ export function ForfaitsWorkbench({
 
 					<Card>
 						<CardHeader>
-							<CardTitle>Projets enregistres</CardTitle>
-							<CardDescription>Persistance Prisma reliee au CRM et partageable sur le VPS.</CardDescription>
+							<CardTitle>{tr(locale, "Projets enregistres", "Saved projects")}</CardTitle>
+							<CardDescription>
+								{tr(locale, "Persistance Prisma reliee au CRM et partageable sur le VPS.", "Prisma persistence linked to CRM and shareable on the VPS.")}
+							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-2">
 							{projects.length === 0 ? (
-								<p className="text-sm text-muted-foreground">Aucun projet enregistre pour le moment.</p>
+								<p className="text-sm text-muted-foreground">{tr(locale, "Aucun projet enregistre pour le moment.", "No saved project yet.")}</p>
 							) : (
 								projects.map((project) => (
 									<div
@@ -1850,7 +1925,8 @@ export function ForfaitsWorkbench({
 										<div>
 											<p className="text-sm font-medium">{project.name}</p>
 											<p className="text-xs text-muted-foreground">
-												Maj: {new Date(project.updatedAt).toLocaleString("fr-CA")} · Rev {project.currentRevision || 1}
+												{tr(locale, "Maj", "Updated")}: {new Date(project.updatedAt).toLocaleString(locale === "en" ? "en-CA" : "fr-CA")} ·{" "}
+												{tr(locale, "Rev", "Rev")} {project.currentRevision || 1}
 												{typeof project.revisionCount === "number" ? ` (${project.revisionCount})` : ""}
 											</p>
 										</div>
@@ -1860,7 +1936,7 @@ export function ForfaitsWorkbench({
 												size="icon-sm"
 												variant="ghost"
 												onClick={() => loadProject(project.id)}
-												title="Charger"
+												title={tr(locale, "Charger", "Load")}
 												disabled={busy}
 											>
 												<FolderOpen />
@@ -1870,7 +1946,7 @@ export function ForfaitsWorkbench({
 												size="icon-sm"
 												variant="ghost"
 												onClick={() => duplicateProject(project.id)}
-												title="Dupliquer"
+												title={tr(locale, "Dupliquer", "Duplicate")}
 												disabled={busy}
 											>
 												<Copy />
@@ -1880,7 +1956,7 @@ export function ForfaitsWorkbench({
 												size="icon-sm"
 												variant="destructive"
 												onClick={() => deleteProject(project.id)}
-												title="Supprimer"
+												title={tr(locale, "Supprimer", "Delete")}
 												disabled={busy}
 											>
 												<Trash2 />
@@ -1892,11 +1968,13 @@ export function ForfaitsWorkbench({
 
 							{selectedProjectId ? (
 								<div className="rounded-xl border border-border/70 bg-muted/20 p-2.5">
-									<p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Historique des revisions</p>
+									<p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+										{tr(locale, "Historique des revisions", "Revision history")}
+									</p>
 									{loadingRevisions ? (
-										<p className="text-xs text-muted-foreground">Chargement...</p>
+										<p className="text-xs text-muted-foreground">{tr(locale, "Chargement...", "Loading...")}</p>
 									) : revisions.length === 0 ? (
-										<p className="text-xs text-muted-foreground">Aucune revision disponible.</p>
+										<p className="text-xs text-muted-foreground">{tr(locale, "Aucune revision disponible.", "No revision available.")}</p>
 									) : (
 										<div className="space-y-1">
 											{revisions.map((rev) => (
@@ -1904,8 +1982,12 @@ export function ForfaitsWorkbench({
 													key={rev.id}
 													className="flex items-center justify-between rounded-lg border border-border/50 bg-background/70 px-2 py-1"
 												>
-													<span className="text-xs font-medium">Revision {rev.revisionNumber}</span>
-													<span className="text-[11px] text-muted-foreground">{new Date(rev.createdAt).toLocaleString("fr-CA")}</span>
+													<span className="text-xs font-medium">
+														{tr(locale, "Revision", "Revision")} {rev.revisionNumber}
+													</span>
+													<span className="text-[11px] text-muted-foreground">
+														{new Date(rev.createdAt).toLocaleString(locale === "en" ? "en-CA" : "fr-CA")}
+													</span>
 												</div>
 											))}
 										</div>
@@ -1921,12 +2003,20 @@ export function ForfaitsWorkbench({
 			<div className="grid gap-4 xl:grid-cols-3">
 				<Card className="xl:col-span-2">
 					<CardHeader>
-						<CardTitle>Prix client par categorie</CardTitle>
-						<CardDescription>Calcul reprenant la logique complete du module initial avec pre/post hotel, transferts et gestion du markup vols.</CardDescription>
+						<CardTitle>{tr(locale, "Prix client par categorie", "Client price by category")}</CardTitle>
+						<CardDescription>
+							{tr(
+								locale,
+								"Calcul reprenant la logique complete du module initial avec pre/post hotel, transferts et gestion du markup vols.",
+								"Calculation based on full original logic with pre/post hotels, transfers, and flight markup handling.",
+							)}
+						</CardDescription>
 					</CardHeader>
 					<CardContent>
 						{resultRows.length === 0 ? (
-							<p className="text-sm text-muted-foreground">Entre au moins une categorie de cabine pour afficher les resultats.</p>
+							<p className="text-sm text-muted-foreground">
+								{tr(locale, "Entre au moins une categorie de cabine pour afficher les resultats.", "Enter at least one cabin category to display results.")}
+							</p>
 						) : (
 							<div className="grid gap-3 md:grid-cols-2">
 								{resultRows.map((row) => (
@@ -1940,24 +2030,24 @@ export function ForfaitsWorkbench({
 										</div>
 										<dl className="space-y-1 text-sm">
 											<StatLine
-												label="Prix / personne"
+												label={tr(locale, "Prix / personne", "Price / person")}
 												value={fmtCad(row.calc.prixPers)}
 											/>
 											<StatLine
-												label="Prix / pers / nuit"
+												label={tr(locale, "Prix / pers / nuit", "Price / person / night")}
 												value={fmtCad(row.calc.prixPersNuit)}
 											/>
 											<StatLine
-												label={`Total (${base.pax} pax)`}
+												label={`${tr(locale, "Total", "Total")} (${base.pax} ${tr(locale, "pax", "pax")})`}
 												value={fmtCad(row.calc.total)}
 											/>
 											<StatLine
-												label="TAAP hotel pre"
+												label={tr(locale, "TAAP hotel pre", "TAAP pre-stay hotel")}
 												value={fmtCad(base.hotelClientChambre)}
 											/>
 											{base.hasPost ? (
 												<StatLine
-													label="TAAP hotel post"
+													label={tr(locale, "TAAP hotel post", "TAAP post-stay hotel")}
 													value={fmtCad(base.hotelClientChambrePost)}
 												/>
 											) : null}
@@ -1971,27 +2061,31 @@ export function ForfaitsWorkbench({
 
 				<Card>
 					<CardHeader>
-						<CardTitle>Analyse marge</CardTitle>
-						<CardDescription>Amelioration: vue immediate de la rentabilite par categorie.</CardDescription>
+						<CardTitle>{tr(locale, "Analyse marge", "Margin analysis")}</CardTitle>
+						<CardDescription>
+							{tr(locale, "Amelioration: vue immediate de la rentabilite par categorie.", "Improvement: immediate profitability view by category.")}
+						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-3">
 						<div className="rounded-xl border border-border p-3">
-							<p className="text-xs uppercase tracking-wide text-muted-foreground">Vente estimee</p>
+							<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Vente estimee", "Estimated sales")}</p>
 							<p className="mt-1 text-xl font-semibold tabular-nums">{fmtCad(summary.totalVente)}</p>
 						</div>
 						<div className="rounded-xl border border-border p-3">
-							<p className="text-xs uppercase tracking-wide text-muted-foreground">Revenu estime</p>
+							<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Revenu estime", "Estimated revenue")}</p>
 							<p className="mt-1 text-xl font-semibold tabular-nums">{fmtCad(summary.totalRevenu)}</p>
 						</div>
 						<div className="rounded-xl border border-border p-3">
-							<p className="text-xs uppercase tracking-wide text-muted-foreground">Sante marge</p>
+							<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Sante marge", "Margin health")}</p>
 							<p className="mt-1 flex items-center gap-2 text-xl font-semibold tabular-nums">
 								{summary.margeMoy.toFixed(1)}% <Badge>{summary.health}</Badge>
 							</p>
 						</div>
 						<div className="space-y-2">
 							{resultRows.length === 0 ? (
-								<p className="text-sm text-muted-foreground">Les barres de marge apparaitront par categorie active.</p>
+								<p className="text-sm text-muted-foreground">
+									{tr(locale, "Les barres de marge apparaitront par categorie active.", "Margin bars will appear for each active category.")}
+								</p>
 							) : (
 								resultRows.map((row) => {
 									const height = Math.max(6, Math.min(100, row.margePct));
@@ -2041,6 +2135,7 @@ function StatLine({ label, value }) {
 }
 
 function MoneyWithMode({ label, value, mode, onValue, onMode, className = "" }) {
+	const { locale } = useLocale();
 	return (
 		<Field
 			label={label}
@@ -2060,8 +2155,8 @@ function MoneyWithMode({ label, value, mode, onValue, onMode, className = "" }) 
 					onChange={(e) => onMode(e.target.value)}
 					className="absolute right-0 top-0 bottom-0 flex h-8 rounded-r-lg border border-input bg-background px-2 text-sm"
 				>
-					<option value="pers">$/pers</option>
-					<option value="tot">$ total</option>
+					<option value="pers">{tr(locale, "$/pers", "$/person")}</option>
+					<option value="tot">{tr(locale, "$ total", "$ total")}</option>
 				</select>
 			</div>
 		</Field>
@@ -2069,6 +2164,7 @@ function MoneyWithMode({ label, value, mode, onValue, onMode, className = "" }) 
 }
 
 function CruiseSearchSelect({ value, onValueChange, options, placeholder, searchPlaceholder, emptyMessage, disabled = false }) {
+	const { locale } = useLocale();
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 
@@ -2126,7 +2222,7 @@ function CruiseSearchSelect({ value, onValueChange, options, placeholder, search
 							}}
 							className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-muted-foreground hover:bg-muted/60"
 						>
-							Clear selection
+							{tr(locale, "Effacer la selection", "Clear selection")}
 						</button>
 					) : null}
 					{filtered.length === 0 ? <p className="p-3 text-sm text-muted-foreground">{emptyMessage}</p> : null}
@@ -2154,13 +2250,19 @@ function CruiseSearchSelect({ value, onValueChange, options, placeholder, search
 	);
 }
 
-function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airportOptions, onAdd, onRemove, onUpdate }) {
+function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airportOptions, onAdd, onRemove, onUpdate, locale = "fr" }) {
 	return (
 		<div className="space-y-2 rounded-xl border border-border/70 p-3">
 			<div className="flex items-center justify-between gap-3">
 				<div>
 					<p className="text-sm font-semibold">{title}</p>
-					<p className="text-xs text-muted-foreground">Ajouter un ou plusieurs segments. Duree de vol et escales se calculent automatiquement.</p>
+					<p className="text-xs text-muted-foreground">
+						{tr(
+							locale,
+							"Ajouter un ou plusieurs segments. Duree de vol et escales se calculent automatiquement.",
+							"Add one or more segments. Flight duration and layovers are calculated automatically.",
+						)}
+					</p>
 				</div>
 				<Button
 					type="button"
@@ -2168,7 +2270,7 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 					size="sm"
 					onClick={() => onAdd(direction)}
 				>
-					<Plus className="size-4" /> Segment
+					<Plus className="size-4" /> {tr(locale, "Segment", "Segment")}
 				</Button>
 			</div>
 
@@ -2183,7 +2285,9 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 						className="space-y-2 rounded-lg border border-border/60 bg-muted/15 p-3"
 					>
 						<div className="flex items-center justify-between">
-							<p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Segment {index + 1}</p>
+							<p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+								{tr(locale, "Segment", "Segment")} {index + 1}
+							</p>
 							<Button
 								type="button"
 								variant="ghost"
@@ -2196,13 +2300,13 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 						</div>
 
 						<div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-							<Field label="Compagnie aerienne">
+							<Field label={tr(locale, "Compagnie aerienne", "Airline")}>
 								<select
 									value={segment.airline}
 									onChange={(e) => onUpdate(direction, index, "airline", e.target.value)}
 									className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
 								>
-									<option value="">Selectionner</option>
+									<option value="">{tr(locale, "Selectionner", "Select")}</option>
 									{airlineOptions.map((option) => (
 										<option
 											key={`airline-${option}`}
@@ -2214,13 +2318,13 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 								</select>
 							</Field>
 
-							<Field label="Operateur">
+							<Field label={tr(locale, "Operateur", "Operator")}>
 								<select
 									value={segment.operator}
 									onChange={(e) => onUpdate(direction, index, "operator", e.target.value)}
 									className="flex h-8 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm"
 								>
-									<option value="">Selectionner</option>
+									<option value="">{tr(locale, "Selectionner", "Select")}</option>
 									{airlineOptions.map((option) => (
 										<option
 											key={`operator-${option}`}
@@ -2232,16 +2336,17 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 								</select>
 							</Field>
 
-							<Field label="Aeroport depart (IATA)">
+							<Field label={tr(locale, "Aeroport depart (IATA)", "Departure airport (IATA)")}>
 								<AirportIataPicker
 									value={segment.fromIata}
 									onValueChange={(nextValue) => onUpdate(direction, index, "fromIata", nextValue)}
 									airports={airportOptions}
-									placeholder="Selectionner aeroport depart"
+									placeholder={tr(locale, "Selectionner aeroport depart", "Select departure airport")}
+									locale={locale}
 								/>
 							</Field>
 
-							<Field label="Heure depart">
+							<Field label={tr(locale, "Heure depart", "Departure time")}>
 								<Input
 									type="time"
 									value={segment.departTime}
@@ -2249,7 +2354,7 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 								/>
 							</Field>
 
-							<Field label="Heure arrivee">
+							<Field label={tr(locale, "Heure arrivee", "Arrival time")}>
 								<Input
 									type="time"
 									value={segment.arriveTime}
@@ -2257,23 +2362,24 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 								/>
 							</Field>
 
-							<Field label="Aeroport arrivee (IATA)">
+							<Field label={tr(locale, "Aeroport arrivee (IATA)", "Arrival airport (IATA)")}>
 								<AirportIataPicker
 									value={segment.toIata}
 									onValueChange={(nextValue) => onUpdate(direction, index, "toIata", nextValue)}
 									airports={airportOptions}
-									placeholder="Selectionner aeroport arrivee"
+									placeholder={tr(locale, "Selectionner aeroport arrivee", "Select arrival airport")}
+									locale={locale}
 								/>
 							</Field>
 						</div>
 
 						<div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
 							<div className="rounded-md border border-border/60 bg-background/70 px-2 py-1.5">
-								<p className="uppercase tracking-wide">Temps de vol</p>
+								<p className="uppercase tracking-wide">{tr(locale, "Temps de vol", "Flight time")}</p>
 								<p className="font-medium text-foreground">{formatDuration(duration)}</p>
 							</div>
 							<div className="rounded-md border border-border/60 bg-background/70 px-2 py-1.5">
-								<p className="uppercase tracking-wide">Escale</p>
+								<p className="uppercase tracking-wide">{tr(locale, "Escale", "Layover")}</p>
 								<p className="font-medium text-foreground">{index === 0 ? "-" : formatDuration(layover)}</p>
 							</div>
 						</div>
@@ -2281,12 +2387,14 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 				);
 			})}
 
-			{airportOptions?.length ? null : <p className="text-xs text-muted-foreground">Aucune liste d&apos;aeroports IATA chargee.</p>}
+			{airportOptions?.length ? null : (
+				<p className="text-xs text-muted-foreground">{tr(locale, "Aucune liste d'aeroports IATA chargee.", "No IATA airport list loaded.")}</p>
+			)}
 		</div>
 	);
 }
 
-function AirportIataPicker({ value, onValueChange, airports, placeholder }) {
+function AirportIataPicker({ value, onValueChange, airports, placeholder, locale = "fr" }) {
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 
@@ -2334,12 +2442,12 @@ function AirportIataPicker({ value, onValueChange, airports, placeholder }) {
 						autoFocus
 						value={query}
 						onChange={(event) => setQuery(event.target.value)}
-						placeholder="Rechercher par IATA, ville, aeroport..."
+						placeholder={tr(locale, "Rechercher par IATA, ville, aeroport...", "Search by IATA, city, airport...")}
 						className="h-9"
 					/>
 				</div>
 				<div className="max-h-72 overflow-y-auto p-1 pt-0">
-					{filtered.length === 0 ? <p className="p-3 text-sm text-muted-foreground">Aucun aeroport trouve.</p> : null}
+					{filtered.length === 0 ? <p className="p-3 text-sm text-muted-foreground">{tr(locale, "Aucun aeroport trouve.", "No airport found.")}</p> : null}
 					{filtered.map((airport) => {
 						const isSelected = normalizeIata(value) === airport.code;
 						return (

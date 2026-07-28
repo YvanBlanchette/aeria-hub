@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { StatCard } from "@/components/admin/stat-card";
 import { TripFilters } from "@/components/trips/trip-filters";
 import { TripsTable } from "@/components/trips/trips-table";
+import { LocaleText } from "@/components/i18n/locale-text";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,15 @@ const RANGE_OPTIONS = [
 	{ value: "90d", label: "90D", days: 90 },
 	{ value: "180d", label: "180D", days: 180 },
 ];
+
+const TRIP_STATUS_LABELS = {
+	INQUIRY: { key: "trips.status.inquiry", fallback: "Inquiry" },
+	QUOTED: { key: "trips.status.quoted", fallback: "Quoted" },
+	BOOKED: { key: "trips.status.booked", fallback: "Booked" },
+	TRAVELING: { key: "trips.status.traveling", fallback: "Traveling" },
+	COMPLETED: { key: "trips.status.completed", fallback: "Completed" },
+	CANCELLED: { key: "trips.status.cancelled", fallback: "Cancelled" },
+};
 
 function resolveRange(value) {
 	return RANGE_OPTIONS.find((option) => option.value === value) || RANGE_OPTIONS.find((option) => option.value === DEFAULT_RANGE);
@@ -134,9 +144,24 @@ export default async function TripsPage({ searchParams }) {
 			<div className="rounded-3xl border border-border/70 bg-card/85 p-5 shadow-sm backdrop-blur-sm sm:p-6">
 				<div className="flex flex-wrap items-start justify-between gap-4">
 					<div className="max-w-2xl space-y-2">
-						<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">Trip operations</p>
-						<h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem]">Trips</h1>
-						<p className="max-w-xl text-sm leading-6 text-muted-foreground">Bookings, itineraries, and delivery timing across every client in the pipeline.</p>
+						<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
+							<LocaleText
+								messageKey="trips.kicker"
+								fallback="Trip operations"
+							/>
+						</p>
+						<h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem]">
+							<LocaleText
+								messageKey="trips.title"
+								fallback="Trips"
+							/>
+						</h1>
+						<p className="max-w-xl text-sm leading-6 text-muted-foreground">
+							<LocaleText
+								messageKey="trips.subtitle"
+								fallback="Bookings, itineraries, and delivery timing across every client in the pipeline."
+							/>
+						</p>
 					</div>
 					<div className="flex flex-col gap-2 sm:items-end">
 						<div className="flex items-center gap-1 rounded-full border border-border bg-background/70 p-1 shadow-sm backdrop-blur">
@@ -155,7 +180,10 @@ export default async function TripsPage({ searchParams }) {
 						<Button asChild>
 							<Link href="/trips/new">
 								<Plus className="size-4" />
-								New Trip
+								<LocaleText
+									messageKey="trips.new"
+									fallback="New Trip"
+								/>
 							</Link>
 						</Button>
 					</div>
@@ -164,22 +192,42 @@ export default async function TripsPage({ searchParams }) {
 
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 				<StatCard
-					label="Total trips"
+					label={
+						<LocaleText
+							messageKey="trips.totalTrips"
+							fallback="Total trips"
+						/>
+					}
 					value={totalTrips}
 					icon={Plane}
 				/>
 				<StatCard
-					label="Active bookings"
+					label={
+						<LocaleText
+							messageKey="trips.activeBookings"
+							fallback="Active bookings"
+						/>
+					}
 					value={activeTrips}
 					icon={CheckCircle2}
 				/>
 				<StatCard
-					label="Upcoming departures"
+					label={
+						<LocaleText
+							messageKey="trips.upcomingDepartures"
+							fallback="Upcoming departures"
+						/>
+					}
 					value={upcomingDepartures}
 					icon={CalendarClock}
 				/>
 				<StatCard
-					label="Total value"
+					label={
+						<LocaleText
+							messageKey="trips.totalValue"
+							fallback="Total value"
+						/>
+					}
 					value={formatCurrency(totalValue._sum.totalPrice || 0)}
 					icon={DollarSign}
 				/>
@@ -188,8 +236,18 @@ export default async function TripsPage({ searchParams }) {
 			<div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
 				<Card>
 					<CardHeader>
-						<CardTitle>Trip pipeline</CardTitle>
-						<CardDescription>Status distribution across all trips.</CardDescription>
+						<CardTitle>
+							<LocaleText
+								messageKey="trips.pipeline.title"
+								fallback="Trip pipeline"
+							/>
+						</CardTitle>
+						<CardDescription>
+							<LocaleText
+								messageKey="trips.pipeline.desc"
+								fallback="Status distribution across all trips."
+							/>
+						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-3">
 						{pipelineRows.map((row) => (
@@ -199,7 +257,12 @@ export default async function TripsPage({ searchParams }) {
 							>
 								<div className="flex items-center justify-between text-sm">
 									<div className="flex items-center gap-2">
-										<span className="font-medium">{row.status}</span>
+										<span className="font-medium">
+											<LocaleText
+												messageKey={TRIP_STATUS_LABELS[row.status]?.key || "trips.status.unknown"}
+												fallback={TRIP_STATUS_LABELS[row.status]?.fallback || row.status}
+											/>
+										</span>
 										<Badge variant="secondary">{row.pct}%</Badge>
 									</div>
 									<span className="text-muted-foreground">{row.count}</span>
@@ -217,20 +280,46 @@ export default async function TripsPage({ searchParams }) {
 
 				<Card>
 					<CardHeader>
-						<CardTitle>Revenue mix</CardTitle>
-						<CardDescription>Pipeline value by maturity stage.</CardDescription>
+						<CardTitle>
+							<LocaleText
+								messageKey="trips.revenue.title"
+								fallback="Revenue mix"
+							/>
+						</CardTitle>
+						<CardDescription>
+							<LocaleText
+								messageKey="trips.revenue.desc"
+								fallback="Pipeline value by maturity stage."
+							/>
+						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-2.5 text-sm">
 						<div className="rounded-lg border border-border p-3">
-							<p className="text-xs uppercase tracking-wide text-muted-foreground">Booked + traveling value</p>
+							<p className="text-xs uppercase tracking-wide text-muted-foreground">
+								<LocaleText
+									messageKey="trips.revenue.bookedTraveling"
+									fallback="Booked + traveling value"
+								/>
+							</p>
 							<p className="mt-1 text-xl font-semibold tabular-nums">{formatCurrency(valueBooked._sum.totalPrice || 0)}</p>
 						</div>
 						<div className="rounded-lg border border-border p-3">
-							<p className="text-xs uppercase tracking-wide text-muted-foreground">Quoted value</p>
+							<p className="text-xs uppercase tracking-wide text-muted-foreground">
+								<LocaleText
+									messageKey="trips.revenue.quoted"
+									fallback="Quoted value"
+								/>
+							</p>
 							<p className="mt-1 text-xl font-semibold tabular-nums">{formatCurrency(valueQuoted._sum.totalPrice || 0)}</p>
 						</div>
 						<div className="flex items-center justify-between rounded-lg border border-border p-3">
-							<span>Stale inquiries (&gt;{range.days}d)</span>
+							<span>
+								<LocaleText
+									messageKey="trips.revenue.staleInquiries"
+									fallback="Stale inquiries"
+								/>{" "}
+								(&gt;{range.days}d)
+							</span>
 							<span className={cn("font-semibold", staleInquiries > 0 && "text-destructive")}>{staleInquiries}</span>
 						</div>
 					</CardContent>
@@ -238,35 +327,65 @@ export default async function TripsPage({ searchParams }) {
 
 				<Card>
 					<CardHeader>
-						<CardTitle>Operations watch</CardTitle>
-						<CardDescription>Delivery risks that need quick action.</CardDescription>
+						<CardTitle>
+							<LocaleText
+								messageKey="trips.ops.title"
+								fallback="Operations watch"
+							/>
+						</CardTitle>
+						<CardDescription>
+							<LocaleText
+								messageKey="trips.ops.desc"
+								fallback="Delivery risks that need quick action."
+							/>
+						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-2.5 text-sm">
 						<div className="flex items-center justify-between rounded-lg border border-border p-3">
 							<div className="flex items-center gap-2">
 								<Clock3 className="size-4 text-primary" />
-								<span>Open trip tasks</span>
+								<span>
+									<LocaleText
+										messageKey="trips.ops.openTasks"
+										fallback="Open trip tasks"
+									/>
+								</span>
 							</div>
 							<span className="font-semibold">{openTaskCount}</span>
 						</div>
 						<div className="flex items-center justify-between rounded-lg border border-border p-3">
 							<div className="flex items-center gap-2">
 								<AlertTriangle className="size-4 text-destructive" />
-								<span>Overdue trip tasks</span>
+								<span>
+									<LocaleText
+										messageKey="trips.ops.overdueTasks"
+										fallback="Overdue trip tasks"
+									/>
+								</span>
 							</div>
 							<span className={cn("font-semibold", overdueTaskCount > 0 && "text-destructive")}>{overdueTaskCount}</span>
 						</div>
 						<div className="flex items-center justify-between rounded-lg border border-border p-3">
 							<div className="flex items-center gap-2">
 								<CalendarClock className="size-4 text-primary" />
-								<span>Departures in 7 days</span>
+								<span>
+									<LocaleText
+										messageKey="trips.ops.departures7d"
+										fallback="Departures in 7 days"
+									/>
+								</span>
 							</div>
 							<span className="font-semibold">{departuresIn7Days}</span>
 						</div>
 						<div className="flex items-center justify-between rounded-lg border border-border p-3">
 							<div className="flex items-center gap-2">
 								<AlertTriangle className="size-4 text-destructive" />
-								<span>Missing final payment date</span>
+								<span>
+									<LocaleText
+										messageKey="trips.ops.missingFinalPayment"
+										fallback="Missing final payment date"
+									/>
+								</span>
 							</div>
 							<span className={cn("font-semibold", missingFinalPayment > 0 && "text-destructive")}>{missingFinalPayment}</span>
 						</div>
@@ -277,12 +396,29 @@ export default async function TripsPage({ searchParams }) {
 			<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
 				<Card>
 					<CardHeader>
-						<CardTitle>Upcoming departures</CardTitle>
-						<CardDescription>Next {range.days} days of booked and traveling trips.</CardDescription>
+						<CardTitle>
+							<LocaleText
+								messageKey="trips.upcoming.title"
+								fallback="Upcoming departures"
+							/>
+						</CardTitle>
+						<CardDescription>
+							<LocaleText
+								messageKey="trips.upcoming.desc"
+								fallback="Next days of booked and traveling trips."
+							/>{" "}
+							({range.days}d)
+						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-2">
 						{upcomingTrips.length === 0 ? (
-							<p className="text-sm text-muted-foreground">No departures scheduled in the next {range.days} days.</p>
+							<p className="text-sm text-muted-foreground">
+								<LocaleText
+									messageKey="trips.upcoming.empty"
+									fallback="No departures scheduled in the next days."
+								/>{" "}
+								({range.days}d)
+							</p>
 						) : (
 							upcomingTrips.map((trip) => (
 								<Link
@@ -305,12 +441,29 @@ export default async function TripsPage({ searchParams }) {
 
 				<Card>
 					<CardHeader>
-						<CardTitle>Recently created trips</CardTitle>
-						<CardDescription>New demand that entered the pipeline in the last {range.days} days.</CardDescription>
+						<CardTitle>
+							<LocaleText
+								messageKey="trips.recent.title"
+								fallback="Recently created trips"
+							/>
+						</CardTitle>
+						<CardDescription>
+							<LocaleText
+								messageKey="trips.recent.desc"
+								fallback="New demand that entered the pipeline in the last days."
+							/>{" "}
+							({range.days}d)
+						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-2">
 						{recentTrips.length === 0 ? (
-							<p className="text-sm text-muted-foreground">No new trips in the last {range.days} days.</p>
+							<p className="text-sm text-muted-foreground">
+								<LocaleText
+									messageKey="trips.recent.empty"
+									fallback="No new trips in the last days."
+								/>{" "}
+								({range.days}d)
+							</p>
 						) : (
 							recentTrips.map((trip) => (
 								<Link
@@ -325,7 +478,12 @@ export default async function TripsPage({ searchParams }) {
 										</p>
 									</div>
 									<div className="flex items-center gap-2">
-										<Badge variant="secondary">{trip.status}</Badge>
+										<Badge variant="secondary">
+											<LocaleText
+												messageKey={TRIP_STATUS_LABELS[trip.status]?.key || "trips.status.unknown"}
+												fallback={TRIP_STATUS_LABELS[trip.status]?.fallback || trip.status}
+											/>
+										</Badge>
 										<span className="text-xs text-muted-foreground">{formatDate(trip.createdAt)}</span>
 									</div>
 								</Link>

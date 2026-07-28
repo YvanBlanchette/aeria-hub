@@ -3,16 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { navItems } from "./nav-config";
 
 export function SidebarNav({ onNavigate }) {
 	const pathname = usePathname();
+	const { t } = useLocale();
 
 	return (
 		<nav className="flex flex-1 flex-col gap-1.5 px-3 py-4">
 			{navItems.map((item) => {
 				const Icon = item.icon;
 				const isActive = item.href && pathname.startsWith(item.href);
+				const label = t(item.labelKey, item.label);
 
 				if (!item.href) {
 					return (
@@ -22,8 +25,10 @@ export function SidebarNav({ onNavigate }) {
 							aria-disabled="true"
 						>
 							<Icon className="size-4 shrink-0" />
-							<span className="flex-1">{item.label}</span>
-							<span className="rounded-full bg-sidebar-accent px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-sidebar-foreground/50">Soon</span>
+							<span className="flex-1">{label}</span>
+							<span className="rounded-full bg-sidebar-accent px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-sidebar-foreground/50">
+								{t("ui.soon", "Soon")}
+							</span>
 						</div>
 					);
 				}
@@ -40,7 +45,7 @@ export function SidebarNav({ onNavigate }) {
 						)}
 					>
 						<Icon className={cn("size-4 shrink-0 transition-transform group-hover:scale-105", isActive && "text-sidebar-primary-foreground")} />
-						<span className="flex-1">{item.label}</span>
+						<span className="flex-1">{label}</span>
 						{isActive && <span className="size-1.5 rounded-full bg-sidebar-primary-foreground/80" />}
 					</Link>
 				);

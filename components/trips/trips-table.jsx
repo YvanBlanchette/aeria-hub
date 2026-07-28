@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SortableTableHead, useSortableRows } from "@/components/ui/sortable-table";
 import { DeleteTripButton } from "@/components/trips/delete-trip-button";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { formatCurrency, formatDate } from "@/lib/format";
 
 const STATUS_VARIANT = {
@@ -16,16 +17,16 @@ const STATUS_VARIANT = {
 	CANCELLED: "destructive",
 };
 
-const COLUMNS = [
-	{ key: "name", label: "Trip" },
-	{ key: "clientName", label: "Client" },
-	{ key: "destination", label: "Destination" },
-	{ key: "startDate", label: "Dates", kind: "date" },
-	{ key: "totalPrice", label: "Total price", align: "right", kind: "number" },
-	{ key: "status", label: "Status", align: "right" },
-];
-
 export function TripsTable({ trips }) {
+	const { t } = useLocale();
+	const COLUMNS = [
+		{ key: "name", label: t("trips.table.trip", "Trip") },
+		{ key: "clientName", label: t("trips.table.client", "Client") },
+		{ key: "destination", label: t("trips.table.destination", "Destination") },
+		{ key: "startDate", label: t("trips.table.dates", "Dates"), kind: "date" },
+		{ key: "totalPrice", label: t("trips.table.totalPrice", "Total price"), align: "right", kind: "number" },
+		{ key: "status", label: t("trips.table.status", "Status"), align: "right" },
+	];
 	const rows = trips.map((t) => ({ ...t, clientName: `${t.client.firstName} ${t.client.lastName}` }));
 	const { sorted, sortKey, sortDir, toggleSort } = useSortableRows(rows, COLUMNS);
 
@@ -34,7 +35,7 @@ export function TripsTable({ trips }) {
 			<Table>
 				<TableBody>
 					<TableRow>
-						<TableCell className="py-10 text-center text-sm text-muted-foreground">No trips found.</TableCell>
+						<TableCell className="py-10 text-center text-sm text-muted-foreground">{t("trips.table.empty", "No trips found.")}</TableCell>
 					</TableRow>
 				</TableBody>
 			</Table>
@@ -69,7 +70,7 @@ export function TripsTable({ trips }) {
 								className="block hover:underline"
 							>
 								<p className="font-medium">{trip.name}</p>
-								<p className="text-xs text-muted-foreground">Trip workspace</p>
+								<p className="text-xs text-muted-foreground">{t("trips.table.workspace", "Trip workspace")}</p>
 							</Link>
 						</TableCell>
 						<TableCell>

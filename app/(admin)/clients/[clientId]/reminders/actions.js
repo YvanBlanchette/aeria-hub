@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
+import { tServer } from "@/lib/i18n-server";
 
 /**
  * @param {string} clientId
@@ -11,32 +12,33 @@ import { logActivity } from "@/lib/activity";
  * @param {FormData} formData
  */
 export async function createReminder(clientId, prevState, formData) {
-  const user = await requireUser();
-  const title = formData.get("title");
-  const dueDate = formData.get("dueDate");
-  const type = formData.get("type") || "CUSTOM";
+	const t = tServer;
+	const user = await requireUser();
+	const title = formData.get("title");
+	const dueDate = formData.get("dueDate");
+	const type = formData.get("type") || "CUSTOM";
 
-  if (typeof title !== "string" || !title.trim()) {
-    return "Title is required.";
-  }
-  if (typeof dueDate !== "string" || !dueDate) {
-    return "Due date is required.";
-  }
+	if (typeof title !== "string" || !title.trim()) {
+		return t("errors.requiredTitle", "Title is required.");
+	}
+	if (typeof dueDate !== "string" || !dueDate) {
+		return t("errors.requiredDueDate", "Due date is required.");
+	}
 
-  await prisma.reminder.create({
-    data: { clientId, title: title.trim(), dueDate: new Date(dueDate), type },
-  });
+	await prisma.reminder.create({
+		data: { clientId, title: title.trim(), dueDate: new Date(dueDate), type },
+	});
 
-  await logActivity({
-    entityType: "Reminder",
-    entityId: clientId,
-    action: "created",
-    description: `Reminder "${title.trim()}" added`,
-    userId: user.id,
-    clientId,
-  });
+	await logActivity({
+		entityType: "Reminder",
+		entityId: clientId,
+		action: "created",
+		description: `Reminder "${title.trim()}" added`,
+		userId: user.id,
+		clientId,
+	});
 
-  revalidatePath(`/clients/${clientId}/reminders`);
+	revalidatePath(`/clients/${clientId}/reminders`);
 }
 
 /**
@@ -45,11 +47,11 @@ export async function createReminder(clientId, prevState, formData) {
  * @param {boolean} completed
  */
 export async function toggleReminder(reminderId, clientId, completed) {
-  await requireUser();
-  const reminder = await prisma.reminder.findFirst({ where: { id: reminderId, clientId } });
-  if (!reminder) return;
-  await prisma.reminder.update({ where: { id: reminderId }, data: { completed } });
-  revalidatePath(`/clients/${clientId}/reminders`);
+	await requireUser();
+	const reminder = await prisma.reminder.findFirst({ where: { id: reminderId, clientId } });
+	if (!reminder) return;
+	await prisma.reminder.update({ where: { id: reminderId }, data: { completed } });
+	revalidatePath(`/clients/${clientId}/reminders`);
 }
 
 /**
@@ -57,9 +59,9 @@ export async function toggleReminder(reminderId, clientId, completed) {
  * @param {string} clientId
  */
 export async function deleteReminder(reminderId, clientId) {
-  await requireUser();
-  const reminder = await prisma.reminder.findFirst({ where: { id: reminderId, clientId } });
-  if (!reminder) return;
-  await prisma.reminder.delete({ where: { id: reminderId } });
-  revalidatePath(`/clients/${clientId}/reminders`);
+	await requireUser();
+	const reminder = await prisma.reminder.findFirst({ where: { id: reminderId, clientId } });
+	if (!reminder) return;
+	await prisma.reminder.delete({ where: { id: reminderId } });
+	revalidatePath(`/clients/${clientId}/reminders`);
 }

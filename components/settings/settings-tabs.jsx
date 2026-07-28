@@ -25,29 +25,33 @@ import { AvatarUpload } from "@/components/settings/avatar-upload";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { PasswordForm } from "@/components/settings/password-form";
 import { AppearanceForm } from "@/components/settings/appearance-form";
+import { LanguageForm } from "@/components/settings/language-form";
 import { TeamTable } from "@/components/settings/team-table";
 import { InviteAgentDialog } from "@/components/settings/invite-agent-dialog";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/components/i18n/locale-provider";
 
 export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
+	const { t } = useLocale();
+
 	const quickLinks = [
-		{ href: "/dashboard", label: "Dashboard", icon: Activity },
-		{ href: "/clients", label: "Clients", icon: Users },
-		{ href: "/trips", label: "Trips", icon: BriefcaseBusiness },
-		{ href: "/commissions", label: "Commissions", icon: Receipt },
-		{ href: "/suppliers", label: "Suppliers", icon: Building2 },
+		{ href: "/dashboard", label: t("nav.dashboard", "Dashboard"), icon: Activity },
+		{ href: "/clients", label: t("nav.clients", "Clients"), icon: Users },
+		{ href: "/trips", label: t("nav.trips", "Trips"), icon: BriefcaseBusiness },
+		{ href: "/commissions", label: t("nav.commissions", "Commissions"), icon: Receipt },
+		{ href: "/suppliers", label: t("nav.suppliers", "Suppliers"), icon: Building2 },
 	];
 
 	return (
 		<Tabs defaultValue="profile">
 			<TabsList variant="line">
-				<TabsTrigger value="profile">Profile</TabsTrigger>
-				<TabsTrigger value="security">Security</TabsTrigger>
-				<TabsTrigger value="appearance">Appearance</TabsTrigger>
-				<TabsTrigger value="system">System</TabsTrigger>
-				{isAdmin && <TabsTrigger value="workspace">Workspace</TabsTrigger>}
-				{isAdmin && <TabsTrigger value="team">Team</TabsTrigger>}
+				<TabsTrigger value="profile">{t("settings.tab.profile", "Profile")}</TabsTrigger>
+				<TabsTrigger value="security">{t("settings.tab.security", "Security")}</TabsTrigger>
+				<TabsTrigger value="appearance">{t("settings.tab.appearance", "Appearance")}</TabsTrigger>
+				<TabsTrigger value="system">{t("settings.tab.system", "System")}</TabsTrigger>
+				{isAdmin && <TabsTrigger value="workspace">{t("settings.tab.workspace", "Workspace")}</TabsTrigger>}
+				{isAdmin && <TabsTrigger value="team">{t("settings.tab.team", "Team")}</TabsTrigger>}
 			</TabsList>
 
 			{/* PROFILE TAB */}
@@ -57,7 +61,7 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 			>
 				<Card>
 					<CardHeader>
-						<CardTitle>Picture</CardTitle>
+						<CardTitle>{t("settings.profile.picture", "Picture")}</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<AvatarUpload
@@ -68,7 +72,7 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 				</Card>
 				<Card>
 					<CardHeader>
-						<CardTitle>Profile info</CardTitle>
+						<CardTitle>{t("settings.profile.info", "Profile info")}</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<ProfileForm user={user} />
@@ -84,8 +88,8 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 				<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
 					<Card>
 						<CardHeader>
-							<CardTitle>Password</CardTitle>
-							<CardDescription>Update your credentials regularly and avoid reuse across tools.</CardDescription>
+							<CardTitle>{t("settings.security.password", "Password")}</CardTitle>
+							<CardDescription>{t("settings.security.passwordDesc", "Update your credentials regularly and avoid reuse across tools.")}</CardDescription>
 						</CardHeader>
 						<CardContent>
 							<PasswordForm />
@@ -94,21 +98,27 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 
 					<Card>
 						<CardHeader>
-							<CardTitle>Security hygiene</CardTitle>
-							<CardDescription>Operational guardrails for account safety and team admin actions.</CardDescription>
+							<CardTitle>{t("settings.security.hygiene", "Security hygiene")}</CardTitle>
+							<CardDescription>{t("settings.security.hygieneDesc", "Operational guardrails for account safety and team admin actions.")}</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-2.5 text-sm">
 							<div className="rounded-lg border border-border p-3">
-								<p className="font-medium">Use unique, high-entropy passwords</p>
-								<p className="mt-1 text-muted-foreground">Minimum 8 characters is enforced; use passphrases whenever possible.</p>
+								<p className="font-medium">{t("settings.security.rule1Title", "Use unique, high-entropy passwords")}</p>
+								<p className="mt-1 text-muted-foreground">
+									{t("settings.security.rule1Body", "Minimum 8 characters is enforced; use passphrases whenever possible.")}
+								</p>
 							</div>
 							<div className="rounded-lg border border-border p-3">
-								<p className="font-medium">Reset teammate passwords on role changes</p>
-								<p className="mt-1 text-muted-foreground">Admins can rotate any teammate password in Team settings immediately.</p>
+								<p className="font-medium">{t("settings.security.rule2Title", "Reset teammate passwords on role changes")}</p>
+								<p className="mt-1 text-muted-foreground">
+									{t("settings.security.rule2Body", "Admins can rotate any teammate password in Team settings immediately.")}
+								</p>
 							</div>
 							<div className="rounded-lg border border-border p-3">
-								<p className="font-medium">Review activity regularly</p>
-								<p className="mt-1 text-muted-foreground">Use Dashboard and Workspace activity logs to detect suspicious edits quickly.</p>
+								<p className="font-medium">{t("settings.security.rule3Title", "Review activity regularly")}</p>
+								<p className="mt-1 text-muted-foreground">
+									{t("settings.security.rule3Body", "Use Dashboard and Workspace activity logs to detect suspicious edits quickly.")}
+								</p>
 							</div>
 						</CardContent>
 					</Card>
@@ -122,7 +132,7 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 			>
 				<Card>
 					<CardHeader>
-						<CardTitle>Theme</CardTitle>
+						<CardTitle>{t("settings.appearance.theme", "Theme")}</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<AppearanceForm />
@@ -135,53 +145,73 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 				value="system"
 				className="space-y-4 pt-4"
 			>
+				<Card>
+					<CardHeader>
+						<CardTitle>{t("settings.language.title", "Language")}</CardTitle>
+						<CardDescription>{t("settings.language.description", "Choose the application display language.")}</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<LanguageForm />
+					</CardContent>
+				</Card>
+
 				<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
 					<Card>
 						<CardHeader>
-							<CardTitle>System behavior</CardTitle>
-							<CardDescription>How key CRM data is interpreted and displayed.</CardDescription>
+							<CardTitle>{t("settings.system.behavior", "System behavior")}</CardTitle>
+							<CardDescription>{t("settings.system.behaviorDesc", "How key CRM data is interpreted and displayed.")}</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-2.5 text-sm">
 							<div className="rounded-lg border border-border p-3">
-								<p className="font-medium">Date and time normalization</p>
-								<p className="mt-1 text-muted-foreground">Date formatting is standardized to UTC for consistency across environments.</p>
+								<p className="font-medium">{t("settings.system.rule1Title", "Date and time normalization")}</p>
+								<p className="mt-1 text-muted-foreground">
+									{t("settings.system.rule1Body", "Date formatting is standardized to UTC for consistency across environments.")}
+								</p>
 							</div>
 							<div className="rounded-lg border border-border p-3">
-								<p className="font-medium">Financial precision</p>
-								<p className="mt-1 text-muted-foreground">Currency values are stored as integer cents to avoid floating-point drift.</p>
+								<p className="font-medium">{t("settings.system.rule2Title", "Financial precision")}</p>
+								<p className="mt-1 text-muted-foreground">
+									{t("settings.system.rule2Body", "Currency values are stored as integer cents to avoid floating-point drift.")}
+								</p>
 							</div>
 							<div className="rounded-lg border border-border p-3">
-								<p className="font-medium">Document privacy</p>
-								<p className="mt-1 text-muted-foreground">Uploaded files are stored privately and served through authenticated API routes.</p>
+								<p className="font-medium">{t("settings.system.rule3Title", "Document privacy")}</p>
+								<p className="mt-1 text-muted-foreground">
+									{t("settings.system.rule3Body", "Uploaded files are stored privately and served through authenticated API routes.")}
+								</p>
 							</div>
 						</CardContent>
 					</Card>
 
 					<Card>
 						<CardHeader>
-							<CardTitle>Operational playbook</CardTitle>
-							<CardDescription>Suggested cadence for CRM maintenance.</CardDescription>
+							<CardTitle>{t("settings.system.playbook", "Operational playbook")}</CardTitle>
+							<CardDescription>{t("settings.system.playbookDesc", "Suggested cadence for CRM maintenance.")}</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-2.5 text-sm">
 							<div className="flex items-start gap-2 rounded-lg border border-border p-3">
 								<Shield className="mt-0.5 size-4 text-primary" />
 								<div>
-									<p className="font-medium">Weekly</p>
-									<p className="text-muted-foreground">Review overdue tasks/reminders and role assignments.</p>
+									<p className="font-medium">{t("settings.system.weekly", "Weekly")}</p>
+									<p className="text-muted-foreground">{t("settings.system.weeklyBody", "Review overdue tasks/reminders and role assignments.")}</p>
 								</div>
 							</div>
 							<div className="flex items-start gap-2 rounded-lg border border-border p-3">
 								<Database className="mt-0.5 size-4 text-primary" />
 								<div>
-									<p className="font-medium">Monthly</p>
-									<p className="text-muted-foreground">Audit open invoice balances, pending commissions, and stale inquiries.</p>
+									<p className="font-medium">{t("settings.system.monthly", "Monthly")}</p>
+									<p className="text-muted-foreground">
+										{t("settings.system.monthlyBody", "Audit open invoice balances, pending commissions, and stale inquiries.")}
+									</p>
 								</div>
 							</div>
 							<div className="flex items-start gap-2 rounded-lg border border-border p-3">
 								<FileText className="mt-0.5 size-4 text-primary" />
 								<div>
-									<p className="font-medium">Per departure cycle</p>
-									<p className="text-muted-foreground">Validate traveler documents and reminder queues before final payment windows.</p>
+									<p className="font-medium">{t("settings.system.departureCycle", "Per departure cycle")}</p>
+									<p className="text-muted-foreground">
+										{t("settings.system.departureCycleBody", "Validate traveler documents and reminder queues before final payment windows.")}
+									</p>
 								</div>
 							</div>
 						</CardContent>
@@ -197,42 +227,42 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 				>
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 						<StatCard
-							label="Team members"
+							label={t("settings.workspace.teamMembers", "Team members")}
 							value={workspaceSummary.teamCount}
 							icon={Users}
 						/>
 						<StatCard
-							label="Admins"
+							label={t("settings.workspace.admins", "Admins")}
 							value={workspaceSummary.adminCount}
 							icon={Shield}
 						/>
 						<StatCard
-							label="Active clients"
+							label={t("settings.workspace.activeClients", "Active clients")}
 							value={workspaceSummary.activeClients}
 							icon={CheckCircle2}
 						/>
 						<StatCard
-							label="Active trips"
+							label={t("settings.workspace.activeTrips", "Active trips")}
 							value={workspaceSummary.activeTrips}
 							icon={BriefcaseBusiness}
 						/>
 						<StatCard
-							label="Open tasks"
+							label={t("settings.workspace.openTasks", "Open tasks")}
 							value={workspaceSummary.openTasks}
 							icon={Clock3}
 						/>
 						<StatCard
-							label="Open reminders"
+							label={t("settings.workspace.openReminders", "Open reminders")}
 							value={workspaceSummary.openReminders}
 							icon={CalendarClock}
 						/>
 						<StatCard
-							label="Open invoices"
+							label={t("settings.workspace.openInvoices", "Open invoices")}
 							value={workspaceSummary.openInvoices}
 							icon={Receipt}
 						/>
 						<StatCard
-							label="Suppliers"
+							label={t("settings.workspace.suppliers", "Suppliers")}
 							value={workspaceSummary.totalSuppliers}
 							icon={Building2}
 						/>
@@ -241,24 +271,24 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 					<div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
 						<Card>
 							<CardHeader>
-								<CardTitle>Finance posture</CardTitle>
-								<CardDescription>Collection and payout pressure at a glance.</CardDescription>
+								<CardTitle>{t("settings.workspace.finance", "Finance posture")}</CardTitle>
+								<CardDescription>{t("settings.workspace.financeDesc", "Collection and payout pressure at a glance.")}</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-2.5 text-sm">
 								<div className="rounded-lg border border-border p-3">
-									<p className="text-xs uppercase tracking-wide text-muted-foreground">Open invoice balance</p>
+									<p className="text-xs uppercase tracking-wide text-muted-foreground">{t("settings.workspace.openInvoiceBalance", "Open invoice balance")}</p>
 									<p className="mt-1 text-xl font-semibold tabular-nums">{formatCurrency(workspaceSummary.openInvoiceBalance)}</p>
 								</div>
 								<div className="rounded-lg border border-border p-3">
-									<p className="text-xs uppercase tracking-wide text-muted-foreground">Collected this month</p>
+									<p className="text-xs uppercase tracking-wide text-muted-foreground">{t("settings.workspace.collectedThisMonth", "Collected this month")}</p>
 									<p className="mt-1 text-xl font-semibold tabular-nums">{formatCurrency(workspaceSummary.paidThisMonth)}</p>
 								</div>
 								<div className="flex items-center justify-between rounded-lg border border-border p-3">
-									<span>Pending commissions</span>
+									<span>{t("settings.workspace.pendingCommissions", "Pending commissions")}</span>
 									<span className="font-semibold tabular-nums">{formatCurrency(workspaceSummary.pendingCommissions)}</span>
 								</div>
 								<div className="flex items-center justify-between rounded-lg border border-border p-3">
-									<span>Overdue invoices</span>
+									<span>{t("settings.workspace.overdueInvoices", "Overdue invoices")}</span>
 									<span className={cn("font-semibold", workspaceSummary.overdueInvoices > 0 && "text-destructive")}>{workspaceSummary.overdueInvoices}</span>
 								</div>
 							</CardContent>
@@ -266,28 +296,28 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 
 						<Card>
 							<CardHeader>
-								<CardTitle>Data health</CardTitle>
-								<CardDescription>Coverage across client and trip entities.</CardDescription>
+								<CardTitle>{t("settings.workspace.dataHealth", "Data health")}</CardTitle>
+								<CardDescription>{t("settings.workspace.dataHealthDesc", "Coverage across client and trip entities.")}</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-2 text-sm">
 								<div className="flex items-center justify-between rounded-lg border border-border p-2.5">
-									<span>Total clients</span>
+									<span>{t("settings.workspace.totalClients", "Total clients")}</span>
 									<Badge variant="secondary">{workspaceSummary.totalClients}</Badge>
 								</div>
 								<div className="flex items-center justify-between rounded-lg border border-border p-2.5">
-									<span>Total travelers</span>
+									<span>{t("settings.workspace.totalTravelers", "Total travelers")}</span>
 									<Badge variant="secondary">{workspaceSummary.totalTravelers}</Badge>
 								</div>
 								<div className="flex items-center justify-between rounded-lg border border-border p-2.5">
-									<span>Total trips</span>
+									<span>{t("settings.workspace.totalTrips", "Total trips")}</span>
 									<Badge variant="secondary">{workspaceSummary.totalTrips}</Badge>
 								</div>
 								<div className="flex items-center justify-between rounded-lg border border-border p-2.5">
-									<span>Departures in 30 days</span>
+									<span>{t("settings.workspace.departures30d", "Departures in 30 days")}</span>
 									<Badge variant="secondary">{workspaceSummary.departures30d}</Badge>
 								</div>
 								<div className="flex items-center justify-between rounded-lg border border-border p-2.5">
-									<span>Total documents</span>
+									<span>{t("settings.workspace.totalDocuments", "Total documents")}</span>
 									<Badge variant="secondary">{workspaceSummary.totalDocuments}</Badge>
 								</div>
 							</CardContent>
@@ -295,26 +325,26 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 
 						<Card>
 							<CardHeader>
-								<CardTitle>Risk watch</CardTitle>
-								<CardDescription>Items that can impact service quality immediately.</CardDescription>
+								<CardTitle>{t("settings.workspace.riskWatch", "Risk watch")}</CardTitle>
+								<CardDescription>{t("settings.workspace.riskWatchDesc", "Items that can impact service quality immediately.")}</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-2.5 text-sm">
 								<div className="flex items-center justify-between rounded-lg border border-border p-3">
 									<div className="flex items-center gap-2">
 										<AlertTriangle className="size-4 text-destructive" />
-										<span>Overdue tasks</span>
+										<span>{t("settings.workspace.overdueTasks", "Overdue tasks")}</span>
 									</div>
 									<span className={cn("font-semibold", workspaceSummary.overdueTasks > 0 && "text-destructive")}>{workspaceSummary.overdueTasks}</span>
 								</div>
 								<div className="flex items-center justify-between rounded-lg border border-border p-3">
 									<div className="flex items-center gap-2">
 										<AlertTriangle className="size-4 text-destructive" />
-										<span>Overdue reminders</span>
+										<span>{t("settings.workspace.overdueReminders", "Overdue reminders")}</span>
 									</div>
 									<span className={cn("font-semibold", workspaceSummary.overdueReminders > 0 && "text-destructive")}>{workspaceSummary.overdueReminders}</span>
 								</div>
 								<div className="rounded-lg border border-border p-3">
-									<p className="text-xs uppercase tracking-wide text-muted-foreground">Quick navigation</p>
+									<p className="text-xs uppercase tracking-wide text-muted-foreground">{t("settings.workspace.quickNav", "Quick navigation")}</p>
 									<div className="mt-2 grid grid-cols-2 gap-2">
 										{quickLinks.map((link) => (
 											<Button
@@ -338,8 +368,8 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 					<Card>
 						<CardHeader className="flex flex-row items-center justify-between space-y-0">
 							<div>
-								<CardTitle>Recent workspace activity</CardTitle>
-								<CardDescription>Latest audited edits across users and client records.</CardDescription>
+								<CardTitle>{t("settings.workspace.recentActivity", "Recent workspace activity")}</CardTitle>
+								<CardDescription>{t("settings.workspace.recentActivityDesc", "Latest audited edits across users and client records.")}</CardDescription>
 							</div>
 							<Button
 								variant="ghost"
@@ -347,14 +377,14 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 								asChild
 							>
 								<Link href="/dashboard">
-									Open dashboard
+									{t("settings.workspace.openDashboard", "Open dashboard")}
 									<ArrowRight className="size-4" />
 								</Link>
 							</Button>
 						</CardHeader>
 						<CardContent className="space-y-2">
 							{workspaceSummary.recentActivity.length === 0 ? (
-								<p className="text-sm text-muted-foreground">No activity records yet.</p>
+								<p className="text-sm text-muted-foreground">{t("settings.workspace.noActivity", "No activity records yet.")}</p>
 							) : (
 								workspaceSummary.recentActivity.map((entry) => (
 									<div
@@ -366,7 +396,7 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 											<span className="text-xs text-muted-foreground">{formatDate(entry.createdAt)}</span>
 										</div>
 										<p className="mt-1 text-xs text-muted-foreground">
-											{entry.user?.name || "System"}
+											{entry.user?.name || t("settings.workspace.systemActor", "System")}
 											{entry.client ? (
 												<>
 													{" · "}
@@ -396,8 +426,8 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 					<Card>
 						<CardHeader className="flex flex-row items-center justify-between space-y-0">
 							<div>
-								<CardTitle>Team access</CardTitle>
-								<CardDescription>Invite teammates, assign roles, rotate passwords, and remove accounts.</CardDescription>
+								<CardTitle>{t("settings.team.access", "Team access")}</CardTitle>
+								<CardDescription>{t("settings.team.accessDesc", "Invite teammates, assign roles, rotate passwords, and remove accounts.")}</CardDescription>
 							</div>
 							<InviteAgentDialog />
 						</CardHeader>
@@ -411,12 +441,12 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary }) {
 
 					<Card>
 						<CardHeader>
-							<CardTitle>Role policy</CardTitle>
+							<CardTitle>{t("settings.team.rolePolicy", "Role policy")}</CardTitle>
 						</CardHeader>
 						<CardContent className="space-y-2 text-sm text-muted-foreground">
-							<p>Admins can manage users, reset passwords, and change roles.</p>
-							<p>Agents can manage client and trip workflows but cannot administer accounts.</p>
-							<p>The last remaining admin cannot be removed or downgraded.</p>
+							<p>{t("settings.team.policy1", "Admins can manage users, reset passwords, and change roles.")}</p>
+							<p>{t("settings.team.policy2", "Agents can manage client and trip workflows but cannot administer accounts.")}</p>
+							<p>{t("settings.team.policy3", "The last remaining admin cannot be removed or downgraded.")}</p>
 						</CardContent>
 					</Card>
 				</TabsContent>

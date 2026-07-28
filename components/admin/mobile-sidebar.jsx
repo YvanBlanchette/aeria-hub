@@ -5,10 +5,12 @@ import Link from "next/link";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { SidebarNav } from "./sidebar-nav";
 
 export function MobileSidebar() {
 	const [open, setOpen] = useState(false);
+	const { t } = useLocale();
 
 	return (
 		<Sheet
@@ -22,7 +24,7 @@ export function MobileSidebar() {
 					className="md:hidden"
 				>
 					<Menu className="size-5" />
-					<span className="sr-only">Open menu</span>
+					<span className="sr-only">{t("ui.openMenu", "Open menu")}</span>
 				</Button>
 			</SheetTrigger>
 			<SheetContent
@@ -40,14 +42,14 @@ export function MobileSidebar() {
 							</div>
 							<div className="text-left">
 								<p className="text-base font-semibold tracking-tight text-sidebar-foreground">ÆRIA Hub</p>
-								<p className="text-[11px] uppercase tracking-[0.28em] text-sidebar-foreground/55">Travel CRM</p>
+								<p className="text-[11px] uppercase tracking-[0.28em] text-sidebar-foreground/55">{t("ui.travelCrm", "Travel CRM")}</p>
 							</div>
 						</Link>
 					</SheetTitle>
 				</SheetHeader>
 				<SidebarNav onNavigate={() => setOpen(false)} />
 				<div className="mx-3 mb-3 rounded-2xl border border-sidebar-border/70 bg-sidebar-accent/40 px-4 py-3 text-xs text-sidebar-foreground/70">
-					Mobile workspace access for trips, clients, and commissions.
+					{t("ui.mobileWorkspace", "Mobile workspace access for trips, clients, and commissions.")}
 				</div>
 			</SheetContent>
 		</Sheet>

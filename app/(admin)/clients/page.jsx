@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Plus, Users, UserCheck, UserPlus2, Luggage } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { StatCard } from "@/components/admin/stat-card";
+import { LocaleText } from "@/components/i18n/locale-text";
 import { ClientFilters } from "@/components/clients/client-filters";
 import { ClientsTable } from "@/components/clients/clients-table";
 import { ExportCsvMenu } from "@/components/clients/export-csv-menu";
@@ -77,8 +78,18 @@ export default async function ClientsPage({ searchParams }) {
 		<div className="space-y-6">
 			<div className="flex items-start justify-between gap-4">
 				<div>
-					<h1 className="text-2xl font-semibold tracking-tight">Clients</h1>
-					<p className="text-sm text-muted-foreground">Households and travelers you work with.</p>
+					<h1 className="text-2xl font-semibold tracking-tight">
+						<LocaleText
+							messageKey="clients.title"
+							fallback="Clients"
+						/>
+					</h1>
+					<p className="text-sm text-muted-foreground">
+						<LocaleText
+							messageKey="clients.subtitle"
+							fallback="Households and travelers you work with."
+						/>
+					</p>
 				</div>
 				<div className="flex items-center gap-2">
 					<ImportCsvDialog />
@@ -86,7 +97,10 @@ export default async function ClientsPage({ searchParams }) {
 					<Button asChild>
 						<Link href="/clients/new">
 							<Plus className="size-4" />
-							New Client
+							<LocaleText
+								messageKey="clients.new"
+								fallback="New Client"
+							/>
 						</Link>
 					</Button>
 				</div>
@@ -94,22 +108,42 @@ export default async function ClientsPage({ searchParams }) {
 
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 				<StatCard
-					label="Total clients"
+					label={
+						<LocaleText
+							messageKey="clients.totalClients"
+							fallback="Total clients"
+						/>
+					}
 					value={totalClients}
 					icon={Users}
 				/>
 				<StatCard
-					label="Active clients"
+					label={
+						<LocaleText
+							messageKey="clients.activeClients"
+							fallback="Active clients"
+						/>
+					}
 					value={activeClients}
 					icon={UserCheck}
 				/>
 				<StatCard
-					label="New this month"
+					label={
+						<LocaleText
+							messageKey="clients.newThisMonth"
+							fallback="New this month"
+						/>
+					}
 					value={newThisMonth}
 					icon={UserPlus2}
 				/>
 				<StatCard
-					label="Total travelers"
+					label={
+						<LocaleText
+							messageKey="clients.totalTravelers"
+							fallback="Total travelers"
+						/>
+					}
 					value={totalTravelers}
 					icon={Luggage}
 				/>
@@ -123,7 +157,10 @@ export default async function ClientsPage({ searchParams }) {
 			</div>
 
 			<div className="overflow-hidden rounded-lg border border-border">
-				<ClientsTable clients={clients} spentByClient={spentByClient} />
+				<ClientsTable
+					clients={clients}
+					spentByClient={spentByClient}
+				/>
 			</div>
 
 			{totalPages > 1 && (

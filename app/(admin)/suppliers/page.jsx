@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { LocaleText } from "@/components/i18n/locale-text";
 import { SupplierFormDialog } from "@/components/suppliers/supplier-form-dialog";
 import { SuppliersTable } from "@/components/suppliers/suppliers-table";
 
@@ -13,8 +14,18 @@ export default async function SuppliersPage() {
 		<div className="space-y-6">
 			<div className="flex items-start justify-between gap-4">
 				<div>
-					<h1 className="text-2xl font-semibold tracking-tight">Suppliers</h1>
-					<p className="text-sm text-muted-foreground">Airlines, cruise lines, booking platforms, hotels, and other vendors you book through.</p>
+					<h1 className="text-2xl font-semibold tracking-tight">
+						<LocaleText
+							messageKey="suppliers.title"
+							fallback="Suppliers"
+						/>
+					</h1>
+					<p className="text-sm text-muted-foreground">
+						<LocaleText
+							messageKey="suppliers.subtitle"
+							fallback="Airlines, cruise lines, booking platforms, hotels, and other vendors you book through."
+						/>
+					</p>
 				</div>
 				<SupplierFormDialog />
 			</div>

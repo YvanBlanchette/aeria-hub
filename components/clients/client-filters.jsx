@@ -2,10 +2,12 @@
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function ClientFilters({ defaultQuery, defaultStatus }) {
+	const { t } = useLocale();
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -31,7 +33,7 @@ export function ClientFilters({ defaultQuery, defaultStatus }) {
 				<Input
 					name="q"
 					defaultValue={defaultQuery}
-					placeholder="Search by name or email..."
+					placeholder={t("clients.filters.searchPlaceholder", "Search by name or email...")}
 					className="pl-8"
 				/>
 			</form>
@@ -44,9 +46,9 @@ export function ClientFilters({ defaultQuery, defaultStatus }) {
 					<SelectValue />
 				</SelectTrigger>
 				<SelectContent>
-					<SelectItem value="all">All</SelectItem>
-					<SelectItem value="ACTIVE">Active</SelectItem>
-					<SelectItem value="INACTIVE">Inactive</SelectItem>
+					<SelectItem value="all">{t("clients.filters.all", "All")}</SelectItem>
+					<SelectItem value="ACTIVE">{t("clients.status.active", "Active")}</SelectItem>
+					<SelectItem value="INACTIVE">{t("clients.status.inactive", "Inactive")}</SelectItem>
 				</SelectContent>
 			</Select>
 		</div>

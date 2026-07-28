@@ -9,6 +9,7 @@ import { parseLocalDateTime, dollarsToCents } from "@/lib/format";
 import { validateUploadedFile, saveUploadedFile, deleteStoredFile } from "@/lib/documents";
 import { computeCommissionPortions } from "@/lib/commissions";
 import { inferCruiseEndpoints, toSegmentDateTime } from "@/lib/cruisemapper-import";
+import { tServer } from "@/lib/i18n-server";
 
 function readSegmentFields(formData) {
 	const get = (name) => {
@@ -47,15 +48,16 @@ function readSegmentFields(formData) {
  * @param {FormData} formData
  */
 export async function createSegment(tripId, prevState, formData) {
+	const t = tServer;
 	const user = await requireUser();
 	const fields = readSegmentFields(formData);
-	if (!fields.title) return "Title is required.";
+	if (!fields.title) return t("errors.requiredTitle", "Title is required.");
 	if (fields.startDateTime && fields.endDateTime && fields.endDateTime < fields.startDateTime) {
-		return "End can't be before the start.";
+		return t("errors.endBeforeStart", "End can't be before the start.");
 	}
 
 	const trip = await prisma.trip.findUnique({ where: { id: tripId }, select: { clientId: true, name: true } });
-	if (!trip) return "Trip not found.";
+	if (!trip) return t("errors.tripNotFound", "Trip not found.");
 
 	const maxSort = await prisma.tripSegment.aggregate({ where: { tripId }, _max: { sortOrder: true } });
 	const segment = await prisma.tripSegment.create({
@@ -81,11 +83,12 @@ export async function createSegment(tripId, prevState, formData) {
  * @param {FormData} formData
  */
 export async function updateSegment(segmentId, prevState, formData) {
+	const t = tServer;
 	const user = await requireUser();
 	const fields = readSegmentFields(formData);
-	if (!fields.title) return "Title is required.";
+	if (!fields.title) return t("errors.requiredTitle", "Title is required.");
 	if (fields.startDateTime && fields.endDateTime && fields.endDateTime < fields.startDateTime) {
-		return "End can't be before the start.";
+		return t("errors.endBeforeStart", "End can't be before the start.");
 	}
 
 	const segment = await prisma.tripSegment.update({
@@ -128,13 +131,14 @@ export async function deleteSegment(segmentId, tripId) {
  * @param {FormData} formData
  */
 export async function importCruiseMapperItinerary(tripId, prevState, formData) {
+	const t = tServer;
 	const user = await requireUser();
 	const itineraryId = formData.get("itineraryId");
 	const mode = formData.get("mode") === "replace" ? "replace" : "append";
 	const includeSeaDays = formData.get("includeSeaDays") === "on";
 
 	if (typeof itineraryId !== "string" || !itineraryId.trim()) {
-		return "Choose a stored itinerary first.";
+		return t("errors.chooseStoredItinerary", "Choose a stored itinerary first.");
 	}
 
 	const selected = await prisma.scrapedCruiseItinerary.findUnique({
@@ -142,7 +146,7 @@ export async function importCruiseMapperItinerary(tripId, prevState, formData) {
 		select: { payload: true, shipName: true, title: true },
 	});
 	if (!selected) {
-		return "Selected itinerary was not found in the database.";
+		return t("errors.selectedItineraryNotFound", "Selected itinerary was not found in the database.");
 	}
 
 	const payload = selected.payload && typeof selected.payload === "object" ? selected.payload : null;
@@ -152,11 +156,11 @@ export async function importCruiseMapperItinerary(tripId, prevState, formData) {
 		where: { id: tripId },
 		select: { id: true, name: true, clientId: true },
 	});
-	if (!trip) return "Trip not found.";
+	if (!trip) return t("errors.tripNotFound", "Trip not found.");
 
 	const sourceCalls = payloadCalls.filter((call) => includeSeaDays || !call.is_sea_day);
 	if (sourceCalls.length === 0) {
-		return "No importable port calls found for this itinerary with the current options.";
+		return t("errors.noImportablePortCalls", "No importable port calls found for this itinerary with the current options.");
 	}
 
 	const { departurePort, arrivalPort } = inferCruiseEndpoints(payloadCalls);
@@ -281,6 +285,7 @@ export async function reorderSegment(segmentId, tripId, direction) {
  * @param {FormData} formData
  */
 export async function uploadSegmentDocument(segmentId, prevState, formData) {
+	const t = tServer;
 	const user = await requireUser();
 	const file = formData.get("file");
 	const type = formData.get("type") || "TICKET";
@@ -292,7 +297,7 @@ export async function uploadSegmentDocument(segmentId, prevState, formData) {
 		where: { id: segmentId },
 		include: { trip: { select: { id: true, clientId: true, name: true } } },
 	});
-	if (!segment) return "Segment not found.";
+	if (!segment) return t("errors.segmentNotFound", "Segment not found.");
 
 	const saved = await saveUploadedFile(segment.trip.clientId, file);
 
@@ -348,9 +353,10 @@ export async function deleteSegmentDocument(documentId, segmentId, tripId) {
  * @param {FormData} formData
  */
 export async function setSegmentCommission(segmentId, prevState, formData) {
+	const t = tServer;
 	await requireUser();
 	const amount = dollarsToCents(formData.get("amount"));
-	if (amount == null || amount < 0) return "Enter a valid commission amount.";
+	if (amount == null || amount < 0) return t("errors.validCommissionAmount", "Enter a valid commission amount.");
 
 	const segment = await prisma.tripSegment.findUnique({
 		where: { id: segmentId },

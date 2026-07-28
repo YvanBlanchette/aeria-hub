@@ -6,11 +6,12 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, requireAdmin } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
 import { validateAvatarFile, saveAvatarFile, deleteAvatarFile } from "@/lib/avatars";
+import { tServer } from "@/lib/i18n-server";
 
 function refreshSessionViews() {
-  // Topbar/sidebar read the session in the shared (admin) layout, so a
-  // plain revalidatePath("/settings") wouldn't refresh them.
-  revalidatePath("/", "layout");
+	// Topbar/sidebar read the session in the shared (admin) layout, so a
+	// plain revalidatePath("/settings") wouldn't refresh them.
+	revalidatePath("/", "layout");
 }
 
 /**
@@ -18,29 +19,30 @@ function refreshSessionViews() {
  * @param {FormData} formData
  */
 export async function updateProfile(prevState, formData) {
-  const user = await requireUser();
-  const name = String(formData.get("name") || "").trim();
-  const email = String(formData.get("email") || "").trim();
+	const t = tServer;
+	const user = await requireUser();
+	const name = String(formData.get("name") || "").trim();
+	const email = String(formData.get("email") || "").trim();
 
-  if (!name) return "Name is required.";
-  if (!email) return "Email is required.";
+	if (!name) return t("errors.requiredName", "Name is required.");
+	if (!email) return t("errors.requiredEmail", "Email is required.");
 
-  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
-  if (existing && existing.id !== user.id) {
-    return "Another account already uses that email.";
-  }
+	const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+	if (existing && existing.id !== user.id) {
+		return t("errors.emailInUse", "Another account already uses that email.");
+	}
 
-  await prisma.user.update({ where: { id: user.id }, data: { name, email } });
+	await prisma.user.update({ where: { id: user.id }, data: { name, email } });
 
-  await logActivity({
-    entityType: "User",
-    entityId: user.id,
-    action: "updated",
-    description: "Profile updated",
-    userId: user.id,
-  });
+	await logActivity({
+		entityType: "User",
+		entityId: user.id,
+		action: "updated",
+		description: "Profile updated",
+		userId: user.id,
+	});
 
-  refreshSessionViews();
+	refreshSessionViews();
 }
 
 /**
@@ -48,26 +50,26 @@ export async function updateProfile(prevState, formData) {
  * @param {FormData} formData
  */
 export async function uploadAvatar(prevState, formData) {
-  const user = await requireUser();
-  const file = formData.get("file");
+	const user = await requireUser();
+	const file = formData.get("file");
 
-  const validationError = validateAvatarFile(file);
-  if (validationError) return validationError;
+	const validationError = validateAvatarFile(file);
+	if (validationError) return validationError;
 
-  const previous = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
-  const avatarUrl = await saveAvatarFile(user.id, file);
-  await prisma.user.update({ where: { id: user.id }, data: { avatarUrl } });
-  if (previous?.avatarUrl) await deleteAvatarFile(previous.avatarUrl);
+	const previous = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
+	const avatarUrl = await saveAvatarFile(user.id, file);
+	await prisma.user.update({ where: { id: user.id }, data: { avatarUrl } });
+	if (previous?.avatarUrl) await deleteAvatarFile(previous.avatarUrl);
 
-  refreshSessionViews();
+	refreshSessionViews();
 }
 
 export async function removeAvatar() {
-  const user = await requireUser();
-  const previous = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
-  await prisma.user.update({ where: { id: user.id }, data: { avatarUrl: null } });
-  if (previous?.avatarUrl) await deleteAvatarFile(previous.avatarUrl);
-  refreshSessionViews();
+	const user = await requireUser();
+	const previous = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarUrl: true } });
+	await prisma.user.update({ where: { id: user.id }, data: { avatarUrl: null } });
+	if (previous?.avatarUrl) await deleteAvatarFile(previous.avatarUrl);
+	refreshSessionViews();
 }
 
 /**
@@ -75,28 +77,29 @@ export async function removeAvatar() {
  * @param {FormData} formData
  */
 export async function changePassword(prevState, formData) {
-  const sessionUser = await requireUser();
-  const currentPassword = String(formData.get("currentPassword") || "");
-  const newPassword = String(formData.get("newPassword") || "");
-  const confirmPassword = String(formData.get("confirmPassword") || "");
+	const t = tServer;
+	const sessionUser = await requireUser();
+	const currentPassword = String(formData.get("currentPassword") || "");
+	const newPassword = String(formData.get("newPassword") || "");
+	const confirmPassword = String(formData.get("confirmPassword") || "");
 
-  if (newPassword.length < 8) return "New password must be at least 8 characters.";
-  if (newPassword !== confirmPassword) return "New password and confirmation don't match.";
+	if (newPassword.length < 8) return t("errors.newPasswordMin", "New password must be at least 8 characters.");
+	if (newPassword !== confirmPassword) return t("errors.passwordConfirmMismatch", "New password and confirmation don't match.");
 
-  const user = await prisma.user.findUnique({ where: { id: sessionUser.id }, select: { passwordHash: true } });
-  const currentMatches = await bcrypt.compare(currentPassword, user.passwordHash);
-  if (!currentMatches) return "Current password is incorrect.";
+	const user = await prisma.user.findUnique({ where: { id: sessionUser.id }, select: { passwordHash: true } });
+	const currentMatches = await bcrypt.compare(currentPassword, user.passwordHash);
+	if (!currentMatches) return t("errors.currentPasswordIncorrect", "Current password is incorrect.");
 
-  const passwordHash = await bcrypt.hash(newPassword, 10);
-  await prisma.user.update({ where: { id: sessionUser.id }, data: { passwordHash } });
+	const passwordHash = await bcrypt.hash(newPassword, 10);
+	await prisma.user.update({ where: { id: sessionUser.id }, data: { passwordHash } });
 
-  await logActivity({
-    entityType: "User",
-    entityId: sessionUser.id,
-    action: "updated",
-    description: "Password changed",
-    userId: sessionUser.id,
-  });
+	await logActivity({
+		entityType: "User",
+		entityId: sessionUser.id,
+		action: "updated",
+		description: "Password changed",
+		userId: sessionUser.id,
+	});
 }
 
 /**
@@ -104,31 +107,32 @@ export async function changePassword(prevState, formData) {
  * @param {FormData} formData
  */
 export async function inviteAgent(prevState, formData) {
-  const admin = await requireAdmin();
-  const name = String(formData.get("name") || "").trim();
-  const email = String(formData.get("email") || "").trim();
-  const role = formData.get("role") === "ADMIN" ? "ADMIN" : "AGENT";
-  const password = String(formData.get("password") || "");
+	const t = tServer;
+	const admin = await requireAdmin();
+	const name = String(formData.get("name") || "").trim();
+	const email = String(formData.get("email") || "").trim();
+	const role = formData.get("role") === "ADMIN" ? "ADMIN" : "AGENT";
+	const password = String(formData.get("password") || "");
 
-  if (!name) return "Name is required.";
-  if (!email) return "Email is required.";
-  if (password.length < 8) return "Temporary password must be at least 8 characters.";
+	if (!name) return t("errors.requiredName", "Name is required.");
+	if (!email) return t("errors.requiredEmail", "Email is required.");
+	if (password.length < 8) return t("errors.tempPasswordMin", "Temporary password must be at least 8 characters.");
 
-  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
-  if (existing) return "Another account already uses that email.";
+	const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+	if (existing) return t("errors.emailInUse", "Another account already uses that email.");
 
-  const passwordHash = await bcrypt.hash(password, 10);
-  const created = await prisma.user.create({ data: { name, email, role, passwordHash } });
+	const passwordHash = await bcrypt.hash(password, 10);
+	const created = await prisma.user.create({ data: { name, email, role, passwordHash } });
 
-  await logActivity({
-    entityType: "User",
-    entityId: created.id,
-    action: "created",
-    description: `Teammate ${name} added (${role.toLowerCase()})`,
-    userId: admin.id,
-  });
+	await logActivity({
+		entityType: "User",
+		entityId: created.id,
+		action: "created",
+		description: `Teammate ${name} added (${role.toLowerCase()})`,
+		userId: admin.id,
+	});
 
-  revalidatePath("/settings");
+	revalidatePath("/settings");
 }
 
 /**
@@ -136,19 +140,20 @@ export async function inviteAgent(prevState, formData) {
  * @param {"ADMIN" | "AGENT"} role
  */
 export async function updateUserRole(userId, role) {
-  await requireAdmin();
-  if (role !== "ADMIN" && role !== "AGENT") return "Invalid role.";
+	const t = tServer;
+	await requireAdmin();
+	if (role !== "ADMIN" && role !== "AGENT") return t("errors.invalidRole", "Invalid role.");
 
-  if (role === "AGENT") {
-    const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
-    const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
-    if (target?.role === "ADMIN" && adminCount <= 1) {
-      return "Can't remove the last admin.";
-    }
-  }
+	if (role === "AGENT") {
+		const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
+		const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+		if (target?.role === "ADMIN" && adminCount <= 1) {
+			return t("errors.cannotRemoveLastAdmin", "Can't remove the last admin.");
+		}
+	}
 
-  await prisma.user.update({ where: { id: userId }, data: { role } });
-  revalidatePath("/settings");
+	await prisma.user.update({ where: { id: userId }, data: { role } });
+	revalidatePath("/settings");
 }
 
 /**
@@ -157,36 +162,41 @@ export async function updateUserRole(userId, role) {
  * @param {FormData} formData
  */
 export async function resetUserPassword(userId, prevState, formData) {
-  await requireAdmin();
-  const newPassword = String(formData.get("newPassword") || "");
-  const confirmPassword = String(formData.get("confirmPassword") || "");
+	const t = tServer;
+	await requireAdmin();
+	const newPassword = String(formData.get("newPassword") || "");
+	const confirmPassword = String(formData.get("confirmPassword") || "");
 
-  if (newPassword.length < 8) return "New password must be at least 8 characters.";
-  if (newPassword !== confirmPassword) return "New password and confirmation don't match.";
+	if (newPassword.length < 8) return t("errors.newPasswordMin", "New password must be at least 8 characters.");
+	if (newPassword !== confirmPassword) return t("errors.passwordConfirmMismatch", "New password and confirmation don't match.");
 
-  const passwordHash = await bcrypt.hash(newPassword, 10);
-  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
-  revalidatePath("/settings");
+	const passwordHash = await bcrypt.hash(newPassword, 10);
+	await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+	revalidatePath("/settings");
 }
 
 /** @param {string} userId */
 export async function removeUser(userId) {
-  const admin = await requireAdmin();
-  if (userId === admin.id) return "You can't remove your own account.";
+	const t = tServer;
+	const admin = await requireAdmin();
+	if (userId === admin.id) return t("errors.cannotRemoveOwnAccount", "You can't remove your own account.");
 
-  const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, name: true } });
-  if (!target) return "Teammate not found.";
+	const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, name: true } });
+	if (!target) return t("errors.teammateNotFound", "Teammate not found.");
 
-  if (target.role === "ADMIN") {
-    const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
-    if (adminCount <= 1) return "Can't remove the last admin.";
-  }
+	if (target.role === "ADMIN") {
+		const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
+		if (adminCount <= 1) return t("errors.cannotRemoveLastAdmin", "Can't remove the last admin.");
+	}
 
-  try {
-    await prisma.user.delete({ where: { id: userId } });
-  } catch {
-    return `Can't remove ${target.name} — they still have notes, tasks, or clients assigned to them. Reassign those first.`;
-  }
+	try {
+		await prisma.user.delete({ where: { id: userId } });
+	} catch {
+		return t(
+			"errors.cannotRemoveAssignedData",
+			`Can't remove ${target.name} - they still have notes, tasks, or clients assigned to them. Reassign those first.`,
+		).replace("{name}", target.name);
+	}
 
-  revalidatePath("/settings");
+	revalidatePath("/settings");
 }

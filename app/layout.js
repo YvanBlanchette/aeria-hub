@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
+import { RegisterServiceWorker } from "@/components/pwa/register-sw";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,6 +17,16 @@ const geistMono = Geist_Mono({
 export const metadata = {
 	title: "ÆRIA Hub",
 	description: "Travel agency CRM to manage clients, trips, and itineraries in one place.",
+	manifest: "/manifest.webmanifest",
+	applicationName: "ÆRIA Hub",
+	icons: {
+		icon: [{ url: "/icon-192.png", type: "image/png" }],
+		apple: [{ url: "/apple-touch-icon.png", type: "image/png" }],
+	},
+};
+
+export const viewport = {
+	themeColor: "#0b4f6c",
 };
 
 export default function RootLayout({ children }) {
@@ -45,6 +56,7 @@ export default function RootLayout({ children }) {
 					enableSystem={false}
 					disableTransitionOnChange
 				>
+					<RegisterServiceWorker />
 					<LocaleProvider>{children}</LocaleProvider>
 				</ThemeProvider>
 			</body>

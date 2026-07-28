@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180" role="img" aria-label="AERIA Hub apple touch icon">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0b4f6c" />
+      <stop offset="100%" stop-color="#083349" />
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" rx="36" fill="url(#bg)" />
+  <circle cx="90" cy="64" r="31" fill="#e8a33d" />
+  <path d="M90 82 L123 140 H106 L97 124 H83 L74 140 H57 Z" fill="#ffffff" />
+</svg>

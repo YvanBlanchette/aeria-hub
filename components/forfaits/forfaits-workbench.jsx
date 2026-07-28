@@ -1383,7 +1383,7 @@ export function ForfaitsWorkbench({
 				<>
 					<div className="grid gap-4 lg:grid-cols-2">
 						{/* VOLS ALLER */}
-						<Card>
+						<Card className="p-0">
 							<FlightSegmentsEditor
 								title={tr(locale, "Vol aller", "Outbound flight")}
 								locale={locale}
@@ -1398,7 +1398,7 @@ export function ForfaitsWorkbench({
 						</Card>
 
 						{/* VOLS RETOUR */}
-						<Card>
+						<Card className="p-0">
 							<FlightSegmentsEditor
 								title={tr(locale, "Vol retour", "Return flight")}
 								locale={locale}
@@ -2260,7 +2260,7 @@ function CruiseSearchSelect({ value, onValueChange, options, placeholder, search
 
 function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airportOptions, onAdd, onRemove, onUpdate, locale = "fr" }) {
 	return (
-		<div className="space-y-2 rounded-xl border border-border/70 p-3">
+		<div className="space-y-2 p-3">
 			<div className="flex items-center justify-between gap-3">
 				<div>
 					<p className="text-sm font-semibold">{title}</p>

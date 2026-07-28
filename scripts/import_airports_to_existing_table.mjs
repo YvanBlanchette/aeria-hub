@@ -86,24 +86,35 @@ async function importAirports() {
 			if (cols.lonCol) payload[cols.lonCol] = airport.lon;
 
 			const fields = Object.keys(payload);
-			const values = fields.map((k) => payload[k]);
-			const placeholders = fields.map((_, i) => `$${i + 1}`).join(", ");
-			const updates = fields
-				.filter((field) => field !== cols.codeCol)
-				.map((field) => `\"${field}\" = EXCLUDED.\"${field}\"`)
-				.join(", ");
+			const mutableFields = fields.filter((field) => field !== cols.codeCol);
 
-			const sql = `
+			// Legacy-friendly strategy: update by code first, then insert if no row exists.
+			if (mutableFields.length > 0) {
+				const updateSet = mutableFields.map((field, i) => `\"${field}\" = $${i + 1}`).join(", ");
+				const updateValues = mutableFields.map((field) => payload[field]);
+				const updateCodeParam = `$${updateValues.length + 1}`;
+				const updateSql = `
+					UPDATE public.airports
+					SET ${updateSet}
+					WHERE UPPER(TRIM(COALESCE(\"${cols.codeCol}\", ''))) = ${updateCodeParam}
+				`;
+
+				const updateResult = await client.query(updateSql, [...updateValues, airport.code]);
+				if (updateResult.rowCount > 0) {
+					updated += updateResult.rowCount;
+					continue;
+				}
+			}
+
+			const insertValues = fields.map((field) => payload[field]);
+			const insertPlaceholders = fields.map((_, i) => `$${i + 1}`).join(", ");
+			const insertSql = `
 				INSERT INTO public.airports (${fields.map((f) => `\"${f}\"`).join(", ")})
-				VALUES (${placeholders})
-				ON CONFLICT (\"${cols.codeCol}\")
-				DO UPDATE SET ${updates}
-				RETURNING (xmax = 0) AS inserted
+				VALUES (${insertPlaceholders})
 			`;
 
-			const result = await client.query(sql, values);
-			if (result.rows[0]?.inserted) inserted += 1;
-			else updated += 1;
+			await client.query(insertSql, insertValues);
+			inserted += 1;
 		}
 	} finally {
 		await client.end();

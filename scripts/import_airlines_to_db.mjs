@@ -13,14 +13,19 @@ async function readAirlineNamesFromJson() {
 	const filePath = path.resolve(process.cwd(), "data/airlines.json");
 	const raw = await readFile(filePath, "utf-8");
 	const parsed = JSON.parse(raw);
-	const rows = Array.isArray(parsed) ? parsed : [];
+	const rows = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.airlines) ? parsed.airlines : [];
 	const unique = new Set();
 
 	for (const row of rows) {
+		const directName = normalizeAirlineName(row?.name);
+		if (directName) unique.add(directName);
+
 		const namesRaw = String(row?.Statistics?.Carriers?.Names || "");
-		for (const token of namesRaw.split(",")) {
-			const name = normalizeAirlineName(token);
-			if (name) unique.add(name);
+		if (namesRaw) {
+			for (const token of namesRaw.split(",")) {
+				const name = normalizeAirlineName(token);
+				if (name) unique.add(name);
+			}
 		}
 	}
 

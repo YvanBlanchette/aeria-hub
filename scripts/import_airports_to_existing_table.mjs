@@ -40,7 +40,34 @@ async function loadTableColumns(client) {
 	`);
 
 	if (result.rows.length === 0) {
-		throw new Error("No table named 'airports' or 'airport' was found in this database.");
+		await client.query(`
+			CREATE TABLE IF NOT EXISTS public.airports (
+				code TEXT PRIMARY KEY,
+				name TEXT NOT NULL,
+				city TEXT,
+				country TEXT,
+				lat DOUBLE PRECISION,
+				lon DOUBLE PRECISION,
+				created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				updated_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+			)
+		`);
+
+		const retry = await client.query(`
+			SELECT table_schema, table_name, column_name
+			FROM information_schema.columns
+			WHERE table_schema = 'public' AND lower(table_name) = 'airports'
+		`);
+
+		if (retry.rows.length === 0) {
+			throw new Error("No table named 'airports' or 'airport' was found in this database.");
+		}
+
+		return {
+			schema: "public",
+			table: "airports",
+			columns: new Set(retry.rows.map((r) => r.column_name)),
+		};
 	}
 
 	const grouped = new Map();

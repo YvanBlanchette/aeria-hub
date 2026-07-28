@@ -94,6 +94,67 @@ async function upsertCruiseLines(prisma, options) {
 	return mapByName;
 }
 
+async function ensureCruiseTables(prisma) {
+	await prisma.$executeRawUnsafe(`
+		CREATE TABLE IF NOT EXISTS "CruiseShip" (
+			"id" TEXT NOT NULL,
+			"sourceValue" TEXT,
+			"name" TEXT NOT NULL,
+			"supplierId" TEXT,
+			"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			"updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			CONSTRAINT "CruiseShip_pkey" PRIMARY KEY ("id")
+		)
+	`);
+
+	await prisma.$executeRawUnsafe(`
+		CREATE TABLE IF NOT EXISTS "CruisePort" (
+			"id" TEXT NOT NULL,
+			"sourceValue" TEXT,
+			"name" TEXT NOT NULL,
+			"displayText" TEXT,
+			"country" TEXT,
+			"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			"updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			CONSTRAINT "CruisePort_pkey" PRIMARY KEY ("id")
+		)
+	`);
+
+	await prisma.$executeRawUnsafe(`
+		CREATE UNIQUE INDEX IF NOT EXISTS "CruiseShip_sourceValue_key" ON "CruiseShip"("sourceValue")
+	`);
+	await prisma.$executeRawUnsafe(`
+		CREATE UNIQUE INDEX IF NOT EXISTS "CruiseShip_supplierId_name_key" ON "CruiseShip"("supplierId", "name")
+	`);
+	await prisma.$executeRawUnsafe(`
+		CREATE INDEX IF NOT EXISTS "CruiseShip_name_idx" ON "CruiseShip"("name")
+	`);
+	await prisma.$executeRawUnsafe(`
+		CREATE INDEX IF NOT EXISTS "CruiseShip_supplierId_idx" ON "CruiseShip"("supplierId")
+	`);
+
+	await prisma.$executeRawUnsafe(`
+		CREATE UNIQUE INDEX IF NOT EXISTS "CruisePort_sourceValue_key" ON "CruisePort"("sourceValue")
+	`);
+	await prisma.$executeRawUnsafe(`
+		CREATE UNIQUE INDEX IF NOT EXISTS "CruisePort_name_country_key" ON "CruisePort"("name", "country")
+	`);
+	await prisma.$executeRawUnsafe(`
+		CREATE INDEX IF NOT EXISTS "CruisePort_name_idx" ON "CruisePort"("name")
+	`);
+
+	await prisma.$executeRawUnsafe(`
+		ALTER TABLE "CruiseShip"
+		DROP CONSTRAINT IF EXISTS "CruiseShip_supplierId_fkey"
+	`);
+	await prisma.$executeRawUnsafe(`
+		ALTER TABLE "CruiseShip"
+		ADD CONSTRAINT "CruiseShip_supplierId_fkey"
+		FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id")
+		ON DELETE SET NULL ON UPDATE CASCADE
+	`);
+}
+
 async function importCruiseCatalog() {
 	const vendorsJson = await readJson("data/cruise-vendors.json");
 	const shipsJson = await readJson("data/cruise-ships.json");
@@ -111,6 +172,8 @@ async function importCruiseCatalog() {
 	let ports = 0;
 
 	try {
+		await ensureCruiseTables(prisma);
+
 		const lineIdByName = await upsertCruiseLines(prisma, vendorOptions);
 		lines = lineIdByName.size;
 

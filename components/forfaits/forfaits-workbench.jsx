@@ -1380,75 +1380,81 @@ export function ForfaitsWorkbench({
 
 			{/* VOLS TAB */}
 			{tab === "vols" && (
-				<Card>
-					<CardHeader>
-						{/* <CardTitle>{tr(locale, "Vols et bagages", "Flights")}</CardTitle> */}
-						<CardDescription>
-							{tr(
-								locale,
-								"Segmente les vols aller/retour avec durees et escales calculees automatiquement.",
-								"Split outbound/return flights with automatic duration and layover calculation.",
-							)}
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-5">
-						{/* VOLS ALLER */}
-						<FlightSegmentsEditor
-							title={tr(locale, "Vol aller", "Outbound flight")}
-							locale={locale}
-							direction="aller"
-							segments={volsAllerSegments}
-							airlineOptions={airlineOptions}
-							airportOptions={airportOptions}
-							onAdd={addFlightSegment}
-							onRemove={removeFlightSegment}
-							onUpdate={updateFlightSegment}
-						/>
-
-						{/* VOLS RETOUR */}
-						<FlightSegmentsEditor
-							title={tr(locale, "Vol retour", "Return flight")}
-							locale={locale}
-							direction="retour"
-							segments={volsRetourSegments}
-							airlineOptions={airlineOptions}
-							airportOptions={airportOptions}
-							onAdd={addFlightSegment}
-							onRemove={removeFlightSegment}
-							onUpdate={updateFlightSegment}
-						/>
-
-						{/* TARIFICATION VOLS */}
-						<div className="grid gap-3 md:grid-cols-2">
-							<MoneyWithMode
-								label={tr(locale, "Cout vols", "Flight cost")}
-								value={draft.vols}
-								mode={draft.volsMode}
-								onValue={(v) => setField("vols", v)}
-								onMode={(v) => setField("volsMode", v)}
-								className="w-full md:col-span-2"
+				<>
+					{/* VOLS ALLER */}
+						<div className="grid gap-4 lg:grid-cols-2">
+							<FlightSegmentsEditor
+								title={tr(locale, "Vol aller", "Outbound flight")}
+								locale={locale}
+								direction="aller"
+								segments={volsAllerSegments}
+								airlineOptions={airlineOptions}
+								airportOptions={airportOptions}
+								onAdd={addFlightSegment}
+								onRemove={removeFlightSegment}
+								onUpdate={updateFlightSegment}
 							/>
-							<div className="flex items-center gap-3 w-full md:col-span-2">
-								<MoneyWithMode
-									label={tr(locale, "Bagages aller", "Outbound baggage")}
-									value={draft.bagAller}
-									mode={draft.bagAllerMode}
-									onValue={(v) => setField("bagAller", v)}
-									onMode={(v) => setField("bagAllerMode", v)}
-									className="flex-1 min-w-0"
-								/>
-								<MoneyWithMode
-									label={tr(locale, "Bagages retour", "Return baggage")}
-									value={draft.bagRetour}
-									mode={draft.bagRetourMode}
-									onValue={(v) => setField("bagRetour", v)}
-									onMode={(v) => setField("bagRetourMode", v)}
-									className="flex-1 min-w-0"
-								/>
-							</div>
+
+							{/* VOLS RETOUR */}
+							<FlightSegmentsEditor
+								title={tr(locale, "Vol retour", "Return flight")}
+								locale={locale}
+								direction="retour"
+								segments={volsRetourSegments}
+								airlineOptions={airlineOptions}
+								airportOptions={airportOptions}
+								onAdd={addFlightSegment}
+								onRemove={removeFlightSegment}
+								onUpdate={updateFlightSegment}
+							/>
 						</div>
-					</CardContent>
-				</Card>
+
+
+						<Card>
+							<CardHeader>
+								{/* <CardTitle>{tr(locale, "Vols et bagages", "Flights")}</CardTitle> */}
+								<CardDescription>
+									{tr(
+										locale,
+										"Segmente les vols aller/retour avec durees et escales calculees automatiquement.",
+										"Split outbound/return flights with automatic duration and layover calculation.",
+									)}
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-5">
+								
+								{/* TARIFICATION VOLS */}
+								<div className="grid gap-3 md:grid-cols-2">
+									<MoneyWithMode
+										label={tr(locale, "Cout vols", "Flight cost")}
+										value={draft.vols}
+										mode={draft.volsMode}
+										onValue={(v) => setField("vols", v)}
+										onMode={(v) => setField("volsMode", v)}
+										className="w-full md:col-span-2"
+									/>
+									<div className="flex items-center gap-3 w-full md:col-span-2">
+										<MoneyWithMode
+											label={tr(locale, "Bagages aller", "Outbound baggage")}
+											value={draft.bagAller}
+											mode={draft.bagAllerMode}
+											onValue={(v) => setField("bagAller", v)}
+											onMode={(v) => setField("bagAllerMode", v)}
+											className="flex-1 min-w-0"
+										/>
+										<MoneyWithMode
+											label={tr(locale, "Bagages retour", "Return baggage")}
+											value={draft.bagRetour}
+											mode={draft.bagRetourMode}
+											onValue={(v) => setField("bagRetour", v)}
+											onMode={(v) => setField("bagRetourMode", v)}
+											className="flex-1 min-w-0"
+										/>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+				</>
 			)}
 
 			{/* HOTEL TAB */}

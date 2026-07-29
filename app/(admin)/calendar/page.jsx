@@ -5,7 +5,7 @@ import { CrmCalendar } from "@/components/calendar/crm-calendar";
 import { buildCrmCalendarEvents } from "@/lib/calendar-events";
 
 export const metadata = {
-	title: "Calendar - AERIA Hub",
+	title: "Calendar | AERIA Hub",
 };
 
 export default async function CalendarPage() {
@@ -14,7 +14,7 @@ export default async function CalendarPage() {
 
 	return (
 		<div className="space-y-6">
-			<div className="rounded-3xl border border-border/70 bg-card/85 p-5 shadow-sm backdrop-blur-sm sm:p-6">
+			{/* <div className="rounded-3xl border border-border/70 bg-card/85 p-5 shadow-sm backdrop-blur-sm sm:p-6">
 				<div className="space-y-2">
 					<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
 						<LocaleText
@@ -35,7 +35,7 @@ export default async function CalendarPage() {
 						/>
 					</p>
 				</div>
-			</div>
+			</div> */}
 
 			<CrmCalendar
 				initialEvents={events}

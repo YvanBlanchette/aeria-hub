@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { formatDate } from "@/lib/format";
+import { LocaleText } from "../i18n/locale-text";
 
 function dayKey(date) {
 	return new Date(date).toISOString().slice(0, 10);
@@ -193,7 +194,14 @@ export function CrmCalendar({ initialEvents, currentUserId }) {
 			<div className="space-y-4">
 				<Card>
 					<CardHeader>
-						<CardTitle>{t("calendar.filters.title", "Filters")}</CardTitle>
+						<CardTitle>
+							<h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem]">
+								<LocaleText
+									messageKey="calendar.title"
+									fallback="Calendar"
+								/>
+							</h1>
+						</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-3">
 						<div className="space-y-1">

@@ -14,6 +14,7 @@ LOCK_FILE="/tmp/cruisemapper_ingest.lock"
 PAGES="${CRUISE_PAGES:-110}"
 STALE_PAGES="${CRUISE_STALE_PAGES:-2}"
 EXPAND_LIMIT_PER_SHIP="${CRUISE_EXPAND_LIMIT_PER_SHIP:-0}"
+EMPTY_SHIPS_FILE="${CRUISE_EMPTY_SHIPS_FILE:-data/no_itinerary_ships.txt}"
 
 mkdir -p "$LOG_DIR"
 RUN_TS="$(date +%Y%m%d_%H%M%S)"
@@ -53,12 +54,18 @@ START_EPOCH="$(date +%s)"
     --pages "$PAGES" \
     --stale-pages "$STALE_PAGES"
 
-  echo "[$(date -Is)] Scrape and sync to DB (expand_limit_per_ship=$EXPAND_LIMIT_PER_SHIP)"
+  echo "[$(date -Is)] Mark already-cached ships with zero itineraries"
+  python3 scripts/cruisemapper_scraper.py --no-robots mark-empty-from-cache \
+    --out "$EMPTY_SHIPS_FILE" \
+    --merge
+
+  echo "[$(date -Is)] Scrape and sync to DB (expand_limit_per_ship=$EXPAND_LIMIT_PER_SHIP empty_ships_file=$EMPTY_SHIPS_FILE)"
   python3 scripts/cruisemapper_scraper.py --no-robots scrape \
     --ships ships.txt \
     --out data/full_ingest \
     --expand-schedule-details \
     --expand-limit-per-ship "$EXPAND_LIMIT_PER_SHIP" \
+    --empty-ships-file "$EMPTY_SHIPS_FILE" \
     --sync-db
 
   # psql does not support the schema query param in URI.

@@ -826,6 +826,29 @@ def write_finder_results(rows: list[FinderCruiseResult], out_csv: Path) -> None:
     log.info("%d resultats finder ecrits -> %s", len(rows), out_csv)
 
 
+def load_url_set(path: Path | None) -> set[str]:
+    if not path or not path.exists():
+        return set()
+    return {
+        line.strip().lstrip("\ufeff")
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines()
+        if line.strip().lstrip("\ufeff") and not line.strip().lstrip("\ufeff").startswith("#")
+    }
+
+
+def write_url_set(path: Path, urls: set[str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(sorted(urls)) + ("\n" if urls else ""), encoding="utf-8")
+
+
+def extract_cached_page_url(html: str) -> str | None:
+    m = re.search(r'<meta\s+(?:name|property)=["\']og:url["\']\s+content=["\']([^"\']+)["\']', html, re.I)
+    if m:
+        return m.group(1)
+    m = re.search(r'<link\s+href=["\']([^"\']+)["\']\s+rel=["\']canonical["\']', html, re.I)
+    return m.group(1) if m else None
+
+
 # --------------------------------------------------------------------------
 # COMMANDES
 # --------------------------------------------------------------------------
@@ -866,6 +889,10 @@ def cmd_discover(args, client: Client) -> int:
 def cmd_scrape(args, client: Client) -> int:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
+    empty_ships_path = Path(args.empty_ships_file) if args.empty_ships_file else None
+    known_empty_ships = set() if args.ignore_empty_ships_file else load_url_set(empty_ships_path)
+    newly_empty_ships: set[str] = set()
+
     ships = []
     if args.url:
         ships.append(args.url)
@@ -882,12 +909,19 @@ def cmd_scrape(args, client: Client) -> int:
     ships_failed = 0
     ships_with_current = 0
     ships_with_schedule = 0
+    ships_skipped_known_empty = 0
+    ships_marked_empty = 0
     total_port_calls = 0
 
     detailed: list[DetailedItinerary] = []
     expanded_details: list[DetailedItinerary] = []
     schedule: list[ScheduledSailing] = []
     for n, url in enumerate(ships, 1):
+        if url in known_empty_ships:
+            ships_skipped_known_empty += 1
+            log.info("[%d/%d] skip connu sans itineraire: %s", n, len(ships), url)
+            continue
+
         html = client.get(url)
         if html is None:
             ships_failed += 1
@@ -905,6 +939,12 @@ def cmd_scrape(args, client: Client) -> int:
         if sch:
             ships_with_schedule += 1
 
+        if not cur and not sch:
+            newly_empty_ships.add(url)
+            ships_marked_empty += 1
+            if empty_ships_path:
+                write_url_set(empty_ships_path, known_empty_ships | newly_empty_ships)
+
         if args.expand_schedule_details and sch:
             expanded = expand_scheduled_sailings(
                 client,
@@ -921,11 +961,15 @@ def cmd_scrape(args, client: Client) -> int:
         if n % 25 == 0:
             write_detailed(detailed, out)
             write_schedule(schedule, out)
+            if empty_ships_path and newly_empty_ships:
+                write_url_set(empty_ships_path, known_empty_ships | newly_empty_ships)
 
     all_detailed = detailed + expanded_details
     write_detailed(all_detailed, out)
     write_schedule(schedule, out)
     write_ports(all_detailed, out)
+    if empty_ships_path:
+        write_url_set(empty_ships_path, known_empty_ships | newly_empty_ships)
 
     sync_exit_code = None
     if args.sync_db:
@@ -942,6 +986,8 @@ def cmd_scrape(args, client: Client) -> int:
                 "ships_total": ships_total,
                 "ships_fetched": ships_fetched,
                 "ships_failed": ships_failed,
+                "ships_skipped_known_empty": ships_skipped_known_empty,
+                "ships_marked_empty": ships_marked_empty,
                 "ships_with_current_itinerary": ships_with_current,
                 "ships_with_schedule": ships_with_schedule,
                 "detailed_itineraries": len(all_detailed),
@@ -962,6 +1008,9 @@ def cmd_scrape(args, client: Client) -> int:
         "ships_total": ships_total,
         "ships_fetched": ships_fetched,
         "ships_failed": ships_failed,
+        "ships_skipped_known_empty": ships_skipped_known_empty,
+        "ships_marked_empty": ships_marked_empty,
+        "empty_ships_file": str(empty_ships_path) if empty_ships_path else None,
         "ships_with_current_itinerary": ships_with_current,
         "ships_with_schedule": ships_with_schedule,
         "detailed_itineraries": len(all_detailed),
@@ -976,9 +1025,11 @@ def cmd_scrape(args, client: Client) -> int:
     write_scrape_summary(out, summary)
 
     log.info(
-        "scrape resume: ships=%d fetched=%d failed=%d current=%d schedule=%d port_calls=%d",
+        "scrape resume: ships=%d fetched=%d skipped_empty=%d marked_empty=%d failed=%d current=%d schedule=%d port_calls=%d",
         ships_total,
         ships_fetched,
+        ships_skipped_known_empty,
+        ships_marked_empty,
         ships_failed,
         ships_with_current,
         ships_with_schedule,
@@ -1038,6 +1089,51 @@ def cmd_finder(args, client: Client) -> int:
     return 0 if rows else 1
 
 
+def cmd_mark_empty_from_cache(args, client: Client) -> int:
+    cache_dir = Path(args.cache_dir or args.cache)
+    empty: set[str] = set()
+    with_data: set[str] = set()
+    ship_pages = 0
+    skipped_non_ship_pages = 0
+    unknown_pages = 0
+
+    for path in cache_dir.glob("*.html"):
+        html = path.read_text(encoding="utf-8", errors="replace")
+        url = extract_cached_page_url(html)
+        if not url:
+            unknown_pages += 1
+            continue
+        if not re.search(r"/ships/[A-Za-z0-9\-]+-\d+/?$", url):
+            skipped_non_ship_pages += 1
+            continue
+
+        ship_pages += 1
+        name, line = extract_ship_meta(html)
+        name = name or ship_id_of(url)
+        cur = parse_current_itinerary(html, url, name, line)
+        sch = parse_schedule(html, url, name, line)
+        if cur or sch:
+            with_data.add(url)
+        else:
+            empty.add(url)
+
+    safe_empty = empty - with_data
+    output_path = Path(args.out)
+    existing = load_url_set(output_path) if args.merge else set()
+    write_url_set(output_path, existing | safe_empty)
+
+    log.info(
+        "cache scan: pages_navire=%d vides=%d avec_donnees=%d non_navire=%d inconnues=%d -> %s",
+        ship_pages,
+        len(safe_empty),
+        len(with_data),
+        skipped_non_ship_pages,
+        unknown_pages,
+        output_path,
+    )
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -1067,6 +1163,10 @@ def main(argv=None) -> int:
                    help="recupere le port-par-port pour chaque depart du tableau planning via /ships/cruise.json")
     s.add_argument("--expand-limit-per-ship", type=int, default=0,
                    help="limite le nombre de departs enrichis par navire (0 = tous)")
+    s.add_argument("--empty-ships-file", default="data/no_itinerary_ships.txt",
+                   help="fichier TXT persistant des navires sans current itinerary ni departs; ils sont skippes aux prochains runs")
+    s.add_argument("--ignore-empty-ships-file", action="store_true",
+                   help="ignore la skiplist des navires vides pour forcer une verification complete")
     s.set_defaults(func=cmd_scrape)
 
     s = sub.add_parser("inspect")
@@ -1090,6 +1190,15 @@ def main(argv=None) -> int:
     s.add_argument("--sync-script", default="scripts/sync_cruisemapper_to_db.mjs",
                    help="script Node de sync JSON -> BD")
     s.set_defaults(func=cmd_finder)
+
+    s = sub.add_parser("mark-empty-from-cache")
+    s.add_argument("--cache-dir",
+                   help="dossier cache a scanner (defaut: valeur globale --cache)")
+    s.add_argument("--out", default="data/no_itinerary_ships.txt",
+                   help="fichier TXT de skiplist a ecrire")
+    s.add_argument("--merge", action="store_true",
+                   help="fusionne avec la skiplist existante au lieu de la remplacer")
+    s.set_defaults(func=cmd_mark_empty_from_cache)
 
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,

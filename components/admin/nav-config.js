@@ -11,12 +11,13 @@ import {
 	MessageSquareText,
 	Settings,
 	CalendarDays,
+	Sparkle,
 } from "lucide-react";
 
 /** Sidebar navigation entries. `href: null` renders a disabled "coming soon" item. */
 export const navItems = [
 	{ label: "Dashboard", labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
-	{ label: "ÆRIA Inspire", labelKey: "nav.inspire", href: "/inspire", icon: Sparkles },
+	{ label: "ÆRIA Inspire", labelKey: "nav.inspire", href: "/inspire", icon: Sparkle },
 	{ label: "Clients", labelKey: "nav.clients", href: "/clients", icon: Users },
 	{ label: "Trips", labelKey: "nav.trips", href: "/trips", icon: Plane },
 	{ label: "Forfaits", labelKey: "nav.forfaits", href: "/forfaits", icon: Calculator },

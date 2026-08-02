@@ -70,7 +70,16 @@ async function createOffer(formData) {
 
 export default async function NewInspireOfferPage() {
 	await requireUser();
-	const influencers = await prisma.influencer.findMany({ orderBy: { name: "asc" } });
+
+	let influencers = [];
+	let dataError = null;
+
+	try {
+		influencers = await prisma.influencer.findMany({ orderBy: { name: "asc" } });
+	} catch (error) {
+		console.error("Failed to load Inspire influencers for offer form", error);
+		dataError = error;
+	}
 
 	return (
 		<div className="max-w-2xl space-y-6">
@@ -78,6 +87,17 @@ export default async function NewInspireOfferPage() {
 				<h1 className="text-2xl font-semibold tracking-tight">Create an offer</h1>
 				<p className="text-sm text-muted-foreground">Set up an offer that an influencer can share from their dashboard.</p>
 			</div>
+
+			{dataError ? (
+				<Card className="border-destructive/20 bg-destructive/5">
+					<CardContent className="py-5">
+						<p className="font-medium">The offer form is unavailable right now.</p>
+						<p className="mt-1 text-sm text-muted-foreground">
+							The Inspire tables may not be available yet on this server. Please apply the Prisma migrations before creating offers.
+						</p>
+					</CardContent>
+				</Card>
+			) : null}
 
 			<Card>
 				<CardHeader>

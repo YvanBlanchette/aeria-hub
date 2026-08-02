@@ -20,18 +20,23 @@ export async function createInspireSale(formData) {
 		throw new Error("Influencer and client name are required.");
 	}
 
-	await prisma.inspireSale.create({
-		data: {
-			influencerId,
-			offerId,
-			clientName,
-			bookingAmountCents: Number.isFinite(bookingAmountCents) ? bookingAmountCents : 0,
-			commissionRate: Number.isFinite(commissionRate) ? commissionRate : 0,
-			commissionAmountCents,
-			status,
-			notes,
-		},
-	});
+	try {
+		await prisma.inspireSale.create({
+			data: {
+				influencerId,
+				offerId,
+				clientName,
+				bookingAmountCents: Number.isFinite(bookingAmountCents) ? bookingAmountCents : 0,
+				commissionRate: Number.isFinite(commissionRate) ? commissionRate : 0,
+				commissionAmountCents,
+				status,
+				notes,
+			},
+		});
+	} catch (error) {
+		console.error("Failed to create Inspire sale", error);
+		throw new Error("Unable to save the sale right now. Please ensure the Inspire tables exist on this server.");
+	}
 
 	revalidatePath("/inspire");
 	revalidatePath("/inspire/sales");
@@ -40,20 +45,26 @@ export async function createInspireSale(formData) {
 
 export async function updateOfferShareUrl(offerId) {
 	const user = await requireUser();
-	const offer = await prisma.inspireOffer.findUnique({ where: { id: offerId }, select: { id: true } });
 
-	if (!offer) {
-		throw new Error("Offer not found");
+	try {
+		const offer = await prisma.inspireOffer.findUnique({ where: { id: offerId }, select: { id: true } });
+
+		if (!offer) {
+			throw new Error("Offer not found");
+		}
+
+		const shareSlug = Math.random().toString(36).slice(2, 12);
+		const publicShareUrl = `/share/inspire/${shareSlug}`;
+		await prisma.inspireOffer.update({
+			where: { id: offerId },
+			data: { shareUrl: publicShareUrl },
+		});
+
+		revalidatePath("/inspire/offers");
+		revalidatePath("/inspire");
+		return shareSlug;
+	} catch (error) {
+		console.error("Failed to update Inspire share URL", error);
+		throw new Error("Unable to update the share URL right now. Please ensure the Inspire tables exist on this server.");
 	}
-
-	const shareSlug = Math.random().toString(36).slice(2, 12);
-	const publicShareUrl = `/share/inspire/${shareSlug}`;
-	await prisma.inspireOffer.update({
-		where: { id: offerId },
-		data: { shareUrl: publicShareUrl },
-	});
-
-	revalidatePath("/inspire/offers");
-	revalidatePath("/inspire");
-	return shareSlug;
 }

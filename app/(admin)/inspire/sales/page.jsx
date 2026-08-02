@@ -11,17 +11,27 @@ export const metadata = {
 export default async function InspireSalesPage() {
 	await requireUser();
 
-	const [sales, influencers, offers] = await Promise.all([
-		prisma.inspireSale.findMany({
-			orderBy: { createdAt: "desc" },
-			include: {
-				influencer: { select: { id: true, name: true } },
-				offer: { select: { id: true, title: true } },
-			},
-		}),
-		prisma.influencer.findMany({ orderBy: { name: "asc" } }),
-		prisma.inspireOffer.findMany({ orderBy: { createdAt: "desc" }, select: { id: true, title: true } }),
-	]);
+	let sales = [];
+	let influencers = [];
+	let offers = [];
+	let dataError = null;
+
+	try {
+		[sales, influencers, offers] = await Promise.all([
+			prisma.inspireSale.findMany({
+				orderBy: { createdAt: "desc" },
+				include: {
+					influencer: { select: { id: true, name: true } },
+					offer: { select: { id: true, title: true } },
+				},
+			}),
+			prisma.influencer.findMany({ orderBy: { name: "asc" } }),
+			prisma.inspireOffer.findMany({ orderBy: { createdAt: "desc" }, select: { id: true, title: true } }),
+		]);
+	} catch (error) {
+		console.error("Failed to load Inspire sales", error);
+		dataError = error;
+	}
 
 	return (
 		<div className="space-y-6">
@@ -29,6 +39,15 @@ export default async function InspireSalesPage() {
 				<h1 className="text-2xl font-semibold tracking-tight">Sales and commissions</h1>
 				<p className="text-sm text-muted-foreground">Track attributed bookings and the commissions tied to them.</p>
 			</div>
+
+			{dataError ? (
+				<Card className="border-destructive/20 bg-destructive/5">
+					<CardContent className="py-5">
+						<p className="font-medium">Sales could not be loaded.</p>
+						<p className="mt-1 text-sm text-muted-foreground">The Inspire tables may not be available yet. Please apply the Prisma migrations on the server.</p>
+					</CardContent>
+				</Card>
+			) : null}
 
 			<CreateSaleForm
 				influencers={influencers}

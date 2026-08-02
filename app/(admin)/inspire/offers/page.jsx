@@ -15,14 +15,22 @@ export const metadata = {
 export default async function InspireOffersPage() {
 	await requireUser();
 
-	const offers = await prisma.inspireOffer.findMany({
-		orderBy: { createdAt: "desc" },
-		include: {
-			influencer: { select: { id: true, name: true } },
-			createdBy: { select: { id: true, name: true } },
-			media: { orderBy: { sortOrder: "asc" } },
-		},
-	});
+	let offers = [];
+	let dataError = null;
+
+	try {
+		offers = await prisma.inspireOffer.findMany({
+			orderBy: { createdAt: "desc" },
+			include: {
+				influencer: { select: { id: true, name: true } },
+				createdBy: { select: { id: true, name: true } },
+				media: { orderBy: { sortOrder: "asc" } },
+			},
+		});
+	} catch (error) {
+		console.error("Failed to load Inspire offers", error);
+		dataError = error;
+	}
 
 	return (
 		<div className="space-y-6">
@@ -38,6 +46,15 @@ export default async function InspireOffersPage() {
 					</Link>
 				</Button>
 			</div>
+
+			{dataError ? (
+				<Card className="border-destructive/20 bg-destructive/5">
+					<CardContent className="py-5">
+						<p className="font-medium">Offers could not be loaded.</p>
+						<p className="mt-1 text-sm text-muted-foreground">The Inspire tables may not be available yet. Please apply the Prisma migrations on the server.</p>
+					</CardContent>
+				</Card>
+			) : null}
 
 			<div className="grid gap-4">
 				{offers.map((offer) => (

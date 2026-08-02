@@ -13,16 +13,29 @@ export const metadata = {
 export default async function InspirePage() {
 	await requireUser();
 
-	const [influencers, offers, sales] = await Promise.all([
-		prisma.influencer.count(),
-		prisma.inspireOffer.count(),
-		prisma.inspireSale.aggregate({
-			_sum: { bookingAmountCents: true, commissionAmountCents: true },
-		}),
-	]);
+	let influencers = 0;
+	let offers = 0;
+	let totalRevenue = 0;
+	let totalCommissions = 0;
+	let dataError = null;
 
-	const totalRevenue = sales._sum.bookingAmountCents || 0;
-	const totalCommissions = sales._sum.commissionAmountCents || 0;
+	try {
+		const [influencerCount, offerCount, sales] = await Promise.all([
+			prisma.influencer.count(),
+			prisma.inspireOffer.count(),
+			prisma.inspireSale.aggregate({
+				_sum: { bookingAmountCents: true, commissionAmountCents: true },
+			}),
+		]);
+
+		influencers = influencerCount;
+		offers = offerCount;
+		totalRevenue = sales._sum.bookingAmountCents || 0;
+		totalCommissions = sales._sum.commissionAmountCents || 0;
+	} catch (error) {
+		console.error("Failed to load Inspire stats", error);
+		dataError = error;
+	}
 
 	return (
 		<div className="space-y-6">
@@ -40,6 +53,17 @@ export default async function InspirePage() {
 					</Button>
 				</div>
 			</div>
+
+			{dataError ? (
+				<Card className="border-destructive/20 bg-destructive/5">
+					<CardContent className="py-5">
+						<p className="font-medium">The Inspire module is not ready yet.</p>
+						<p className="mt-1 text-sm text-muted-foreground">
+							The database tables for Inspire are missing or the Prisma migrations have not been applied on this server yet.
+						</p>
+					</CardContent>
+				</Card>
+			) : null}
 
 			<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 				<Card>

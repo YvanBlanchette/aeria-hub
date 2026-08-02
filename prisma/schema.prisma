@@ -66,6 +66,18 @@ enum ReminderType {
   CUSTOM
 }
 
+enum InspireInfluencerStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum InspireOfferStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  CLOSED
+}
+
 enum InquiryStatus {
   NEW
   CONTACTED
@@ -120,7 +132,79 @@ model User {
   assignedTasks   TripTask[]    @relation("TaskAssignee")
   forfaitQuotes   ForfaitQuote[]
   forfaitQuoteRevisions ForfaitQuoteRevision[]
+  inspireOffers   InspireOffer[]
   googleCalendarConnection GoogleCalendarConnection?
+}
+
+model Influencer {
+  id String @id @default(cuid())
+  name String
+  email String?
+  slug String? @unique
+  commissionRate Float @default(0)
+  status InspireInfluencerStatus @default(ACTIVE)
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  offers InspireOffer[]
+  sales InspireSale[]
+}
+
+model InspireOffer {
+  id String @id @default(cuid())
+  title String
+  description String?
+  priceCents Int @default(0)
+  currency String @default("CAD")
+  status InspireOfferStatus @default(DRAFT)
+  shareUrl String?
+
+  createdById String?
+  createdBy   User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  influencerId String?
+  influencer   Influencer? @relation(fields: [influencerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  media InspireOfferMedia[]
+  sales InspireSale[]
+}
+
+model InspireOfferMedia {
+  id String @id @default(cuid())
+  offerId String
+  offer   InspireOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  kind String @default("IMAGE")
+  url String
+  caption String?
+  sortOrder Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model InspireSale {
+  id String @id @default(cuid())
+  influencerId String
+  influencer   Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+
+  offerId String?
+  offer   InspireOffer? @relation(fields: [offerId], references: [id], onDelete: SetNull)
+
+  clientName String?
+  bookingAmountCents Int @default(0)
+  commissionRate Float @default(0)
+  commissionAmountCents Int @default(0)
+  status String @default("CONFIRMED")
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model GoogleCalendarConnection {

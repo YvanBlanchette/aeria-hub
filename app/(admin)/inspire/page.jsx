@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, BadgeDollarSign, Sparkles, Users } from "lucide-react";
+import { BarChart3, BadgeDollarSign, Sparkle, Users } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,7 +60,7 @@ export default async function InspirePage() {
 							<CardTitle>Offers</CardTitle>
 							<CardDescription>Shared offers created for the network.</CardDescription>
 						</div>
-						<Sparkles className="size-4 text-muted-foreground" />
+						<Sparkle className="size-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
 						<div className="text-3xl font-semibold">{offers}</div>

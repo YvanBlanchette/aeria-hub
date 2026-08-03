@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Calculator, Check, ChevronDown, ChevronUp, Copy, Download, FileText, FolderOpen, Plus, Save, Trash2, Upload } from "lucide-react";
+import { Calculator, Check, ChevronDown, ChevronUp, Copy, Download, FileText, FolderOpen, Menu, Plus, Save, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,7 +23,7 @@ const DEFAULT_CONSTANTS = {
 	arrondi: 0,
 };
 
-const TAB_ITEMS = [{ id: "croisiere" }, { id: "vols" }, { id: "hotel" }, { id: "sommaire" }, { id: "parametres" }];
+const TAB_ITEMS = [{ id: "croisiere" }, { id: "vols" }, { id: "hotel" }, { id: "sommaire" }, { id: "projets" }, { id: "parametres" }];
 
 const CABINS = [
 	{ id: "INT", label: "Interieure" },
@@ -1396,6 +1396,8 @@ export function ForfaitsWorkbench({
 									? tr(locale, "Hotels & Transferts", "Hotels & Transfers")
 									: item.id === "sommaire"
 										? tr(locale, "Sommaire", "Summary")
+										: item.id === "projets"
+											? tr(locale, "Projets", "Projects")
 										: tr(locale, "Parametres", "Parameters")}
 					</Button>
 				))}
@@ -1700,6 +1702,24 @@ export function ForfaitsWorkbench({
 									</Field>
 								))}
 							</div>
+							<div className="md:col-span-2 grid gap-3 md:grid-cols-2">
+								<Field label={tr(locale, "Depot / personne", "Deposit / person")}> 
+									<Input
+										type="number"
+										min="0"
+										step="0.01"
+										value={draft.depot}
+										onChange={(e) => setField("depot", e.target.value)}
+									/>
+								</Field>
+								<Field label={tr(locale, "Date limite solde", "Final payment due date")}> 
+									<Input
+										type="date"
+										value={draft.soldeDate}
+										onChange={(e) => setField("soldeDate", e.target.value)}
+									/>
+								</Field>
+							</div>
 							<Field
 								label={tr(locale, "Notes croisiere", "Cruise notes")}
 								className="md:col-span-2"
@@ -1714,6 +1734,27 @@ export function ForfaitsWorkbench({
 										"Example: This cruise includes main meals, shows, and port taxes.",
 									)}
 								/>
+								<p className="text-xs text-muted-foreground">
+									{tr(locale, "Visible dans le PDF client.", "Visible in the client PDF.")}
+								</p>
+							</Field>
+							<Field
+								label={tr(locale, "Notes internes", "Internal notes")}
+								className="md:col-span-2"
+							>
+								<Textarea
+									rows={4}
+									value={draft.notes}
+									onChange={(e) => setField("notes", e.target.value)}
+									placeholder={tr(
+										locale,
+										"Notes operationnelles internes, suivis, rappels, etc.",
+										"Internal operational notes, follow-ups, reminders, etc.",
+									)}
+								/>
+								<p className="text-xs text-muted-foreground">
+									{tr(locale, "Non visible dans le PDF client.", "Not visible in the client PDF.")}
+								</p>
 							</Field>
 						</CardContent>
 					</Card>
@@ -2137,138 +2178,235 @@ export function ForfaitsWorkbench({
 
 			{/* SOMMAIRE TAB */}
 			{tab === "sommaire" && (
-				<div className="grid gap-4 lg:grid-cols-2">
-					<Card>
+				<div className="space-y-4">
+					<Card className="w-full">
 						<CardHeader>
-							<CardTitle>{tr(locale, "Dossier et export", "Project and export")}</CardTitle>
+							<CardTitle>{tr(locale, "Prix client par categorie", "Client price by category")}</CardTitle>
 							<CardDescription>
-								{tr(locale, "Enregistre, duplique, importe et exporte ton dossier de forfait.", "Save, duplicate, import, and export your package project.")}
+								{tr(
+									locale,
+									"Calcul reprenant la logique complete du module initial avec pre/post hotel, transferts et gestion du markup vols.",
+									"Calculation based on full original logic with pre/post hotels, transfers, and flight markup handling.",
+								)}
 							</CardDescription>
 						</CardHeader>
+						<CardContent>
+							{resultRows.length === 0 ? (
+								<p className="text-sm text-muted-foreground">
+									{tr(locale, "Entre au moins une categorie de cabine pour afficher les resultats.", "Enter at least one cabin category to display results.")}
+								</p>
+							) : (
+								<div className="space-y-3">
+									{resultRows.map((row) =>
+										(() => {
+											const rowHealth =
+												row.margePct >= 16
+													? { label: tr(locale, "Forte", "Strong"), variant: "default" }
+													: row.margePct >= 10
+														? { label: tr(locale, "Solide", "Solid"), variant: "secondary" }
+														: row.margePct >= 6
+															? { label: tr(locale, "A surveiller", "Watch"), variant: "outline" }
+															: { label: tr(locale, "Faible", "Low"), variant: "destructive" };
+
+											return (
+												<article
+													key={row.id}
+													className="rounded-2xl border border-border/70 bg-background/60 p-4 shadow-sm"
+												>
+													<div className="mb-3 flex items-center justify-between gap-3">
+														<h3 className="font-semibold">{row.label}</h3>
+														<div className="flex items-center gap-2">
+															<Badge variant={rowHealth.variant}>{rowHealth.label}</Badge>
+															<Badge variant="outline">{row.id}</Badge>
+														</div>
+													</div>
+													<div className="grid gap-3 xl:grid-cols-2">
+														<div className="rounded-2xl border border-border/60 bg-card/70 p-3">
+															<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Details du prix", "Price details")}</p>
+															<dl className="mt-2 space-y-2 text-sm">
+																{row.priceRows.map((item) => (
+																	<StatLine
+																		key={item.label}
+																		label={item.label}
+																		value={fmtCad(item.value)}
+																	/>
+																))}
+															</dl>
+														</div>
+														<div className="rounded-2xl border border-border/60 bg-card/70 p-3">
+															<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Details commission", "Commission details")}</p>
+															<dl className="mt-2 space-y-2 text-sm">
+																{row.commissionRows.map((item) => (
+																	<StatLine
+																		key={item.label}
+																		label={item.label}
+																		value={fmtCad(item.value)}
+																	/>
+																))}
+															</dl>
+														</div>
+													</div>
+													<div className="mt-4 grid gap-2 rounded-2xl border border-dashed border-border/70 bg-muted/30 p-3 sm:grid-cols-3">
+														<div>
+															<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Par personne", "Per person")}</p>
+															<p className="mt-1 text-xl font-semibold tabular-nums">{fmtCad(row.calc.prixPers)}</p>
+														</div>
+														<div>
+															<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Par pers / nuit", "Per person / night")}</p>
+															<p className="mt-1 text-xl font-semibold tabular-nums">{fmtCad(row.calc.prixPersNuit)}</p>
+														</div>
+														<div>
+															<p className="text-xs uppercase tracking-wide text-muted-foreground">
+																{tr(locale, `Total - ${base.pax} pax`, `Total - ${base.pax} pax`)}
+															</p>
+															<p className="mt-1 text-xl font-semibold tabular-nums text-primary">{fmtCad(row.calc.total)}</p>
+														</div>
+													</div>
+												</article>
+											);
+										})(),
+									)}
+								</div>
+							)}
+						</CardContent>
+					</Card>
+				</div>
+			)}
+
+			{/* PROJETS TAB */}
+			{tab === "projets" && (
+				<div className="grid gap-4 lg:grid-cols-2">
+					<Card>
+						<CardHeader className="flex flex-row items-start justify-between gap-3">
+							<div>
+								<CardTitle>{tr(locale, "Dossier et export", "Project and export")}</CardTitle>
+								<CardDescription>
+									{tr(locale, "Enregistre, duplique, importe et exporte ton dossier de forfait.", "Save, duplicate, import, and export your package project.")}
+								</CardDescription>
+							</div>
+							<Popover>
+								<PopoverTrigger asChild>
+									<Button
+										type="button"
+										variant="outline"
+										size="icon"
+										className="shrink-0"
+									>
+										<Menu className="size-4" />
+									</Button>
+								</PopoverTrigger>
+								<PopoverContent
+									align="end"
+									className="w-64 rounded-xl border-border/70 p-2"
+								>
+									<div className="space-y-1">
+										<Button
+											type="button"
+											variant="ghost"
+											className="w-full justify-start"
+											onClick={saveProject}
+											disabled={busy}
+										>
+											<Save /> {tr(locale, "Enregistrer", "Save")}
+										</Button>
+										<Button
+											type="button"
+											variant="ghost"
+											className="w-full justify-start"
+											onClick={resetAll}
+											disabled={busy}
+										>
+											<Calculator /> {tr(locale, "Nouveau", "New")}
+										</Button>
+										<Button
+											type="button"
+											variant="ghost"
+											className="w-full justify-start"
+											onClick={exportPdf}
+										>
+											<FileText /> {tr(locale, "Export PDF client", "Client PDF export")}
+										</Button>
+										<Button
+											type="button"
+											variant="ghost"
+											className="w-full justify-start"
+											onClick={convertToQuote}
+											disabled={busy || !selectedProjectId || !draft.tripId}
+										>
+											<FileText /> {tr(locale, "Convertir en devis", "Convert to quote")}
+										</Button>
+										<div className="my-1 border-t border-border/70" />
+										<Button
+											type="button"
+											variant="ghost"
+											className="w-full justify-start"
+											onClick={exportExcel}
+										>
+											<Download /> {tr(locale, "Export Excel interne", "Internal Excel export")}
+										</Button>
+										<Button
+											type="button"
+											variant="ghost"
+											className="w-full justify-start"
+											onClick={exportJson}
+										>
+											<Download /> {tr(locale, "Export JSON", "Export JSON")}
+										</Button>
+										<Button
+											type="button"
+											variant="ghost"
+											className="w-full justify-start"
+											onClick={exportCsv}
+										>
+											<Download /> {tr(locale, "Export CSV", "Export CSV")}
+										</Button>
+										<Button
+											type="button"
+											variant="ghost"
+											className="w-full justify-start"
+											onClick={() => importJsonRef.current?.click()}
+										>
+											<Upload /> {tr(locale, "Import JSON", "Import JSON")}
+										</Button>
+										<Button
+											type="button"
+											variant="ghost"
+											className="w-full justify-start"
+											onClick={() => importCsvRef.current?.click()}
+										>
+											<Upload /> {tr(locale, "Import CSV", "Import CSV")}
+										</Button>
+										<Button
+											type="button"
+											variant="ghost"
+											className="w-full justify-start"
+											onClick={copySummary}
+										>
+											<Copy /> {tr(locale, "Copier synthese", "Copy summary")}
+										</Button>
+									</div>
+								</PopoverContent>
+							</Popover>
+						</CardHeader>
 						<CardContent className="space-y-3">
-							<div className="grid gap-3 md:grid-cols-2">
-								<Field label={tr(locale, "Depot / personne", "Deposit / person")}>
-									<Input
-										type="number"
-										min="0"
-										step="0.01"
-										value={draft.depot}
-										onChange={(e) => setField("depot", e.target.value)}
-									/>
-								</Field>
-								<Field label={tr(locale, "Date limite depot", "Deposit due date")}>
-									<Input
-										type="date"
-										value={draft.depotDate}
-										onChange={(e) => setField("depotDate", e.target.value)}
-									/>
-								</Field>
-								<Field label={tr(locale, "Date limite solde", "Final payment due date")}>
-									<Input
-										type="date"
-										value={draft.soldeDate}
-										onChange={(e) => setField("soldeDate", e.target.value)}
-									/>
-								</Field>
-							</div>
-							<Field label={tr(locale, "Notes internes", "Internal notes")}>
-								<Textarea
-									rows={5}
-									value={draft.notes}
-									onChange={(e) => setField("notes", e.target.value)}
-								/>
-							</Field>
-
-							<div className="flex flex-wrap gap-2">
-								<Button
-									type="button"
-									onClick={saveProject}
-									disabled={busy}
-								>
-									<Save /> {tr(locale, "Enregistrer", "Save")}
-								</Button>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={resetAll}
-									disabled={busy}
-								>
-									<Calculator /> {tr(locale, "Nouveau", "New")}
-								</Button>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={exportPdf}
-								>
-									<FileText /> {tr(locale, "Export PDF client", "Client PDF export")}
-								</Button>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={convertToQuote}
-									disabled={busy || !selectedProjectId || !draft.tripId}
-								>
-									<FileText /> {tr(locale, "Convertir en devis", "Convert to quote")}
-								</Button>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={exportExcel}
-								>
-									<Download /> {tr(locale, "Export Excel interne", "Internal Excel export")}
-								</Button>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={exportJson}
-								>
-									<Download /> {tr(locale, "Export JSON", "Export JSON")}
-								</Button>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={exportCsv}
-								>
-									<Download /> {tr(locale, "Export CSV", "Export CSV")}
-								</Button>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => importJsonRef.current?.click()}
-								>
-									<Upload /> {tr(locale, "Import JSON", "Import JSON")}
-								</Button>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => importCsvRef.current?.click()}
-								>
-									<Upload /> {tr(locale, "Import CSV", "Import CSV")}
-								</Button>
-								<Button
-									type="button"
-									variant="secondary"
-									onClick={copySummary}
-								>
-									<Copy /> {tr(locale, "Copier synthese", "Copy summary")}
-								</Button>
-								<input
-									ref={importJsonRef}
-									type="file"
-									accept="application/json,.json"
-									className="hidden"
-									onChange={handleImportJson}
-								/>
-								<input
-									ref={importCsvRef}
-									type="file"
-									accept="text/csv,.csv"
-									className="hidden"
-									onChange={handleImportCsv}
-								/>
-							</div>
-
+							<p className="text-sm text-muted-foreground">
+								{tr(locale, "Utilise le menu en haut a droite pour sauvegarder, exporter ou importer.", "Use the top-right menu to save, export, or import.")}
+							</p>
 							{notice ? <p className="text-sm text-muted-foreground">{notice}</p> : null}
+							<input
+								ref={importJsonRef}
+								type="file"
+								accept="application/json,.json"
+								className="hidden"
+								onChange={handleImportJson}
+							/>
+							<input
+								ref={importCsvRef}
+								type="file"
+								accept="text/csv,.csv"
+								className="hidden"
+								onChange={handleImportCsv}
+							/>
 						</CardContent>
 					</Card>
 
@@ -2283,56 +2421,58 @@ export function ForfaitsWorkbench({
 							{projects.length === 0 ? (
 								<p className="text-sm text-muted-foreground">{tr(locale, "Aucun projet enregistre pour le moment.", "No saved project yet.")}</p>
 							) : (
-								projects.map((project) => (
-									<div
-										key={project.id}
-										className={cn(
-											"flex items-center justify-between rounded-xl border p-2",
-											project.id === selectedProjectId && "border-primary/60 bg-primary/5",
-										)}
-									>
-										<div>
-											<p className="text-sm font-medium">{project.name}</p>
-											<p className="text-xs text-muted-foreground">
-												{tr(locale, "Maj", "Updated")}: {new Date(project.updatedAt).toLocaleString(locale === "en" ? "en-CA" : "fr-CA")} ·{" "}
-												{tr(locale, "Rev", "Rev")} {project.currentRevision || 1}
-												{typeof project.revisionCount === "number" ? ` (${project.revisionCount})` : ""}
-											</p>
+								<div className="max-h-[22rem] space-y-2 overflow-y-auto pr-1">
+									{projects.map((project) => (
+										<div
+											key={project.id}
+											className={cn(
+												"flex items-center justify-between rounded-xl border p-2",
+												project.id === selectedProjectId && "border-primary/60 bg-primary/5",
+											)}
+										>
+											<div>
+												<p className="text-sm font-medium">{project.name}</p>
+												<p className="text-xs text-muted-foreground">
+													{tr(locale, "Maj", "Updated")}: {new Date(project.updatedAt).toLocaleString(locale === "en" ? "en-CA" : "fr-CA")} ·{" "}
+													{tr(locale, "Rev", "Rev")} {project.currentRevision || 1}
+													{typeof project.revisionCount === "number" ? ` (${project.revisionCount})` : ""}
+												</p>
+											</div>
+											<div className="flex items-center gap-1">
+												<Button
+													type="button"
+													size="icon-sm"
+													variant="ghost"
+													onClick={() => loadProject(project.id)}
+													title={tr(locale, "Charger", "Load")}
+													disabled={busy}
+												>
+													<FolderOpen />
+												</Button>
+												<Button
+													type="button"
+													size="icon-sm"
+													variant="ghost"
+													onClick={() => duplicateProject(project.id)}
+													title={tr(locale, "Dupliquer", "Duplicate")}
+													disabled={busy}
+												>
+													<Copy />
+												</Button>
+												<Button
+													type="button"
+													size="icon-sm"
+													variant="destructive"
+													onClick={() => deleteProject(project.id)}
+													title={tr(locale, "Supprimer", "Delete")}
+													disabled={busy}
+												>
+													<Trash2 />
+												</Button>
+											</div>
 										</div>
-										<div className="flex items-center gap-1">
-											<Button
-												type="button"
-												size="icon-sm"
-												variant="ghost"
-												onClick={() => loadProject(project.id)}
-												title={tr(locale, "Charger", "Load")}
-												disabled={busy}
-											>
-												<FolderOpen />
-											</Button>
-											<Button
-												type="button"
-												size="icon-sm"
-												variant="ghost"
-												onClick={() => duplicateProject(project.id)}
-												title={tr(locale, "Dupliquer", "Duplicate")}
-												disabled={busy}
-											>
-												<Copy />
-											</Button>
-											<Button
-												type="button"
-												size="icon-sm"
-												variant="destructive"
-												onClick={() => deleteProject(project.id)}
-												title={tr(locale, "Supprimer", "Delete")}
-												disabled={busy}
-											>
-												<Trash2 />
-											</Button>
-										</div>
-									</div>
-								))
+									))}
+								</div>
 							)}
 
 							{selectedProjectId ? (
@@ -2367,101 +2507,6 @@ export function ForfaitsWorkbench({
 					</Card>
 				</div>
 			)}
-
-			{/* RESULTS */}
-			<div className="space-y-4">
-				<Card className="w-full">
-					<CardHeader>
-						<CardTitle>{tr(locale, "Prix client par categorie", "Client price by category")}</CardTitle>
-						<CardDescription>
-							{tr(
-								locale,
-								"Calcul reprenant la logique complete du module initial avec pre/post hotel, transferts et gestion du markup vols.",
-								"Calculation based on full original logic with pre/post hotels, transfers, and flight markup handling.",
-							)}
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						{resultRows.length === 0 ? (
-							<p className="text-sm text-muted-foreground">
-								{tr(locale, "Entre au moins une categorie de cabine pour afficher les resultats.", "Enter at least one cabin category to display results.")}
-							</p>
-						) : (
-							<div className="space-y-3">
-								{resultRows.map((row) =>
-									(() => {
-										const rowHealth =
-											row.margePct >= 16
-												? { label: tr(locale, "Forte", "Strong"), variant: "default" }
-												: row.margePct >= 10
-													? { label: tr(locale, "Solide", "Solid"), variant: "secondary" }
-													: row.margePct >= 6
-														? { label: tr(locale, "A surveiller", "Watch"), variant: "outline" }
-														: { label: tr(locale, "Faible", "Low"), variant: "destructive" };
-
-										return (
-											<article
-												key={row.id}
-												className="rounded-2xl border border-border/70 bg-background/60 p-4 shadow-sm"
-											>
-												<div className="mb-3 flex items-center justify-between gap-3">
-													<h3 className="font-semibold">{row.label}</h3>
-													<div className="flex items-center gap-2">
-														<Badge variant={rowHealth.variant}>{rowHealth.label}</Badge>
-														<Badge variant="outline">{row.id}</Badge>
-													</div>
-												</div>
-												<div className="grid gap-3 xl:grid-cols-2">
-													<div className="rounded-2xl border border-border/60 bg-card/70 p-3">
-														<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Details du prix", "Price details")}</p>
-														<dl className="mt-2 space-y-2 text-sm">
-															{row.priceRows.map((item) => (
-																<StatLine
-																	key={item.label}
-																	label={item.label}
-																	value={fmtCad(item.value)}
-																/>
-															))}
-														</dl>
-													</div>
-													<div className="rounded-2xl border border-border/60 bg-card/70 p-3">
-														<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Details commission", "Commission details")}</p>
-														<dl className="mt-2 space-y-2 text-sm">
-															{row.commissionRows.map((item) => (
-																<StatLine
-																	key={item.label}
-																	label={item.label}
-																	value={fmtCad(item.value)}
-																/>
-															))}
-														</dl>
-													</div>
-												</div>
-												<div className="mt-4 grid gap-2 rounded-2xl border border-dashed border-border/70 bg-muted/30 p-3 sm:grid-cols-3">
-													<div>
-														<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Par personne", "Per person")}</p>
-														<p className="mt-1 text-xl font-semibold tabular-nums">{fmtCad(row.calc.prixPers)}</p>
-													</div>
-													<div>
-														<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Par pers / nuit", "Per person / night")}</p>
-														<p className="mt-1 text-xl font-semibold tabular-nums">{fmtCad(row.calc.prixPersNuit)}</p>
-													</div>
-													<div>
-														<p className="text-xs uppercase tracking-wide text-muted-foreground">
-															{tr(locale, `Total - ${base.pax} pax`, `Total - ${base.pax} pax`)}
-														</p>
-														<p className="mt-1 text-xl font-semibold tabular-nums text-primary">{fmtCad(row.calc.total)}</p>
-													</div>
-												</div>
-											</article>
-										);
-									})(),
-								)}
-							</div>
-						)}
-					</CardContent>
-				</Card>
-			</div>
 		</div>
 	);
 }

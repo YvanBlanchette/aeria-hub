@@ -34,8 +34,7 @@ export async function createInquiry(formData) {
 	const source = typeof sourceValue === "string" && sourceValue.trim() ? sourceValue.trim() : "manual";
 	const notes = typeof notesValue === "string" && notesValue.trim() ? notesValue.trim() : null;
 	const assignedAgentIdValue = formData.get("assignedAgentId");
-	const requestedAssignedAgentId =
-		typeof assignedAgentIdValue === "string" && assignedAgentIdValue.trim() ? assignedAgentIdValue.trim() : null;
+	const requestedAssignedAgentId = typeof assignedAgentIdValue === "string" && assignedAgentIdValue.trim() ? assignedAgentIdValue.trim() : null;
 
 	let assignedAgentId = null;
 	if (user.role === "ADMIN") {
@@ -90,8 +89,25 @@ export async function convertInquiryToClient(formData) {
 			id: inquiryId,
 			...inquiryScope(user),
 		},
+		select: {
+			id: true,
+			name: true,
+			email: true,
+			phone: true,
+			status: true,
+			assignedAgentId: true,
+			convertedClientId: true,
+			convertedTripId: true,
+		},
 	});
 	if (!inquiry) return t("errors.inquiryNotFound", "Inquiry not found.");
+
+	if (inquiry.convertedTripId) {
+		redirect(`/trips/${inquiry.convertedTripId}/overview`);
+	}
+	if (inquiry.convertedClientId) {
+		redirect(`/clients/${inquiry.convertedClientId}`);
+	}
 
 	const { firstName, lastName } = splitName(inquiry.name);
 
@@ -130,7 +146,15 @@ export async function convertInquiryToClient(formData) {
 		tripId = trip.id;
 	}
 
-	await prisma.inquiry.update({ where: { id: inquiry.id }, data: { status: "CONVERTED" } });
+	await prisma.inquiry.update({
+		where: { id: inquiry.id },
+		data: {
+			status: "CONVERTED",
+			convertedClientId: clientId,
+			convertedTripId: tripId,
+			convertedAt: new Date(),
+		},
+	});
 
 	if (clientId) {
 		await logActivity({

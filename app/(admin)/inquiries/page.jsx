@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate } from "@/lib/format";
+import Link from "next/link";
 
 export const metadata = {
 	title: "Inquiries - AERIA Hub",
@@ -32,14 +33,18 @@ export default async function InquiriesPage() {
 			where: inquiryScope(user),
 			orderBy: [{ createdAt: "desc" }],
 			take: 300,
-			include: { assignedAgent: { select: { id: true, name: true, email: true } } },
+			include: {
+				assignedAgent: { select: { id: true, name: true, email: true } },
+				convertedClient: { select: { id: true, firstName: true, lastName: true } },
+				convertedTrip: { select: { id: true, name: true } },
+			},
 		}),
 		user.role === "ADMIN"
 			? prisma.user.findMany({
 					where: { role: { in: ["ADMIN", "AGENT"] } },
 					orderBy: { name: "asc" },
 					select: { id: true, name: true, email: true },
-			  })
+				})
 			: Promise.resolve([]),
 	]);
 
@@ -154,6 +159,7 @@ export default async function InquiriesPage() {
 										<TableHead>Contact</TableHead>
 										<TableHead>Source</TableHead>
 										<TableHead>Owner</TableHead>
+										<TableHead>Converted To</TableHead>
 										<TableHead>Status</TableHead>
 										<TableHead>Created</TableHead>
 										<TableHead className="text-right">Actions</TableHead>
@@ -170,6 +176,25 @@ export default async function InquiriesPage() {
 											<TableCell>{inquiry.source || "-"}</TableCell>
 											<TableCell className="text-xs text-muted-foreground">
 												{inquiry.assignedAgent?.name || inquiry.assignedAgent?.email || "Unassigned"}
+											</TableCell>
+											<TableCell className="text-xs text-muted-foreground">
+												{inquiry.convertedTrip ? (
+													<Link
+														href={`/trips/${inquiry.convertedTrip.id}/overview`}
+														className="font-medium text-foreground hover:underline"
+													>
+														{inquiry.convertedTrip.name}
+													</Link>
+												) : inquiry.convertedClient ? (
+													<Link
+														href={`/clients/${inquiry.convertedClient.id}`}
+														className="font-medium text-foreground hover:underline"
+													>
+														{inquiry.convertedClient.firstName} {inquiry.convertedClient.lastName}
+													</Link>
+												) : (
+													"-"
+												)}
 											</TableCell>
 											<TableCell>
 												<Badge variant={STATUS_VARIANT[inquiry.status] || "secondary"}>{inquiry.status}</Badge>
@@ -206,7 +231,7 @@ export default async function InquiriesPage() {
 															Update
 														</Button>
 													</form>
-													{inquiry.status !== "CONVERTED" && (
+													{!inquiry.convertedTripId && !inquiry.convertedClientId && inquiry.status !== "CONVERTED" && (
 														<form action={convertInquiryToClient}>
 															<input
 																type="hidden"
@@ -220,6 +245,16 @@ export default async function InquiriesPage() {
 																Convert
 															</Button>
 														</form>
+													)}
+													{(inquiry.convertedTripId || inquiry.convertedClientId) && (
+														<Button
+															asChild
+															size="sm"
+														>
+															<Link href={inquiry.convertedTripId ? `/trips/${inquiry.convertedTripId}/overview` : `/clients/${inquiry.convertedClientId}`}>
+																Open
+															</Link>
+														</Button>
 													)}
 												</div>
 											</TableCell>

@@ -276,6 +276,7 @@ model Client {
   activityLogs    ActivityLog[]
   loyaltyPrograms LoyaltyProgram[]
   forfaitQuotes   ForfaitQuote[]
+  convertedInquiries Inquiry[] @relation("InquiryConvertedClient")
 }
 
 model LoyaltyProgram {
@@ -338,6 +339,7 @@ model Trip {
   /// traveling together on the same booking.
   additionalClients TripClient[]
   forfaitQuotes     ForfaitQuote[]
+  convertedInquiries Inquiry[] @relation("InquiryConvertedTrip")
 }
 
 /// Persisted cruise package pricing dossier, linked to CRM context when known.
@@ -728,9 +730,17 @@ model Inquiry {
   assignedAgentId String?
   assignedAgent   User? @relation(fields: [assignedAgentId], references: [id], onDelete: SetNull)
 
+  convertedClientId String?
+  convertedClient   Client? @relation("InquiryConvertedClient", fields: [convertedClientId], references: [id], onDelete: SetNull)
+  convertedTripId String?
+  convertedTrip   Trip? @relation("InquiryConvertedTrip", fields: [convertedTripId], references: [id], onDelete: SetNull)
+  convertedAt DateTime?
+
   createdAt DateTime @default(now())
 
   @@index([assignedAgentId])
+  @@index([convertedClientId])
+  @@index([convertedTripId])
 }
 
 model ActivityLog {

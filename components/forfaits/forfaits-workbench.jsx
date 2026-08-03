@@ -551,6 +551,7 @@ export function ForfaitsWorkbench({
 	const [revisions, setRevisions] = useState([]);
 	const [loadingRevisions, setLoadingRevisions] = useState(false);
 	const [routePaste, setRoutePaste] = useState("");
+	const [pendingCruisePort, setPendingCruisePort] = useState("");
 	const importJsonRef = useRef(null);
 	const importCsvRef = useRef(null);
 

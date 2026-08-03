@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
-import { inquiryScope } from "@/lib/visibility-scope";
-import { createInquiry, updateInquiryStatus, convertInquiryToClient } from "./actions";
+import { forfaitScope, inquiryScope } from "@/lib/visibility-scope";
+import { createInquiry, updateInquiryStatus, convertInquiryToClient, convertInquiryToQuoteFromPackage, updateInquiryLinkedForfait } from "./actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,15 +28,17 @@ const STATUS_OPTIONS = ["NEW", "CONTACTED", "QUALIFIED", "CONVERTED", "LOST"];
 export default async function InquiriesPage() {
 	const user = await requireUser();
 
-	const [inquiries, agents] = await Promise.all([
+	const [inquiries, agents, packages] = await Promise.all([
 		prisma.inquiry.findMany({
 			where: inquiryScope(user),
 			orderBy: [{ createdAt: "desc" }],
 			take: 300,
 			include: {
 				assignedAgent: { select: { id: true, name: true, email: true } },
+				linkedForfaitQuote: { select: { id: true, name: true } },
 				convertedClient: { select: { id: true, firstName: true, lastName: true } },
 				convertedTrip: { select: { id: true, name: true } },
+				convertedQuote: { select: { id: true, title: true, tripId: true } },
 			},
 		}),
 		user.role === "ADMIN"
@@ -46,6 +48,12 @@ export default async function InquiriesPage() {
 					select: { id: true, name: true, email: true },
 				})
 			: Promise.resolve([]),
+		prisma.forfaitQuote.findMany({
+			where: forfaitScope(user),
+			orderBy: { updatedAt: "desc" },
+			take: 200,
+			select: { id: true, name: true },
+		}),
 	]);
 
 	return (
@@ -67,7 +75,7 @@ export default async function InquiriesPage() {
 				<CardContent>
 					<form
 						action={createInquiry}
-						className="grid grid-cols-1 gap-3 md:grid-cols-6"
+						className="grid grid-cols-1 gap-3 md:grid-cols-8"
 					>
 						<div className="space-y-1 md:col-span-2">
 							<Label htmlFor="name">Name</Label>
@@ -123,7 +131,7 @@ export default async function InquiriesPage() {
 								</select>
 							</div>
 						)}
-						<div className="space-y-1 md:col-span-3">
+						<div className="space-y-1 md:col-span-2">
 							<Label htmlFor="notes">Notes</Label>
 							<Input
 								id="notes"
@@ -131,7 +139,25 @@ export default async function InquiriesPage() {
 								placeholder="Family of 4, Caribbean cruise, spring break"
 							/>
 						</div>
-						<div className="flex items-end md:col-span-1">
+						<div className="space-y-1 md:col-span-2">
+							<Label htmlFor="linkedForfaitQuoteId">Linked package</Label>
+							<select
+								id="linkedForfaitQuoteId"
+								name="linkedForfaitQuoteId"
+								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+							>
+								<option value="">None</option>
+								{packages.map((item) => (
+									<option
+										key={item.id}
+										value={item.id}
+									>
+										{item.name}
+									</option>
+								))}
+							</select>
+						</div>
+						<div className="flex items-end md:col-span-2">
 							<Button
 								type="submit"
 								className="w-full"
@@ -159,6 +185,7 @@ export default async function InquiriesPage() {
 										<TableHead>Contact</TableHead>
 										<TableHead>Source</TableHead>
 										<TableHead>Owner</TableHead>
+										<TableHead>Package</TableHead>
 										<TableHead>Converted To</TableHead>
 										<TableHead>Status</TableHead>
 										<TableHead>Created</TableHead>
@@ -178,7 +205,26 @@ export default async function InquiriesPage() {
 												{inquiry.assignedAgent?.name || inquiry.assignedAgent?.email || "Unassigned"}
 											</TableCell>
 											<TableCell className="text-xs text-muted-foreground">
-												{inquiry.convertedTrip ? (
+												{inquiry.linkedForfaitQuote ? (
+													<Link
+														href={`/packages?projectId=${inquiry.linkedForfaitQuote.id}`}
+														className="font-medium text-foreground hover:underline"
+													>
+														{inquiry.linkedForfaitQuote.name}
+													</Link>
+												) : (
+													"-"
+												)}
+											</TableCell>
+											<TableCell className="text-xs text-muted-foreground">
+												{inquiry.convertedQuote?.tripId ? (
+													<Link
+														href={`/trips/${inquiry.convertedQuote.tripId}/quotes`}
+														className="font-medium text-foreground hover:underline"
+													>
+														{inquiry.convertedQuote.title}
+													</Link>
+												) : inquiry.convertedTrip ? (
 													<Link
 														href={`/trips/${inquiry.convertedTrip.id}/overview`}
 														className="font-medium text-foreground hover:underline"
@@ -202,6 +248,36 @@ export default async function InquiriesPage() {
 											<TableCell>{formatDate(inquiry.createdAt)}</TableCell>
 											<TableCell>
 												<div className="flex flex-wrap items-center justify-end gap-2">
+													<form action={updateInquiryLinkedForfait}>
+														<input
+															type="hidden"
+															name="inquiryId"
+															value={inquiry.id}
+														/>
+														<select
+															name="linkedForfaitQuoteId"
+															defaultValue={inquiry.linkedForfaitQuoteId || ""}
+															className="h-9 rounded-md border border-input bg-transparent px-2 text-xs"
+														>
+															<option value="">No package</option>
+															{packages.map((item) => (
+																<option
+																	key={item.id}
+																	value={item.id}
+																>
+																	{item.name}
+																</option>
+															))}
+														</select>
+														<Button
+															type="submit"
+															variant="outline"
+															size="sm"
+															className="ml-2"
+														>
+															Link package
+														</Button>
+													</form>
 													<form action={updateInquiryStatus}>
 														<input
 															type="hidden"
@@ -231,7 +307,24 @@ export default async function InquiriesPage() {
 															Update
 														</Button>
 													</form>
-													{!inquiry.convertedTripId && !inquiry.convertedClientId && inquiry.status !== "CONVERTED" && (
+													{!inquiry.convertedQuoteId && !inquiry.convertedTripId && !inquiry.convertedClientId && inquiry.status !== "CONVERTED" && (
+														<form action={convertInquiryToQuoteFromPackage}>
+															<input
+																type="hidden"
+																name="inquiryId"
+																value={inquiry.id}
+															/>
+															<Button
+																type="submit"
+																variant="outline"
+																size="sm"
+																disabled={!inquiry.linkedForfaitQuoteId}
+															>
+																Convert + Quote
+															</Button>
+														</form>
+													)}
+													{!inquiry.convertedQuoteId && !inquiry.convertedTripId && !inquiry.convertedClientId && inquiry.status !== "CONVERTED" && (
 														<form action={convertInquiryToClient}>
 															<input
 																type="hidden"
@@ -246,12 +339,20 @@ export default async function InquiriesPage() {
 															</Button>
 														</form>
 													)}
-													{(inquiry.convertedTripId || inquiry.convertedClientId) && (
+													{(inquiry.convertedQuoteId || inquiry.convertedTripId || inquiry.convertedClientId) && (
 														<Button
 															asChild
 															size="sm"
 														>
-															<Link href={inquiry.convertedTripId ? `/trips/${inquiry.convertedTripId}/overview` : `/clients/${inquiry.convertedClientId}`}>
+															<Link
+																href={
+																	inquiry.convertedQuote?.tripId
+																		? `/trips/${inquiry.convertedQuote.tripId}/quotes`
+																		: inquiry.convertedTripId
+																			? `/trips/${inquiry.convertedTripId}/overview`
+																			: `/clients/${inquiry.convertedClientId}`
+																}
+															>
 																Open
 															</Link>
 														</Button>

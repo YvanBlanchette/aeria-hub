@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/session";
 import { ForfaitsWorkbench } from "@/components/forfaits/forfaits-workbench";
 
 export const metadata = {
-	title: "Forfaits - AERIA Hub",
+	title: "Packages - AERIA Hub",
 };
 
 function quoteIdent(value) {
@@ -157,8 +157,12 @@ async function loadCruiseCatalogFromDb() {
 	};
 }
 
-export default async function ForfaitsPage() {
+export default async function ForfaitsPage({ searchParams }) {
 	const user = await requireUser();
+	const resolvedSearchParams = (await searchParams) || {};
+	const initialProjectId = typeof resolvedSearchParams.projectId === "string" ? resolvedSearchParams.projectId : "";
+	const initialClientId = typeof resolvedSearchParams.clientId === "string" ? resolvedSearchParams.clientId : "";
+	const initialTripId = typeof resolvedSearchParams.tripId === "string" ? resolvedSearchParams.tripId : "";
 
 	const [clients, trips, quotes, airlineSuppliers, iataAirports, cruiseCatalog] = await Promise.all([
 		prisma.client.findMany({
@@ -250,6 +254,9 @@ export default async function ForfaitsPage() {
 			clients={clientOptions}
 			trips={tripOptions}
 			initialProjects={initialProjects}
+			initialProjectId={initialProjectId}
+			initialClientId={initialClientId}
+			initialTripId={initialTripId}
 			airlineSuppliers={airlineSuppliers}
 			iataAirports={iataAirports}
 			iataAirlines={iataAirlines}

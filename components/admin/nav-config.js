@@ -20,7 +20,7 @@ export const navItems = [
 	{ label: "ÆRIA Inspire", labelKey: "nav.inspire", href: "/inspire", icon: Sparkle },
 	{ label: "Clients", labelKey: "nav.clients", href: "/clients", icon: Users },
 	{ label: "Trips", labelKey: "nav.trips", href: "/trips", icon: Plane },
-	{ label: "Forfaits", labelKey: "nav.forfaits", href: "/forfaits", icon: Calculator },
+	{ label: "Packages", labelKey: "nav.forfaits", href: "/packages", icon: Calculator },
 	{ label: "Commissions", labelKey: "nav.commissions", href: "/commissions", icon: Percent },
 	{ label: "Quotes", labelKey: "nav.quotes", href: "/quotes", icon: FileText },
 	{ label: "Invoices", labelKey: "nav.invoices", href: "/invoices", icon: Receipt },

@@ -378,6 +378,7 @@ model ForfaitQuote {
   updatedAt DateTime @updatedAt
 
   revisions ForfaitQuoteRevision[]
+  linkedInquiries Inquiry[] @relation("InquiryLinkedForfait")
 
   @@index([updatedAt])
   @@index([clientId])
@@ -591,6 +592,7 @@ model Quote {
   updatedAt DateTime @updatedAt
 
   lineItems QuoteLineItem[]
+  sourceInquiries Inquiry[] @relation("InquiryConvertedQuote")
 }
 
 model QuoteLineItem {
@@ -730,17 +732,24 @@ model Inquiry {
   assignedAgentId String?
   assignedAgent   User? @relation(fields: [assignedAgentId], references: [id], onDelete: SetNull)
 
+  linkedForfaitQuoteId String?
+  linkedForfaitQuote   ForfaitQuote? @relation("InquiryLinkedForfait", fields: [linkedForfaitQuoteId], references: [id], onDelete: SetNull)
+
   convertedClientId String?
   convertedClient   Client? @relation("InquiryConvertedClient", fields: [convertedClientId], references: [id], onDelete: SetNull)
   convertedTripId String?
   convertedTrip   Trip? @relation("InquiryConvertedTrip", fields: [convertedTripId], references: [id], onDelete: SetNull)
+  convertedQuoteId String?
+  convertedQuote   Quote? @relation("InquiryConvertedQuote", fields: [convertedQuoteId], references: [id], onDelete: SetNull)
   convertedAt DateTime?
 
   createdAt DateTime @default(now())
 
   @@index([assignedAgentId])
+  @@index([linkedForfaitQuoteId])
   @@index([convertedClientId])
   @@index([convertedTripId])
+  @@index([convertedQuoteId])
 }
 
 model ActivityLog {

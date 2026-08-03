@@ -48,6 +48,9 @@ export function ForfaitsWorkbench({
 	clients,
 	trips,
 	initialProjects,
+	initialProjectId = "",
+	initialClientId = "",
+	initialTripId = "",
 	airlineSuppliers = [],
 	iataAirports = [],
 	iataAirlines = [],
@@ -74,11 +77,26 @@ export function ForfaitsWorkbench({
 		],
 		[locale],
 	);
-	const [hotelPre, setHotelPre] = useState(() => makeDefaultDraft().hasPre);
-	const [hotelPost, setHotelPost] = useState(() => makeDefaultDraft().hasPost);
+	const initialProject = useMemo(
+		() => (initialProjectId && Array.isArray(initialProjects) ? initialProjects.find((project) => project.id === initialProjectId) : null) || null,
+		[initialProjectId, initialProjects],
+	);
+	const [draft, setDraft] = useState(() => {
+		const fromProject = normalizeDraftInput(initialProject?.payload || initialProject?.draft, cruisePortOptions);
+		const seeded = normalizeDraftInput(fromProject, cruisePortOptions);
+		return {
+			...seeded,
+			clientId: initialClientId || seeded.clientId,
+			tripId: initialTripId || seeded.tripId,
+		};
+	});
+	const [hotelPre, setHotelPre] = useState(() => Boolean(draft.hasPre));
+	const [hotelPost, setHotelPost] = useState(() => Boolean(draft.hasPost));
 	const [tab, setTab] = useState("croisiere");
-	const [draft, setDraft] = useState(() => makeDefaultDraft());
 	const [constants, setConstants] = useState(() => {
+		if (initialProject?.constants) {
+			return normalizeConstantsInput(initialProject.constants);
+		}
 		if (typeof window === "undefined") return DEFAULT_CONSTANTS;
 		try {
 			const savedConstants = window.localStorage.getItem(CONSTANTS_KEY);
@@ -97,7 +115,7 @@ export function ForfaitsWorkbench({
 				}))
 			: [],
 	);
-	const [selectedProjectId, setSelectedProjectId] = useState("");
+	const [selectedProjectId, setSelectedProjectId] = useState(() => initialProject?.id || "");
 	const [notice, setNotice] = useState("");
 	const [busy, setBusy] = useState(false);
 	const [revisions, setRevisions] = useState([]);

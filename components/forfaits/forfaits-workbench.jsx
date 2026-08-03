@@ -12,496 +12,36 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
-
-const CONSTANTS_KEY = "aeria.forfaits.constants.v1";
-
-const DEFAULT_CONSTANTS = {
-	admin: 150,
-	pctVols: 10,
-	pctMarkup: 30,
-	pourboiresNuit: 25,
-	arrondi: 0,
-};
-
-const TAB_ITEMS = [{ id: "croisiere" }, { id: "vols" }, { id: "hotel" }, { id: "sommaire" }, { id: "projets" }, { id: "parametres" }];
-
-const CABINS = [
-	{ id: "INT", label: "Interieure" },
-	{ id: "EXT", label: "Exterieure" },
-	{ id: "BAL", label: "Balcon" },
-	{ id: "SUI", label: "Suite" },
-];
-
-const CRUISE_LINE_SHIP_TERMS = {
-	AmaWaterways: ["ama"],
-	Azamara: ["azamara"],
-	"Carnival Cruise Line": ["carnival"],
-	"Celebrity Cruises": ["celebrity", "flora", "xcel"],
-	"Celebrity River": ["celebrity"],
-	"Celestyal Cruises": ["celestyal"],
-	"Costa Cruise Lines": ["costa"],
-	Cunard: ["queen anne", "queen elizabeth", "queen mary", "queen victoria"],
-	"Disney Cruise Line": ["disney"],
-	"Holland America Line": ["eurodam", "koningsdam", "nieuw", "noordam", "oosterdam", "rotterdam", "volendam", "westerdam", "zaandam", "zuiderdam"],
-	"HX Expeditions": ["fram", "fridtjof", "maud", "otto sverdrup", "roald amundsen", "spitsbergen", "trollfjord"],
-	"MSC Cruises": ["msc"],
-	"Norwegian Cruise Line": ["norwegian", "pride of america"],
-	"Princess Cruises": ["princess"],
-	"Royal Caribbean International": ["of the seas"],
-	"Seabourn Cruise Line": ["seabourn"],
-	"Silversea Cruises": ["silver"],
-	"Virgin Voyages": ["lady"],
-	"Avalon Waterways River Cruises": ["avalon"],
-};
-
-function tr(locale, fr, en) {
-	return locale === "en" ? en : fr;
-}
-
-function matchesCruiseLineShip(shipLabel, cruiseLineLabel) {
-	if (!cruiseLineLabel) return true;
-	const terms = CRUISE_LINE_SHIP_TERMS[cruiseLineLabel] || [];
-	if (terms.length === 0) return false;
-	const normalizedShip = String(shipLabel || "").toLowerCase();
-	return terms.some((term) => normalizedShip.includes(term));
-}
-
-function createFlightSegment(direction = "aller") {
-	return {
-		airline: "",
-		operator: "",
-		fromIata: direction === "aller" ? "YUL" : "",
-		departDate: "",
-		departTime: "",
-		arriveDate: "",
-		arriveTime: "",
-		toIata: "",
-	};
-}
-
-function normalizeFlightSegments(value, direction = "aller") {
-	const list = Array.isArray(value) ? value : [];
-	if (list.length === 0) return [createFlightSegment(direction)];
-	return list.map((item) => ({ ...createFlightSegment(direction), ...(item || {}) }));
-}
-
-function normalizeIata(value) {
-	return String(value || "")
-		.toUpperCase()
-		.replace(/[^A-Z]/g, "")
-		.slice(0, 3);
-}
-
-function parseDateString(value) {
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return null;
-	const [year, month, day] = String(value)
-		.split("-")
-		.map((part) => Number.parseInt(part, 10));
-	if (![year, month, day].every(Number.isFinite)) return null;
-	return Date.UTC(year, month - 1, day);
-}
-
-function formatDateString(timestamp) {
-	if (!Number.isFinite(timestamp)) return "";
-	const date = new Date(timestamp);
-	return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
-}
-
-function addDays(dateValue, days) {
-	const timestamp = parseDateString(dateValue);
-	const dayCount = Number.parseInt(String(days), 10);
-	if (!Number.isFinite(timestamp) || !Number.isFinite(dayCount)) return "";
-	return formatDateString(timestamp + dayCount * 24 * 60 * 60 * 1000);
-}
-
-function diffDays(startValue, endValue) {
-	const start = parseDateString(startValue);
-	const end = parseDateString(endValue);
-	if (!Number.isFinite(start) || !Number.isFinite(end)) return "";
-	return Math.max(0, Math.round((end - start) / (24 * 60 * 60 * 1000)));
-}
-
-function normalizePortSearchText(value) {
-	return String(value || "")
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, " ")
-		.replace(/\s+/g, " ")
-		.trim();
-}
-
-function matchCruisePortOption(text, options) {
-	const normalizedText = normalizePortSearchText(text);
-	if (!normalizedText) return null;
-	const list = Array.isArray(options) ? options : [];
-	return (
-		list.find((option) => normalizePortSearchText(option.label) === normalizedText) ||
-		list.find((option) => normalizePortSearchText(option.label).includes(normalizedText)) ||
-		list.find((option) => normalizedText.includes(normalizePortSearchText(option.label))) ||
-		null
-	);
-}
-
-function normalizeCruisePortItems(value, options) {
-	const list = Array.isArray(value) ? value : [];
-	return list
-		.map((item) => {
-			if (!item) return null;
-			if (typeof item === "string") {
-				const option = matchCruisePortOption(item, options);
-				return option || { id: item, value: item, label: item };
-			}
-			const option = matchCruisePortOption(item.label || item.value || item.id, options);
-			return {
-				id: String(item.id || option?.id || item.value || item.label || ""),
-				value: String(item.value || option?.value || item.label || item.id || ""),
-				label: String(item.label || option?.label || item.value || item.id || ""),
-			};
-		})
-		.filter((item) => item && item.value && item.label);
-}
-
-function parseCruisePortPaste(text, options) {
-	const rawParts = String(text || "")
-		.replace(/^ports\s+of\s+call\s*/i, "")
-		.split(/\s*\|\s*|\r?\n+/)
-		.map((part) => part.trim())
-		.filter(Boolean);
-
-	return rawParts
-		.map((part, index) => {
-			const cleaned = index === 0 ? part.replace(/^ports\s+of\s+call\s*/i, "").trim() : part;
-			const option = matchCruisePortOption(cleaned, options);
-			return option || { id: cleaned, value: cleaned, label: cleaned };
-		})
-		.filter((item) => item && item.value && item.label);
-}
-
-function makeDefaultDraft() {
-	return {
-		projectName: "",
-		clientId: "",
-		tripId: "",
-		compagnie: "",
-		navire: "",
-		portDepart: "",
-		portArrivee: "",
-		cruisePortStops: [],
-		croisiereDebut: "",
-		croisiereFin: "",
-		croisiereNotes: "",
-		pax: 2,
-		nuits: 7,
-		pourboiresInclus: false,
-		pourboiresManuel: "",
-		usdCab: false,
-		taux: 1.38,
-		hasPre: true,
-		hasPost: false,
-		hasTransferts: true,
-		nuitsHotel: 1,
-		nuitsHotelPost: 1,
-		hotelNuit: "",
-		hotelNuitPost: "",
-		hotelNom: "",
-		hotelPostNom: "",
-		hotelDebut: "",
-		hotelFin: "",
-		hotelPostDebut: "",
-		hotelPostFin: "",
-		volsDetails: "",
-		volsAllerSegments: [createFlightSegment("aller")],
-		volsRetourSegments: [createFlightSegment("retour")],
-		vols: "",
-		volsMode: "pers",
-		bagAller: "",
-		bagAllerMode: "pers",
-		bagRetour: "",
-		bagRetourMode: "pers",
-		trA: "",
-		trAMode: "pers",
-		trB: "",
-		trBMode: "pers",
-		trC: "",
-		trCMode: "pers",
-		trD: "",
-		trDMode: "pers",
-		trE: "",
-		trEMode: "pers",
-		trAComp: "",
-		trBComp: "",
-		trCComp: "",
-		trDComp: "",
-		trEComp: "",
-		commissionHotelPre: "",
-		commissionHotelPost: "",
-		commissionTransferts: "",
-		commissionVols: "",
-		cabExampleInt: "",
-		cabExampleExt: "",
-		cabExampleBal: "",
-		cabExampleSui: "",
-		depot: "",
-		depotDate: "",
-		soldeDate: "",
-		notes: "",
-		cabins: {
-			INT: "",
-			EXT: "",
-			BAL: "",
-			SUI: "",
-		},
-		commissions: {
-			INT: "",
-			EXT: "",
-			BAL: "",
-			SUI: "",
-		},
-		inclusions: {
-			boissons: false,
-			wifi: false,
-			restos: false,
-			creditBord: false,
-			creditExcursions: false,
-			pourboires: false,
-			fraisAdminCredites: false,
-			dejeuner: false,
-			toutInclus: false,
-			navette: false,
-			balcon: false,
-			vue: false,
-			bagages: false,
-			sieges: false,
-			transfertAeroHotel: false,
-			transfertHotelPort: false,
-			transfertPortAero: false,
-			transfertPortHotelPost: false,
-			transfertHotelPostAero: false,
-		},
-	};
-}
-
-function toNumber(value) {
-	if (value === "" || value === null || typeof value === "undefined") return 0;
-	const n = Number.parseFloat(String(value));
-	return Number.isFinite(n) ? n : 0;
-}
-
-function roundStep(value, step) {
-	if (!step || step <= 0) return value;
-	return Math.ceil(value / step) * step;
-}
-
-function fmtCad(value) {
-	return new Intl.NumberFormat("fr-CA", {
-		style: "currency",
-		currency: "CAD",
-		maximumFractionDigits: 2,
-	}).format(Number.isFinite(value) ? value : 0);
-}
-
-function computeBase(draft, constants) {
-	const pax = Math.max(1, Math.trunc(toNumber(draft.pax)) || 1);
-
-	const valuePerPerson = (key, modeKey) => {
-		const raw = toNumber(draft[key]);
-		const mode = draft[modeKey] === "tot" ? "tot" : "pers";
-		return mode === "tot" ? raw / pax : raw;
-	};
-
-	const nuits = Math.max(0, Math.trunc(toNumber(draft.nuits)));
-	const hasPre = Boolean(draft.hasPre);
-	const hasPost = Boolean(draft.hasPost);
-	const hasTransferts = Boolean(draft.hasTransferts);
-	const nuitsHotel = hasPre ? Math.max(0, Math.trunc(toNumber(draft.nuitsHotel))) : 0;
-	const nuitsHotelPost = hasPost ? Math.max(0, Math.trunc(toNumber(draft.nuitsHotelPost))) : 0;
-
-	const vols = valuePerPerson("vols", "volsMode");
-	const bagAller = valuePerPerson("bagAller", "bagAllerMode");
-	const bagRetour = valuePerPerson("bagRetour", "bagRetourMode");
-	const bagages = bagAller + bagRetour;
-
-	const hotelNuit = hasPre ? toNumber(draft.hotelNuit) : 0;
-	const hotelNuitPost = hasPost ? toNumber(draft.hotelNuitPost) : 0;
-	const hotelChambre = hotelNuit * nuitsHotel;
-	const hotelChambrePost = hotelNuitPost * nuitsHotelPost;
-	const hotelTotal = hotelChambre + hotelChambrePost;
-	const hotelPers = pax > 0 ? hotelTotal / pax : 0;
-
-	const trA = hasTransferts ? valuePerPerson("trA", "trAMode") : 0;
-	const trB = hasTransferts ? valuePerPerson("trB", "trBMode") : 0;
-	const trC = hasTransferts ? valuePerPerson("trC", "trCMode") : 0;
-	const trD = hasTransferts && hasPost ? valuePerPerson("trD", "trDMode") : 0;
-	const trE = hasTransferts && hasPost ? valuePerPerson("trE", "trEMode") : 0;
-	const transferts = trA + trB + trC + trD + trE;
-	const nbTransferts = hasTransferts ? (hasPost ? 5 : 3) : 0;
-
-	const inclus = Boolean(draft.pourboiresInclus);
-	const manuel = draft.pourboiresManuel === "" ? null : toNumber(draft.pourboiresManuel);
-	let pourboires = 0;
-	let pourboiresMode = "inclus";
-	if (inclus) {
-		pourboires = 0;
-		pourboiresMode = "inclus";
-	} else if (manuel !== null && Number.isFinite(manuel)) {
-		pourboires = Math.max(0, manuel);
-		pourboiresMode = "manuel";
-	} else {
-		pourboires = constants.pourboiresNuit * nuits;
-		pourboiresMode = "auto";
-	}
-
-	const totalNuits = nuits + nuitsHotel + nuitsHotelPost;
-	const usd = Boolean(draft.usdCab);
-	const taux = usd ? Math.max(0, toNumber(draft.taux)) : 1;
-
-	const fraisVises = (vols * constants.pctVols) / 100;
-	const markupMax = (hotelPers * constants.pctMarkup) / 100;
-	const markup = Math.min(fraisVises, markupMax);
-	const perte = Math.max(0, fraisVises - markup);
-	const markupTotal = markup * pax;
-	const partPre = hotelTotal > 0 ? hotelChambre / hotelTotal : 1;
-
-	return {
-		pax,
-		nuits,
-		hasPre,
-		hasPost,
-		hasTransferts,
-		nuitsHotel,
-		nuitsHotelPost,
-		vols,
-		bagAller,
-		bagRetour,
-		bagages,
-		hotelNuit,
-		hotelNuitPost,
-		hotelChambre,
-		hotelChambrePost,
-		hotelPers,
-		hotelTotal,
-		trA,
-		trB,
-		trC,
-		trD,
-		trE,
-		transferts,
-		nbTransferts,
-		pourboires,
-		pourboiresMode,
-		totalNuits,
-		usd,
-		taux,
-		fraisVises,
-		markupMax,
-		markup,
-		perte,
-		hotelClientChambre: hotelChambre + markupTotal * partPre,
-		hotelClientChambrePost: hotelChambrePost + markupTotal * (1 - partPre),
-	};
-}
-
-function activeCabins(draft, base) {
-	return CABINS.map((cab) => {
-		const raw = toNumber(draft.cabins[cab.id]);
-		if (!(raw > 0)) return null;
-		const facture = base.usd ? raw * base.taux : raw;
-		return {
-			id: cab.id,
-			label: cab.label,
-			factureBrute: raw,
-			facture,
-		};
-	}).filter(Boolean);
-}
-
-function cabinCalc(base, constants, cabineFacture) {
-	const cabinePers = cabineFacture / base.pax;
-	const brut = cabinePers + base.vols + base.bagages + base.hotelPers + base.transferts + base.pourboires + constants.admin + base.markup;
-	const prixPers = roundStep(brut, constants.arrondi);
-	const coussin = prixPers - brut;
-	const total = prixPers * base.pax;
-	const prixPersNuit = base.totalNuits > 0 ? prixPers / base.totalNuits : 0;
-	return { cabinePers, brut, prixPers, coussin, total, prixPersNuit };
-}
-
-function flattenDraftToCsvRows(draft) {
-	const rows = [];
-	const walk = (prefix, value) => {
-		if (value && typeof value === "object" && !Array.isArray(value)) {
-			Object.entries(value).forEach(([k, v]) => walk(prefix ? `${prefix}.${k}` : k, v));
-			return;
-		}
-		rows.push([prefix, String(value ?? "")]);
-	};
-	walk("", draft);
-	return rows.filter(([k]) => k !== "");
-}
-
-function asCsvCell(value) {
-	const s = String(value);
-	return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-
-function parseCsvRows(text) {
-	const rows = [];
-	let field = "";
-	let row = [];
-	let inQuotes = false;
-	const src = text.replace(/^\ufeff/, "");
-	for (let i = 0; i < src.length; i += 1) {
-		const ch = src[i];
-		if (inQuotes) {
-			if (ch === '"') {
-				if (src[i + 1] === '"') {
-					field += '"';
-					i += 1;
-				} else {
-					inQuotes = false;
-				}
-			} else {
-				field += ch;
-			}
-		} else if (ch === '"') {
-			inQuotes = true;
-		} else if (ch === ",") {
-			row.push(field);
-			field = "";
-		} else if (ch === "\n" || ch === "\r") {
-			if (ch === "\r" && src[i + 1] === "\n") i += 1;
-			row.push(field);
-			field = "";
-			if (row.length > 1 || row[0] !== "") rows.push(row);
-			row = [];
-		} else {
-			field += ch;
-		}
-	}
-	if (field !== "" || row.length > 0) {
-		row.push(field);
-		rows.push(row);
-	}
-	return rows;
-}
-
-function setByPath(target, path, rawValue) {
-	const keys = path.split(".");
-	let node = target;
-	for (let i = 0; i < keys.length - 1; i += 1) {
-		const key = keys[i];
-		if (!node[key] || typeof node[key] !== "object") node[key] = {};
-		node = node[key];
-	}
-	const last = keys[keys.length - 1];
-	if (rawValue === "true") {
-		node[last] = true;
-	} else if (rawValue === "false") {
-		node[last] = false;
-	} else if (rawValue !== "" && !Number.isNaN(Number(rawValue)) && String(Number(rawValue)) === rawValue.trim()) {
-		node[last] = Number(rawValue);
-	} else {
-		node[last] = rawValue;
-	}
-}
+import {
+	CONSTANTS_KEY,
+	DEFAULT_CONSTANTS,
+	TAB_ITEMS,
+	CABINS,
+	NOTICE_TIMEOUT_MS,
+	tr,
+	matchesCruiseLineShip,
+	createFlightSegment,
+	normalizeFlightSegments,
+	normalizeIata,
+	addDays,
+	diffDays,
+	normalizeCruisePortItems,
+	parseCruisePortPaste,
+	makeDefaultDraft,
+	toNumber,
+	fmtCad,
+	computeBase,
+	activeCabins,
+	cabinCalc,
+	flattenDraftToCsvRows,
+	asCsvCell,
+	parseCsvRows,
+	setByPath,
+	normalizeConstantsInput,
+	normalizeDraftInput,
+	readResponseJson,
+	getResponseErrorMessage,
+} from "@/components/forfaits/forfaits-workbench-utils";
 
 export function ForfaitsWorkbench({
 	clients,
@@ -515,6 +55,17 @@ export function ForfaitsWorkbench({
 	cruisePortOptions = [],
 }) {
 	const { locale } = useLocale();
+	const tabMeta = useMemo(
+		() => ({
+			croisiere: { title: tr(locale, "Croisiere", "Cruise"), hint: tr(locale, "Cadre", "Setup") },
+			vols: { title: tr(locale, "Vols", "Flights"), hint: tr(locale, "Segments", "Segments") },
+			hotel: { title: tr(locale, "Hotels & Transferts", "Hotels & Transfers"), hint: tr(locale, "Sejours", "Stays") },
+			sommaire: { title: tr(locale, "Sommaire", "Summary"), hint: tr(locale, "Marge", "Margin") },
+			projets: { title: tr(locale, "Projets", "Projects"), hint: tr(locale, "Sauvegarde", "Storage") },
+			parametres: { title: tr(locale, "Parametres", "Parameters"), hint: tr(locale, "Reglages", "Settings") },
+		}),
+		[locale],
+	);
 	const yesNoOptions = useMemo(
 		() => [
 			{ value: "false", label: tr(locale, "Non", "No") },
@@ -532,7 +83,7 @@ export function ForfaitsWorkbench({
 			const savedConstants = window.localStorage.getItem(CONSTANTS_KEY);
 			if (!savedConstants) return DEFAULT_CONSTANTS;
 			const parsed = JSON.parse(savedConstants);
-			return { ...DEFAULT_CONSTANTS, ...parsed };
+			return normalizeConstantsInput(parsed);
 		} catch {
 			return DEFAULT_CONSTANTS;
 		}
@@ -541,7 +92,7 @@ export function ForfaitsWorkbench({
 		Array.isArray(initialProjects)
 			? initialProjects.map((project) => ({
 					...project,
-					draft: project.payload || makeDefaultDraft(),
+					draft: normalizeDraftInput(project.payload || project.draft, cruisePortOptions),
 				}))
 			: [],
 	);
@@ -562,6 +113,12 @@ export function ForfaitsWorkbench({
 			console.warn("Impossible de sauvegarder les constantes localement.");
 		}
 	}, [constants]);
+
+	useEffect(() => {
+		if (!notice) return;
+		const timer = window.setTimeout(() => setNotice(""), NOTICE_TIMEOUT_MS);
+		return () => window.clearTimeout(timer);
+	}, [notice]);
 
 	const base = useMemo(() => computeBase(draft, constants), [draft, constants]);
 	const cabinRows = useMemo(() => activeCabins(draft, base), [draft, base]);
@@ -665,6 +222,8 @@ export function ForfaitsWorkbench({
 		draft.commissionTransferts,
 		draft.commissionVols,
 		draft.commissions,
+		draft.hotelNuit,
+		draft.hotelNuitPost,
 	]);
 
 	const summary = useMemo(() => {
@@ -699,6 +258,8 @@ export function ForfaitsWorkbench({
 	const selectedTrip = useMemo(() => {
 		return trips.find((trip) => trip.id === draft.tripId) || null;
 	}, [draft.tripId, trips]);
+
+	const selectedProject = useMemo(() => projects.find((project) => project.id === selectedProjectId) || null, [projects, selectedProjectId]);
 
 	const airlineOptions = useMemo(() => {
 		const fromSuppliers = Array.isArray(airlineSuppliers) ? airlineSuppliers.map((row) => row?.name).filter(Boolean) : [];
@@ -781,6 +342,16 @@ export function ForfaitsWorkbench({
 
 	const volsAllerSegments = useMemo(() => normalizeFlightSegments(draft.volsAllerSegments, "aller"), [draft.volsAllerSegments]);
 	const volsRetourSegments = useMemo(() => normalizeFlightSegments(draft.volsRetourSegments, "retour"), [draft.volsRetourSegments]);
+
+	const headerStats = useMemo(
+		() => [
+			{ label: tr(locale, "Passagers", "Passengers"), value: String(base.pax) },
+			{ label: tr(locale, "Vente estimee", "Estimated sales"), value: fmtCad(summary.totalVente) },
+			{ label: tr(locale, "Revenu estime", "Estimated revenue"), value: fmtCad(summary.totalRevenu) },
+			{ label: tr(locale, "Marge moyenne", "Average margin"), value: `${summary.margeMoy.toFixed(1)}%` },
+		],
+		[base.pax, locale, summary.margeMoy, summary.totalRevenu, summary.totalVente],
+	);
 
 	function setField(field, value) {
 		setDraft((prev) => ({ ...prev, [field]: value }));
@@ -919,7 +490,7 @@ export function ForfaitsWorkbench({
 		try {
 			const response = await fetch(`/api/forfaits/${projectId}/revisions`);
 			if (!response.ok) throw new Error("revisions_failed");
-			const data = await response.json();
+			const data = await readResponseJson(response);
 			setRevisions(Array.isArray(data?.revisions) ? data.revisions : []);
 		} catch {
 			setRevisions([]);
@@ -941,7 +512,7 @@ export function ForfaitsWorkbench({
 	}
 
 	function resetAll() {
-		const nextDraft = makeDefaultDraft();
+		const nextDraft = normalizeDraftInput(makeDefaultDraft(), normalizedCruisePortOptions);
 		setDraft(nextDraft);
 		setHotelPre(nextDraft.hasPre);
 		setHotelPost(nextDraft.hasPost);
@@ -974,14 +545,14 @@ export function ForfaitsWorkbench({
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(buildMutationBody()),
 			});
-
-			if (!response.ok) throw new Error("save_failed");
-
-			const data = await response.json();
+			const data = await readResponseJson(response);
+			if (!response.ok) {
+				throw new Error(getResponseErrorMessage(data, tr(locale, "Enregistrement impossible.", "Could not save.")));
+			}
 			const project = data.project;
 			const normalized = {
 				...project,
-				draft: project.payload || makeDefaultDraft(),
+				draft: normalizeDraftInput(project.payload, normalizedCruisePortOptions),
 			};
 
 			setProjects((prev) => {
@@ -994,8 +565,12 @@ export function ForfaitsWorkbench({
 			setSelectedProjectId(normalized.id);
 			refreshRevisions(normalized.id);
 			setNotice(`${tr(locale, "Projet enregistre", "Project saved")}: ${normalized.name}`);
-		} catch {
-			setNotice(tr(locale, "Enregistrement impossible. Verifie la connexion et reessaie.", "Could not save. Check your connection and try again."));
+		} catch (error) {
+			setNotice(
+				error instanceof Error
+					? error.message
+					: tr(locale, "Enregistrement impossible. Verifie la connexion et reessaie.", "Could not save. Check your connection and try again."),
+			);
 		} finally {
 			setBusy(false);
 		}
@@ -1004,11 +579,11 @@ export function ForfaitsWorkbench({
 	function loadProject(projectId) {
 		const project = projects.find((item) => item.id === projectId);
 		if (!project) return;
-		const nextDraft = { ...makeDefaultDraft(), ...(project.payload || project.draft || {}) };
+		const nextDraft = normalizeDraftInput(project.payload || project.draft, normalizedCruisePortOptions);
 		setDraft(nextDraft);
 		setHotelPre(Boolean(nextDraft.hasPre));
 		setHotelPost(Boolean(nextDraft.hasPost));
-		setConstants({ ...DEFAULT_CONSTANTS, ...(project.constants || {}) });
+		setConstants(normalizeConstantsInput(project.constants));
 		setSelectedProjectId(project.id);
 		refreshRevisions(project.id);
 		setNotice(`${tr(locale, "Projet charge", "Project loaded")}: ${project.name}`);
@@ -1020,12 +595,14 @@ export function ForfaitsWorkbench({
 
 		setBusy(true);
 		try {
+			const draftPayload = normalizeDraftInput(project.payload || project.draft || makeDefaultDraft(), normalizedCruisePortOptions);
+			const projectConstants = normalizeConstantsInput(project.constants || DEFAULT_CONSTANTS);
 			const body = {
 				name: `${project.name} (${tr(locale, "copie", "copy")})`,
 				clientId: project.clientId || null,
 				tripId: project.tripId || null,
-				payload: project.payload || project.draft || makeDefaultDraft(),
-				constants: project.constants || DEFAULT_CONSTANTS,
+				payload: draftPayload,
+				constants: projectConstants,
 				currency: project.currency || "CAD",
 				passengers: project.passengers || 1,
 				totalSaleCents: project.totalSaleCents || 0,
@@ -1037,16 +614,18 @@ export function ForfaitsWorkbench({
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(body),
 			});
-			if (!response.ok) throw new Error("duplicate_failed");
-			const data = await response.json();
+			const data = await readResponseJson(response);
+			if (!response.ok) {
+				throw new Error(getResponseErrorMessage(data, tr(locale, "Duplication impossible.", "Could not duplicate project.")));
+			}
 			const duplicated = {
 				...data.project,
-				draft: data.project.payload || makeDefaultDraft(),
+				draft: normalizeDraftInput(data.project.payload, normalizedCruisePortOptions),
 			};
 			setProjects((prev) => [duplicated, ...prev]);
 			setNotice(tr(locale, "Copie creee.", "Copy created."));
-		} catch {
-			setNotice(tr(locale, "Duplication impossible.", "Could not duplicate project."));
+		} catch (error) {
+			setNotice(error instanceof Error ? error.message : tr(locale, "Duplication impossible.", "Could not duplicate project."));
 		} finally {
 			setBusy(false);
 		}
@@ -1285,8 +864,11 @@ export function ForfaitsWorkbench({
 				setNotice(tr(locale, "Fichier JSON invalide.", "Invalid JSON file."));
 				return;
 			}
-			setDraft({ ...makeDefaultDraft(), ...nextDraft });
-			setConstants({ ...DEFAULT_CONSTANTS, ...nextConstants });
+			const normalizedDraft = normalizeDraftInput(nextDraft, normalizedCruisePortOptions);
+			setDraft(normalizedDraft);
+			setHotelPre(Boolean(normalizedDraft.hasPre));
+			setHotelPost(Boolean(normalizedDraft.hasPost));
+			setConstants(normalizeConstantsInput(nextConstants));
 			setSelectedProjectId("");
 			setNotice(tr(locale, "JSON importe.", "JSON imported."));
 		} catch {
@@ -1306,7 +888,10 @@ export function ForfaitsWorkbench({
 				if (!key || key === "champ" || key.startsWith("__meta_")) return;
 				setByPath(seed, key, r.slice(1).join(","));
 			});
-			setDraft(seed);
+			const normalizedDraft = normalizeDraftInput(seed, normalizedCruisePortOptions);
+			setDraft(normalizedDraft);
+			setHotelPre(Boolean(normalizedDraft.hasPre));
+			setHotelPost(Boolean(normalizedDraft.hasPost));
 			setSelectedProjectId("");
 			setNotice(tr(locale, "CSV importe.", "CSV imported."));
 		} catch {
@@ -1316,20 +901,61 @@ export function ForfaitsWorkbench({
 
 	return (
 		<div className="space-y-6">
+			{/* WORKBENCH HERO */}
 			<Card>
-				<CardHeader className="flex flex-wrap items-start justify-between gap-3">
-					<div className="max-w-3xl space-y-2">
-						<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">{tr(locale, "Moteur forfaits", "Packages engine")}</p>
-						<CardTitle className="text-2xl font-semibold tracking-tight sm:text-[2rem]">
-							{tr(locale, "Calculateur de forfaits croisiere", "Cruise package calculator")}
-						</CardTitle>
-						<p className="text-sm leading-6 text-muted-foreground">
-							{tr(
-								locale,
-								"Outil integree de planification de forfaits croisiere, suivi de marge et sauvegarde de dossiers.",
-								"Integrated cruise package planning tool with margin tracking and project persistence.",
-							)}
-						</p>
+				<CardHeader className="relative overflow-hidden rounded-t-xl border-b border-border/50 bg-linear-to-br from-primary/10 via-background to-accent/25">
+					<div className="pointer-events-none absolute right-0 top-0 h-28 w-28 -translate-y-5 translate-x-4 rounded-full bg-primary/15 blur-3xl" />
+					<div className="pointer-events-none absolute bottom-0 left-0 h-24 w-24 -translate-x-4 translate-y-4 rounded-full bg-accent/45 blur-2xl" />
+					<div className="relative flex flex-wrap items-start justify-between gap-3">
+						<div className="max-w-3xl space-y-2">
+							<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">{tr(locale, "Moteur forfaits", "Packages engine")}</p>
+							<CardTitle className="text-2xl font-semibold tracking-tight sm:text-[2rem]">
+								{tr(locale, "Calculateur de forfaits croisiere", "Cruise package calculator")}
+							</CardTitle>
+							<p className="text-sm leading-6 text-muted-foreground">
+								{tr(
+									locale,
+									"Outil integree de planification de forfaits croisiere, suivi de marge et sauvegarde de dossiers.",
+									"Integrated cruise package planning tool with margin tracking and project persistence.",
+								)}
+							</p>
+							<div className="flex flex-wrap items-center gap-2">
+								<Badge variant="secondary">
+									{tr(locale, "Etat", "Status")} {summary.health}
+								</Badge>
+								{selectedProject ? (
+									<Badge variant="outline">
+										{tr(locale, "Revision", "Revision")} {selectedProject.currentRevision || 1}
+									</Badge>
+								) : null}
+								{selectedTrip ? <Badge variant="outline">{selectedTrip.name}</Badge> : null}
+							</div>
+						</div>
+						<div className="flex flex-wrap items-center gap-2">
+							<Button
+								type="button"
+								variant="default"
+								onClick={saveProject}
+								disabled={busy}
+							>
+								<Save className="size-4" /> {tr(locale, "Enregistrer", "Save")}
+							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={exportPdf}
+							>
+								<FileText className="size-4" /> {tr(locale, "PDF client", "Client PDF")}
+							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={resetAll}
+								disabled={busy}
+							>
+								<Calculator className="size-4" /> {tr(locale, "Nouveau", "New")}
+							</Button>
+						</div>
 					</div>
 				</CardHeader>
 				<CardContent className="grid gap-4 md:grid-cols-3">
@@ -1374,6 +1000,18 @@ export function ForfaitsWorkbench({
 							locale={locale}
 						/>
 					</div>
+					<div className="md:col-span-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+						{headerStats.map((item) => (
+							<div
+								key={item.label}
+								className="rounded-xl border border-border/70 bg-card/70 px-3 py-2"
+							>
+								<p className="text-[11px] uppercase tracking-wide text-muted-foreground">{item.label}</p>
+								<p className="text-base font-semibold tabular-nums">{item.value}</p>
+							</div>
+						))}
+					</div>
+					{notice ? <p className="md:col-span-3 rounded-xl border border-border/70 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">{notice}</p> : null}
 				</CardContent>
 			</Card>
 
@@ -1385,20 +1023,15 @@ export function ForfaitsWorkbench({
 						type="button"
 						variant={tab === item.id ? "default" : "ghost"}
 						size="sm"
-						className="rounded-xl"
+						className="h-auto min-h-9 rounded-xl px-3 py-1.5"
 						onClick={() => setTab(item.id)}
 					>
-						{item.id === "croisiere"
-							? tr(locale, "Croisiere", "Cruise")
-							: item.id === "vols"
-								? tr(locale, "Vols", "Flights")
-								: item.id === "hotel"
-									? tr(locale, "Hotels & Transferts", "Hotels & Transfers")
-									: item.id === "sommaire"
-										? tr(locale, "Sommaire", "Summary")
-										: item.id === "projets"
-											? tr(locale, "Projets", "Projects")
-										: tr(locale, "Parametres", "Parameters")}
+						<span className="flex flex-col items-start leading-tight">
+							<span>{tabMeta[item.id]?.title || item.id}</span>
+							<span className={cn("text-[10px] uppercase tracking-wide", tab === item.id ? "text-primary-foreground/80" : "text-muted-foreground")}>
+								{tabMeta[item.id]?.hint || ""}
+							</span>
+						</span>
 					</Button>
 				))}
 			</div>
@@ -1703,7 +1336,7 @@ export function ForfaitsWorkbench({
 								))}
 							</div>
 							<div className="md:col-span-2 grid gap-3 md:grid-cols-2">
-								<Field label={tr(locale, "Depot / personne", "Deposit / person")}> 
+								<Field label={tr(locale, "Depot / personne", "Deposit / person")}>
 									<Input
 										type="number"
 										min="0"
@@ -1712,7 +1345,7 @@ export function ForfaitsWorkbench({
 										onChange={(e) => setField("depot", e.target.value)}
 									/>
 								</Field>
-								<Field label={tr(locale, "Date limite solde", "Final payment due date")}> 
+								<Field label={tr(locale, "Date limite solde", "Final payment due date")}>
 									<Input
 										type="date"
 										value={draft.soldeDate}
@@ -1734,9 +1367,7 @@ export function ForfaitsWorkbench({
 										"Example: This cruise includes main meals, shows, and port taxes.",
 									)}
 								/>
-								<p className="text-xs text-muted-foreground">
-									{tr(locale, "Visible dans le PDF client.", "Visible in the client PDF.")}
-								</p>
+								<p className="text-xs text-muted-foreground">{tr(locale, "Visible dans le PDF client.", "Visible in the client PDF.")}</p>
 							</Field>
 							<Field
 								label={tr(locale, "Notes internes", "Internal notes")}
@@ -1746,15 +1377,9 @@ export function ForfaitsWorkbench({
 									rows={4}
 									value={draft.notes}
 									onChange={(e) => setField("notes", e.target.value)}
-									placeholder={tr(
-										locale,
-										"Notes operationnelles internes, suivis, rappels, etc.",
-										"Internal operational notes, follow-ups, reminders, etc.",
-									)}
+									placeholder={tr(locale, "Notes operationnelles internes, suivis, rappels, etc.", "Internal operational notes, follow-ups, reminders, etc.")}
 								/>
-								<p className="text-xs text-muted-foreground">
-									{tr(locale, "Non visible dans le PDF client.", "Not visible in the client PDF.")}
-								</p>
+								<p className="text-xs text-muted-foreground">{tr(locale, "Non visible dans le PDF client.", "Not visible in the client PDF.")}</p>
 							</Field>
 						</CardContent>
 					</Card>
@@ -2392,7 +2017,6 @@ export function ForfaitsWorkbench({
 							<p className="text-sm text-muted-foreground">
 								{tr(locale, "Utilise le menu en haut a droite pour sauvegarder, exporter ou importer.", "Use the top-right menu to save, export, or import.")}
 							</p>
-							{notice ? <p className="text-sm text-muted-foreground">{notice}</p> : null}
 							<input
 								ref={importJsonRef}
 								type="file"
@@ -2421,7 +2045,7 @@ export function ForfaitsWorkbench({
 							{projects.length === 0 ? (
 								<p className="text-sm text-muted-foreground">{tr(locale, "Aucun projet enregistre pour le moment.", "No saved project yet.")}</p>
 							) : (
-								<div className="max-h-[22rem] space-y-2 overflow-y-auto pr-1">
+								<div className="max-h-88 space-y-2 overflow-y-auto pr-1">
 									{projects.map((project) => (
 										<div
 											key={project.id}

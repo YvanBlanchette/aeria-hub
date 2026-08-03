@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
 import { dollarsToCents } from "@/lib/format";
 import { tServer } from "@/lib/i18n-server";
+import { clientScope, invoiceScope, quoteScope, tripScope } from "@/lib/visibility-scope";
 
 async function nextInvoiceNumber() {
 	const invoices = await prisma.invoice.findMany({ select: { invoiceNumber: true } });
@@ -32,6 +33,8 @@ async function syncInvoiceAmount(invoiceId) {
  */
 export async function createInvoice(formData) {
 	const user = await requireUser();
+	const scopedClients = clientScope(user);
+	const scopedTrips = tripScope(user);
 	const clientIdRaw = formData.get("clientId");
 	const tripIdRaw = formData.get("tripId");
 	const dueDateRaw = formData.get("dueDate");
@@ -41,12 +44,18 @@ export async function createInvoice(formData) {
 
 	if (!clientId) return tServer("errors.clientRequired", "Client is required.");
 
-	const client = await prisma.client.findUnique({ where: { id: clientId }, select: { id: true, firstName: true, lastName: true } });
+	const client = await prisma.client.findFirst({
+		where: { id: clientId, ...scopedClients },
+		select: { id: true, firstName: true, lastName: true },
+	});
 	if (!client) return tServer("errors.clientNotFound", "Client not found.");
 
 	let trip = null;
 	if (tripId) {
-		trip = await prisma.trip.findUnique({ where: { id: tripId }, select: { id: true, clientId: true, name: true } });
+		trip = await prisma.trip.findFirst({
+			where: { id: tripId, ...scopedTrips },
+			select: { id: true, clientId: true, name: true },
+		});
 		if (!trip) return tServer("errors.tripNotFound", "Trip not found.");
 		if (trip.clientId !== client.id) return tServer("errors.tripClientMismatch", "Selected trip does not belong to the selected client.");
 	}
@@ -87,8 +96,11 @@ export async function createInvoice(formData) {
 export async function convertItineraryToInvoice(tripId) {
 	const user = await requireUser();
 
-	const trip = await prisma.trip.findUnique({
-		where: { id: tripId },
+	const trip = await prisma.trip.findFirst({
+		where: {
+			id: tripId,
+			...tripScope(user),
+		},
 		include: { segments: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
 	});
 	if (!trip) return;
@@ -135,14 +147,27 @@ export async function convertItineraryToInvoice(tripId) {
 export async function convertQuoteToInvoice(quoteId) {
 	const user = await requireUser();
 
-	const quote = await prisma.quote.findUnique({
-		where: { id: quoteId },
+	const quote = await prisma.quote.findFirst({
+		where: {
+			id: quoteId,
+			...quoteScope(user),
+		},
 		include: {
 			lineItems: { orderBy: { sortOrder: "asc" } },
 			trip: { select: { id: true, name: true, clientId: true, finalPaymentDate: true } },
 		},
 	});
 	if (!quote) return;
+
+	await prisma.quote.updateMany({
+		where: { id: quote.id, status: { in: ["DRAFT", "SENT"] } },
+		data: { status: "ACCEPTED" },
+	});
+
+	await prisma.trip.updateMany({
+		where: { id: quote.trip.id, status: "INQUIRY" },
+		data: { status: "QUOTED" },
+	});
 
 	const invoiceNumber = await nextInvoiceNumber();
 	const invoice = await prisma.invoice.create({
@@ -197,10 +222,21 @@ export async function updateInvoice(invoiceId, prevState, formData) {
 	const dueDate = dueDateValue ? new Date(dueDateValue) : null;
 	const amountPaid = dollarsToCents(get("amountPaid")) ?? 0;
 
+	const existing = await prisma.invoice.findFirst({ where: { id: invoiceId, ...invoiceScope(user) }, select: { id: true } });
+	if (!existing) return tServer("errors.invoiceNotFound", "Invoice not found.");
+
 	const invoice = await prisma.invoice.update({
 		where: { id: invoiceId },
 		data: { status, dueDate, amountPaid },
+		select: { id: true, invoiceNumber: true, clientId: true, tripId: true, status: true },
 	});
+
+	if (invoice.tripId && invoice.status === "PAID") {
+		await prisma.trip.updateMany({
+			where: { id: invoice.tripId, status: { in: ["INQUIRY", "QUOTED"] } },
+			data: { status: "BOOKED" },
+		});
+	}
 
 	await logActivity({
 		entityType: "Invoice",
@@ -221,8 +257,8 @@ export async function updateInvoice(invoiceId, prevState, formData) {
  * @param {string} clientId
  */
 export async function deleteInvoice(invoiceId, clientId) {
-	await requireUser();
-	const invoice = await prisma.invoice.findFirst({ where: { id: invoiceId, clientId } });
+	const user = await requireUser();
+	const invoice = await prisma.invoice.findFirst({ where: { id: invoiceId, clientId, ...invoiceScope(user) } });
 	if (!invoice) return;
 
 	await prisma.invoice.delete({ where: { id: invoiceId } });
@@ -238,7 +274,7 @@ export async function deleteInvoice(invoiceId, clientId) {
  * @param {FormData} formData
  */
 export async function createInvoiceLineItem(invoiceId, prevState, formData) {
-	await requireUser();
+	const user = await requireUser();
 	const description = formData.get("description");
 	const quantity = Number(formData.get("quantity"));
 	const unitPrice = dollarsToCents(formData.get("unitPrice"));
@@ -246,7 +282,7 @@ export async function createInvoiceLineItem(invoiceId, prevState, formData) {
 	if (typeof description !== "string" || !description.trim()) return tServer("errors.requiredDescription", "Description is required.");
 	if (unitPrice == null || unitPrice < 0) return tServer("errors.validUnitPrice", "Enter a valid unit price.");
 
-	const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { id: true } });
+	const invoice = await prisma.invoice.findFirst({ where: { id: invoiceId, ...invoiceScope(user) }, select: { id: true } });
 	if (!invoice) return tServer("errors.invoiceNotFound", "Invoice not found.");
 
 	const maxSort = await prisma.invoiceLineItem.aggregate({ where: { invoiceId }, _max: { sortOrder: true } });
@@ -271,7 +307,7 @@ export async function createInvoiceLineItem(invoiceId, prevState, formData) {
  * @param {FormData} formData
  */
 export async function updateInvoiceLineItem(lineItemId, invoiceId, prevState, formData) {
-	await requireUser();
+	const user = await requireUser();
 	const description = formData.get("description");
 	const quantity = Number(formData.get("quantity"));
 	const unitPrice = dollarsToCents(formData.get("unitPrice"));
@@ -279,7 +315,9 @@ export async function updateInvoiceLineItem(lineItemId, invoiceId, prevState, fo
 	if (typeof description !== "string" || !description.trim()) return tServer("errors.requiredDescription", "Description is required.");
 	if (unitPrice == null || unitPrice < 0) return tServer("errors.validUnitPrice", "Enter a valid unit price.");
 
-	const existing = await prisma.invoiceLineItem.findFirst({ where: { id: lineItemId, invoiceId } });
+	const existing = await prisma.invoiceLineItem.findFirst({
+		where: { id: lineItemId, invoiceId, invoice: invoiceScope(user) },
+	});
 	if (!existing) return tServer("errors.lineItemNotFound", "Line item not found.");
 
 	await prisma.invoiceLineItem.update({
@@ -300,8 +338,10 @@ export async function updateInvoiceLineItem(lineItemId, invoiceId, prevState, fo
  * @param {string} invoiceId
  */
 export async function deleteInvoiceLineItem(lineItemId, invoiceId) {
-	await requireUser();
-	const existing = await prisma.invoiceLineItem.findFirst({ where: { id: lineItemId, invoiceId } });
+	const user = await requireUser();
+	const existing = await prisma.invoiceLineItem.findFirst({
+		where: { id: lineItemId, invoiceId, invoice: invoiceScope(user) },
+	});
 	if (!existing) return;
 
 	await prisma.invoiceLineItem.delete({ where: { id: lineItemId } });

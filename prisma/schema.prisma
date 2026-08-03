@@ -133,6 +133,7 @@ model User {
   forfaitQuotes   ForfaitQuote[]
   forfaitQuoteRevisions ForfaitQuoteRevision[]
   inspireOffers   InspireOffer[]
+  inquiries       Inquiry[]
   googleCalendarConnection GoogleCalendarConnection?
 }
 
@@ -724,7 +725,12 @@ model Inquiry {
   status InquiryStatus @default(NEW)
   notes  String?
 
+  assignedAgentId String?
+  assignedAgent   User? @relation(fields: [assignedAgentId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
+
+  @@index([assignedAgentId])
 }
 
 model ActivityLog {

@@ -35,6 +35,11 @@ export async function createQuote(tripId, prevState, formData) {
 		},
 	});
 
+	await prisma.trip.updateMany({
+		where: { id: tripId, status: "INQUIRY" },
+		data: { status: "QUOTED" },
+	});
+
 	await logActivity({
 		entityType: "Quote",
 		entityId: quote.id,

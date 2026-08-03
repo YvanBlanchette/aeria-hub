@@ -11,6 +11,7 @@ import { DashboardTasksTable } from "@/components/dashboard/dashboard-tasks-tabl
 import { DashboardTripsTable } from "@/components/dashboard/dashboard-trips-table";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { activityScope, clientScope, inquiryScope, invoiceScope, reminderScope, taskScope, tripScope } from "@/lib/visibility-scope";
 
 const ACTIVE_TRIP_STATUSES = ["BOOKED", "TRAVELING"];
 const OPEN_INVOICE_STATUSES = ["SENT", "PARTIALLY_PAID", "OVERDUE"];
@@ -58,6 +59,14 @@ export default async function DashboardPage({ searchParams }) {
 	startOfMonth.setUTCDate(1);
 	startOfMonth.setUTCHours(0, 0, 0, 0);
 
+	const scopedClients = clientScope(user);
+	const scopedTrips = tripScope(user);
+	const scopedInvoices = invoiceScope(user);
+	const scopedTasks = taskScope(user);
+	const scopedReminders = reminderScope(user);
+	const scopedActivities = activityScope(user);
+	const scopedInquiries = inquiryScope(user);
+
 	const [
 		totalClients,
 		activeClients,
@@ -82,62 +91,66 @@ export default async function DashboardPage({ searchParams }) {
 		dueSoonReminders,
 		recentActivity,
 	] = await Promise.all([
-		prisma.client.count(),
-		prisma.client.count({ where: { status: "ACTIVE" } }),
-		prisma.client.count({ where: { createdAt: { gte: startOfMonth } } }),
-		prisma.trip.count({ where: { status: { in: ACTIVE_TRIP_STATUSES } } }),
+		prisma.client.count({ where: scopedClients }),
+		prisma.client.count({ where: { ...scopedClients, status: "ACTIVE" } }),
+		prisma.client.count({ where: { ...scopedClients, createdAt: { gte: startOfMonth } } }),
+		prisma.trip.count({ where: { ...scopedTrips, status: { in: ACTIVE_TRIP_STATUSES } } }),
 		prisma.trip.count({
 			where: {
+				...scopedTrips,
 				startDate: { gte: now, lte: rangeEnd },
 				status: { in: ACTIVE_TRIP_STATUSES },
 			},
 		}),
-		prisma.tripTask.count({ where: { completed: false } }),
-		prisma.tripTask.count({ where: { completed: false, dueDate: { lt: now } } }),
-		prisma.invoice.count({ where: { status: { in: OPEN_INVOICE_STATUSES } } }),
-		prisma.invoice.count({ where: { status: "OVERDUE" } }),
-		prisma.inquiry.count({ where: { status: "NEW" } }),
-		prisma.inquiry.groupBy({ by: ["status"], _count: { status: true } }),
-		prisma.trip.groupBy({ by: ["status"], _count: { status: true } }),
+		prisma.tripTask.count({ where: { ...scopedTasks, completed: false } }),
+		prisma.tripTask.count({ where: { ...scopedTasks, completed: false, dueDate: { lt: now } } }),
+		prisma.invoice.count({ where: { ...scopedInvoices, status: { in: OPEN_INVOICE_STATUSES } } }),
+		prisma.invoice.count({ where: { ...scopedInvoices, status: "OVERDUE" } }),
+		prisma.inquiry.count({ where: { ...scopedInquiries, status: "NEW" } }),
+		prisma.inquiry.groupBy({ by: ["status"], where: scopedInquiries, _count: { status: true } }),
+		prisma.trip.groupBy({ by: ["status"], where: scopedTrips, _count: { status: true } }),
 		prisma.invoice.aggregate({
-			where: { status: { in: OPEN_INVOICE_STATUSES } },
+			where: { ...scopedInvoices, status: { in: OPEN_INVOICE_STATUSES } },
 			_sum: { amount: true, amountPaid: true },
 		}),
 		prisma.invoice.aggregate({
-			where: { status: "PAID", updatedAt: { gte: startOfMonth } },
+			where: { ...scopedInvoices, status: "PAID", updatedAt: { gte: startOfMonth } },
 			_sum: { amountPaid: true },
 		}),
 		prisma.client.findMany({
+			where: scopedClients,
 			orderBy: { createdAt: "desc" },
 			take: 6,
 			select: { id: true, firstName: true, lastName: true, primaryEmail: true, primaryPhone: true, status: true, createdAt: true },
 		}),
 		prisma.tripTask.findMany({
-			where: { completed: false, dueDate: { not: null } },
+			where: { ...scopedTasks, completed: false, dueDate: { not: null } },
 			orderBy: [{ dueDate: "asc" }],
 			take: 8,
 			include: { trip: { select: { id: true, name: true } } },
 		}),
 		prisma.trip.findMany({
+			where: scopedTrips,
 			orderBy: { createdAt: "desc" },
 			take: 6,
 			include: { client: { select: { id: true, firstName: true, lastName: true } } },
 		}),
 		prisma.trip.findMany({
-			where: { startDate: { gte: now, lte: rangeEnd }, status: { in: ACTIVE_TRIP_STATUSES } },
+			where: { ...scopedTrips, startDate: { gte: now, lte: rangeEnd }, status: { in: ACTIVE_TRIP_STATUSES } },
 			orderBy: { startDate: "asc" },
 			take: 6,
 			include: { client: { select: { id: true, firstName: true, lastName: true } } },
 		}),
 		prisma.reminder.findMany({
-			where: { completed: false, dueDate: { gte: now, lte: rangeEnd } },
+			where: { ...scopedReminders, completed: false, dueDate: { gte: now, lte: rangeEnd } },
 			orderBy: { dueDate: "asc" },
 			take: 8,
 			include: { client: { select: { id: true, firstName: true, lastName: true } } },
 		}),
-		prisma.reminder.count({ where: { completed: false, dueDate: { lt: now } } }),
-		prisma.reminder.count({ where: { completed: false, dueDate: { gte: now, lte: in7Days } } }),
+		prisma.reminder.count({ where: { ...scopedReminders, completed: false, dueDate: { lt: now } } }),
+		prisma.reminder.count({ where: { ...scopedReminders, completed: false, dueDate: { gte: now, lte: in7Days } } }),
 		prisma.activityLog.findMany({
+			where: scopedActivities,
 			orderBy: { createdAt: "desc" },
 			take: 8,
 			include: {
@@ -452,7 +465,16 @@ export default async function DashboardPage({ searchParams }) {
 
 				<Card>
 					<CardHeader>
-						<CardTitle>Inquiry board</CardTitle>
+						<div className="flex items-center justify-between gap-2">
+							<CardTitle>Inquiry board</CardTitle>
+							<Button
+								variant="ghost"
+								size="sm"
+								asChild
+							>
+								<Link href="/inquiries">Open</Link>
+							</Button>
+						</div>
 						<CardDescription>Lead progression from intake to conversion.</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-2 text-sm">

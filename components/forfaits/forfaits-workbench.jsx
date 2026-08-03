@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -101,10 +102,29 @@ export function ForfaitsWorkbench({
 	const [busy, setBusy] = useState(false);
 	const [revisions, setRevisions] = useState([]);
 	const [loadingRevisions, setLoadingRevisions] = useState(false);
+	const [previewOpen, setPreviewOpen] = useState(false);
+	const [previewLoading, setPreviewLoading] = useState(false);
+	const [previewAction, setPreviewAction] = useState(null);
+	const [previewPlan, setPreviewPlan] = useState(null);
+	const [importOptions, setImportOptions] = useState({
+		includeCruise: true,
+		includeFlights: true,
+		includeHotels: true,
+		includeTransfers: true,
+		importIntoExistingTrip: false,
+	});
 	const [routePaste, setRoutePaste] = useState("");
 	const [pendingCruisePort, setPendingCruisePort] = useState("");
 	const importJsonRef = useRef(null);
 	const importCsvRef = useRef(null);
+
+	const actionLabel = useMemo(
+		() => ({
+			trip: tr(locale, "Convertir en voyage", "Convert to trip"),
+			quote: tr(locale, "Convertir en devis", "Convert to quote"),
+		}),
+		[locale],
+	);
 
 	useEffect(() => {
 		try {
@@ -799,8 +819,8 @@ export function ForfaitsWorkbench({
 			setNotice(tr(locale, "Enregistre d'abord le forfait pour le convertir en devis.", "Save the package before converting it to a quote."));
 			return;
 		}
-		if (!draft.tripId) {
-			setNotice(tr(locale, "Selectionne un voyage avant conversion en devis.", "Select a trip before converting to a quote."));
+		if (!draft.clientId) {
+			setNotice(tr(locale, "Selectionne un client avant conversion en devis.", "Select a client before converting to a quote."));
 			return;
 		}
 
@@ -809,6 +829,7 @@ export function ForfaitsWorkbench({
 			const response = await fetch(`/api/forfaits/${selectedProjectId}/convert-to-quote`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ importOptions }),
 			});
 			const data = await response.json().catch(() => ({}));
 			if (!response.ok) {
@@ -816,7 +837,35 @@ export function ForfaitsWorkbench({
 				return;
 			}
 
-			setNotice(tr(locale, "Devis cree avec succes. Ouverture de l'onglet devis du voyage.", "Quote created successfully. Opening the trip quotes tab."));
+			if (data?.tripId && !draft.tripId) {
+				setField("tripId", data.tripId);
+				setProjects((prev) =>
+					prev.map((project) =>
+						project.id === selectedProjectId
+							? {
+									...project,
+									tripId: data.tripId,
+									payload: { ...(project.payload || project.draft || {}), tripId: data.tripId },
+									draft: { ...(project.draft || project.payload || {}), tripId: data.tripId },
+								}
+							: project,
+					),
+				);
+			}
+
+			setNotice(
+				data?.tripCreated
+					? tr(
+							locale,
+							`Voyage client cree automatiquement (${data.importedSegments || 0} segment(s) importe(s)) puis devis genere. Ouverture de l'onglet devis.`,
+							`Client trip created automatically (${data.importedSegments || 0} imported segment(s)) and quote generated. Opening the quote tab.`,
+						)
+					: tr(
+							locale,
+							`Devis cree avec succes. ${data.importedSegments || 0} segment(s) ajoute(s), ${data.skippedSegments || 0} ignore(s). Ouverture de l'onglet devis du voyage.`,
+							`Quote created successfully. ${data.importedSegments || 0} segment(s) added, ${data.skippedSegments || 0} skipped. Opening the trip quotes tab.`,
+						),
+			);
 			if (data?.redirectTo) {
 				window.location.assign(data.redirectTo);
 			}
@@ -825,6 +874,122 @@ export function ForfaitsWorkbench({
 		} finally {
 			setBusy(false);
 		}
+	}
+
+	async function convertToTrip() {
+		if (!selectedProjectId) {
+			setNotice(tr(locale, "Enregistre d'abord le forfait pour le convertir en voyage.", "Save the package before converting it to a trip."));
+			return;
+		}
+		if (!draft.clientId) {
+			setNotice(tr(locale, "Selectionne un client avant conversion en voyage.", "Select a client before converting to a trip."));
+			return;
+		}
+
+		setBusy(true);
+		try {
+			const response = await fetch(`/api/forfaits/${selectedProjectId}/convert-to-trip`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ importOptions }),
+			});
+			const data = await response.json().catch(() => ({}));
+			if (!response.ok) {
+				setNotice(data?.error || tr(locale, "Conversion en voyage impossible.", "Could not convert to trip."));
+				return;
+			}
+
+			if (data?.tripId && !draft.tripId) {
+				setField("tripId", data.tripId);
+				setProjects((prev) =>
+					prev.map((project) =>
+						project.id === selectedProjectId
+							? {
+									...project,
+									tripId: data.tripId,
+									payload: { ...(project.payload || project.draft || {}), tripId: data.tripId },
+									draft: { ...(project.draft || project.payload || {}), tripId: data.tripId },
+								}
+							: project,
+					),
+				);
+			}
+
+			setNotice(
+				data?.tripCreated
+					? tr(
+							locale,
+							`Voyage client cree avec ${data.importedSegments || 0} segment(s) importe(s). Ouverture du voyage.`,
+							`Client trip created with ${data.importedSegments || 0} imported segment(s). Opening trip.`,
+						)
+					: tr(
+							locale,
+							`Voyage lie au forfait. ${data.importedSegments || 0} segment(s) ajoute(s), ${data.skippedSegments || 0} ignore(s). Ouverture du voyage.`,
+							`Trip linked to package. ${data.importedSegments || 0} segment(s) added, ${data.skippedSegments || 0} skipped. Opening trip.`,
+						),
+			);
+
+			if (data?.redirectTo) {
+				window.location.assign(data.redirectTo);
+			}
+		} catch {
+			setNotice(tr(locale, "Conversion en voyage impossible.", "Could not convert to trip."));
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	async function openConversionPreview(actionType) {
+		if (!selectedProjectId) {
+			setNotice(
+				actionType === "quote"
+					? tr(locale, "Enregistre d'abord le forfait pour le convertir en devis.", "Save the package before converting it to a quote.")
+					: tr(locale, "Enregistre d'abord le forfait pour le convertir en voyage.", "Save the package before converting it to a trip."),
+			);
+			return;
+		}
+		if (!draft.clientId) {
+			setNotice(
+				actionType === "quote"
+					? tr(locale, "Selectionne un client avant conversion en devis.", "Select a client before converting to a quote.")
+					: tr(locale, "Selectionne un client avant conversion en voyage.", "Select a client before converting to a trip."),
+			);
+			return;
+		}
+
+		setPreviewLoading(true);
+		setPreviewAction(actionType);
+		setPreviewOpen(true);
+		try {
+			const response = await fetch(`/api/forfaits/${selectedProjectId}/preview-trip-segments`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ importOptions }),
+			});
+			const data = await response.json().catch(() => ({}));
+			if (!response.ok) {
+				setPreviewOpen(false);
+				setNotice(data?.error || tr(locale, "Apercu impossible.", "Could not build preview."));
+				return;
+			}
+			setPreviewPlan(data);
+		} catch {
+			setPreviewOpen(false);
+			setNotice(tr(locale, "Apercu impossible.", "Could not build preview."));
+		} finally {
+			setPreviewLoading(false);
+		}
+	}
+
+	async function confirmConversionFromPreview() {
+		const selectedAction = previewAction;
+		setPreviewOpen(false);
+		setPreviewPlan(null);
+		if (selectedAction === "quote") {
+			await convertToQuote();
+			return;
+		}
+		await convertToTrip();
 	}
 
 	async function copySummary() {
@@ -1955,10 +2120,19 @@ export function ForfaitsWorkbench({
 											type="button"
 											variant="ghost"
 											className="w-full justify-start"
-											onClick={convertToQuote}
-											disabled={busy || !selectedProjectId || !draft.tripId}
+											onClick={() => openConversionPreview("quote")}
+											disabled={busy || !selectedProjectId || !draft.clientId}
 										>
 											<FileText /> {tr(locale, "Convertir en devis", "Convert to quote")}
+										</Button>
+										<Button
+											type="button"
+											variant="ghost"
+											className="w-full justify-start"
+											onClick={() => openConversionPreview("trip")}
+											disabled={busy || !selectedProjectId || !draft.clientId}
+										>
+											<FolderOpen /> {tr(locale, "Convertir en voyage", "Convert to trip")}
 										</Button>
 										<div className="my-1 border-t border-border/70" />
 										<Button
@@ -2014,6 +2188,50 @@ export function ForfaitsWorkbench({
 							</Popover>
 						</CardHeader>
 						<CardContent className="space-y-3">
+							<div className="space-y-2 rounded-xl border border-border/70 bg-muted/20 p-3">
+								<p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+									{tr(locale, "Mapping import vers voyage", "Trip import mapping")}
+								</p>
+								<div className="grid gap-2 sm:grid-cols-2">
+									<label className="flex items-center gap-2 text-sm">
+										<Checkbox
+											checked={importOptions.includeCruise}
+											onCheckedChange={(checked) => setImportOptions((prev) => ({ ...prev, includeCruise: checked === true }))}
+										/>
+										<span>{tr(locale, "Croisiere", "Cruise")}</span>
+									</label>
+									<label className="flex items-center gap-2 text-sm">
+										<Checkbox
+											checked={importOptions.includeFlights}
+											onCheckedChange={(checked) => setImportOptions((prev) => ({ ...prev, includeFlights: checked === true }))}
+										/>
+										<span>{tr(locale, "Vols", "Flights")}</span>
+									</label>
+									<label className="flex items-center gap-2 text-sm">
+										<Checkbox
+											checked={importOptions.includeHotels}
+											onCheckedChange={(checked) => setImportOptions((prev) => ({ ...prev, includeHotels: checked === true }))}
+										/>
+										<span>{tr(locale, "Hotels", "Hotels")}</span>
+									</label>
+									<label className="flex items-center gap-2 text-sm">
+										<Checkbox
+											checked={importOptions.includeTransfers}
+											onCheckedChange={(checked) => setImportOptions((prev) => ({ ...prev, includeTransfers: checked === true }))}
+										/>
+										<span>{tr(locale, "Transferts", "Transfers")}</span>
+									</label>
+								</div>
+								<label className="flex items-center gap-2 text-sm">
+									<Checkbox
+										checked={importOptions.importIntoExistingTrip}
+										onCheckedChange={(checked) => setImportOptions((prev) => ({ ...prev, importIntoExistingTrip: checked === true }))}
+									/>
+									<span>
+										{tr(locale, "Importer aussi dans un voyage deja lie (mode dedoublonne)", "Also import into an already linked trip (deduplicated mode)")}
+									</span>
+								</label>
+							</div>
 							<p className="text-sm text-muted-foreground">
 								{tr(locale, "Utilise le menu en haut a droite pour sauvegarder, exporter ou importer.", "Use the top-right menu to save, export, or import.")}
 							</p>
@@ -2131,6 +2349,114 @@ export function ForfaitsWorkbench({
 					</Card>
 				</div>
 			)}
+
+			{/* CONVERSION PREVIEW DIALOG */}
+			<Dialog
+				open={previewOpen}
+				onOpenChange={(next) => {
+					if (!busy) {
+						setPreviewOpen(next);
+						if (!next) setPreviewPlan(null);
+					}
+				}}
+			>
+				<DialogContent className="max-w-3xl p-0">
+					<DialogHeader className="px-4 pt-4">
+						<DialogTitle>{tr(locale, "Apercu avant conversion", "Preview before conversion")}</DialogTitle>
+						<DialogDescription>{previewAction ? actionLabel[previewAction] : tr(locale, "Conversion", "Conversion")}</DialogDescription>
+					</DialogHeader>
+
+					<div className="max-h-[60vh] space-y-3 overflow-y-auto px-4 pb-4">
+						{previewLoading ? (
+							<p className="text-sm text-muted-foreground">{tr(locale, "Preparation de l'apercu...", "Preparing preview...")}</p>
+						) : previewPlan ? (
+							<>
+								<div className="grid gap-2 sm:grid-cols-3">
+									<div className="rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
+										<p className="text-[11px] uppercase tracking-wide text-muted-foreground">{tr(locale, "Segments detectes", "Detected segments")}</p>
+										<p className="text-lg font-semibold tabular-nums">{previewPlan.candidateCount || 0}</p>
+									</div>
+									<div className="rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
+										<p className="text-[11px] uppercase tracking-wide text-muted-foreground">{tr(locale, "Seront importes", "Will be imported")}</p>
+										<p className="text-lg font-semibold tabular-nums">{previewPlan.importCount || 0}</p>
+									</div>
+									<div className="rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
+										<p className="text-[11px] uppercase tracking-wide text-muted-foreground">{tr(locale, "Ignores", "Skipped")}</p>
+										<p className="text-lg font-semibold tabular-nums">{previewPlan.skippedCount || 0}</p>
+									</div>
+								</div>
+
+								<p className="text-xs text-muted-foreground">
+									{previewPlan.tripWillBeCreated
+										? tr(locale, "Un nouveau voyage client sera cree lors de la conversion.", "A new client trip will be created during conversion.")
+										: previewPlan.importIntoExistingTrip
+											? tr(
+													locale,
+													"Les segments manquants seront ajoutes au voyage deja lie (sans doublons).",
+													"Missing segments will be appended to the already linked trip (no duplicates).",
+												)
+											: tr(
+													locale,
+													"Le voyage deja lie sera reutilise sans ajout de segments.",
+													"The already linked trip will be reused without importing segments.",
+												)}
+								</p>
+
+								<div className="space-y-2">
+									{Array.isArray(previewPlan.segments) && previewPlan.segments.length > 0 ? (
+										previewPlan.segments.map((segment, index) => (
+											<div
+												key={`${segment.type}-${segment.title}-${index}`}
+												className={cn("rounded-xl border px-3 py-2", segment.willImport ? "border-primary/40 bg-primary/5" : "border-border/70 bg-muted/10")}
+											>
+												<div className="flex flex-wrap items-center justify-between gap-2">
+													<div className="min-w-0">
+														<p className="truncate text-sm font-medium">{segment.title || tr(locale, "Segment", "Segment")}</p>
+														<p className="text-xs text-muted-foreground">{segment.location || tr(locale, "Sans lieu", "No location")}</p>
+													</div>
+													<div className="flex items-center gap-2">
+														<Badge variant="outline">{segment.type}</Badge>
+														<Badge variant={segment.willImport ? "default" : "secondary"}>
+															{segment.willImport ? tr(locale, "Importe", "Import") : tr(locale, "Ignore", "Skip")}
+														</Badge>
+													</div>
+												</div>
+											</div>
+										))
+									) : (
+										<p className="text-sm text-muted-foreground">
+											{tr(locale, "Aucun segment a importer avec ces options.", "No segments to import with current options.")}
+										</p>
+									)}
+								</div>
+							</>
+						) : (
+							<p className="text-sm text-muted-foreground">{tr(locale, "Apercu indisponible.", "Preview unavailable.")}</p>
+						)}
+					</div>
+
+					<DialogFooter>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => {
+								setPreviewOpen(false);
+								setPreviewPlan(null);
+							}}
+							disabled={busy || previewLoading}
+						>
+							{tr(locale, "Annuler", "Cancel")}
+						</Button>
+						<Button
+							type="button"
+							onClick={confirmConversionFromPreview}
+							disabled={busy || previewLoading || !previewPlan}
+						>
+							{previewAction ? actionLabel[previewAction] : tr(locale, "Confirmer", "Confirm")}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

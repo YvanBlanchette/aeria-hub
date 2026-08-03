@@ -13,6 +13,8 @@ import { LocaleText } from "@/components/i18n/locale-text";
 import { tServer } from "@/lib/i18n-server";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { requireUser } from "@/lib/session";
+import { invoiceScope } from "@/lib/visibility-scope";
 
 const STATUS_VARIANT = {
 	DRAFT: "secondary",
@@ -45,9 +47,10 @@ function statusLabel(status, t) {
 export default async function InvoiceDetailPage({ params }) {
 	const t = tServer;
 	const { invoiceId } = await params;
+	const user = await requireUser();
 
-	const invoice = await prisma.invoice.findUnique({
-		where: { id: invoiceId },
+	const invoice = await prisma.invoice.findFirst({
+		where: { id: invoiceId, ...invoiceScope(user) },
 		include: {
 			client: { select: { id: true, firstName: true, lastName: true } },
 			trip: { select: { id: true, name: true } },

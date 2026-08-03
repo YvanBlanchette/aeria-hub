@@ -2,11 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
-
-function toNumber(value) {
-	const n = Number.parseFloat(String(value ?? "0"));
-	return Number.isFinite(n) ? n : 0;
-}
+import { ensureTripLinked, normalizeImportOptions, toNumber } from "@/app/api/forfaits/_conversion";
 
 function roundStep(value, step) {
 	if (!step || step <= 0) return value;
@@ -77,16 +73,21 @@ function computePricing(draft, constants) {
 export async function POST(request, { params }) {
 	const user = await requireUser();
 	const { forfaitId } = await params;
+	const body = await request.json().catch(() => ({}));
 
 	const source = await prisma.forfaitQuote.findUnique({ where: { id: forfaitId } });
 	if (!source) return new NextResponse("Not found", { status: 404 });
 	if (user.role !== "ADMIN" && source.createdById !== user.id) return new NextResponse("Forbidden", { status: 403 });
-	if (!source.tripId) return NextResponse.json({ error: "Trip is required before conversion." }, { status: 400 });
 
 	const draft = source.payload;
 	const constants = source.constants;
 	if (!draft || typeof draft !== "object" || !constants || typeof constants !== "object") {
 		return NextResponse.json({ error: "Invalid forfait payload." }, { status: 400 });
+	}
+
+	const tripLink = await ensureTripLinked(source, draft, normalizeImportOptions(body?.importOptions));
+	if (tripLink?.error) {
+		return NextResponse.json({ error: tripLink.error }, { status: tripLink.status || 400 });
 	}
 
 	const { rows, pax } = computePricing(draft, constants);
@@ -97,7 +98,7 @@ export async function POST(request, { params }) {
 	const titleBase = typeof source.name === "string" && source.name.trim() ? source.name.trim() : "Forfait";
 	const quote = await prisma.quote.create({
 		data: {
-			tripId: source.tripId,
+			tripId: tripLink.tripId,
 			title: `${titleBase} - conversion forfait`,
 			status: "DRAFT",
 			notes: `Genere depuis le forfait ${source.id}. ${pax} passager(s).`,
@@ -113,12 +114,20 @@ export async function POST(request, { params }) {
 		include: { trip: { select: { id: true, clientId: true } } },
 	});
 
+	await prisma.trip.updateMany({
+		where: { id: tripLink.tripId, status: "INQUIRY" },
+		data: { status: "QUOTED" },
+	});
+
 	revalidatePath(`/trips/${quote.trip.id}/quotes`);
 	revalidatePath(`/trips/${quote.trip.id}/overview`);
 
 	return NextResponse.json({
 		quoteId: quote.id,
 		tripId: quote.trip.id,
+		tripCreated: Boolean(tripLink.created),
+		importedSegments: tripLink.importedCount || 0,
+		skippedSegments: tripLink.skippedCount || 0,
 		redirectTo: `/trips/${quote.trip.id}/quotes`,
 	});
 }

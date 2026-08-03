@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { LocaleText } from "@/components/i18n/locale-text";
 import { createQuoteFromHub } from "@/app/(admin)/quotes/actions";
 import { tServer } from "@/lib/i18n-server";
+import { requireUser } from "@/lib/session";
+import { quoteScope, tripScope } from "@/lib/visibility-scope";
 
 export const metadata = {
 	title: "Quotes - AERIA Hub",
@@ -15,8 +17,12 @@ export const metadata = {
 
 export default async function QuotesPage() {
 	const t = tServer;
+	const user = await requireUser();
+	const quotesWhere = quoteScope(user);
+	const tripsWhere = tripScope(user);
 	const [quotes, trips] = await Promise.all([
 		prisma.quote.findMany({
+			where: quotesWhere,
 			orderBy: { createdAt: "desc" },
 			include: {
 				lineItems: { orderBy: { sortOrder: "asc" } },
@@ -24,6 +30,7 @@ export default async function QuotesPage() {
 			},
 		}),
 		prisma.trip.findMany({
+			where: tripsWhere,
 			orderBy: { createdAt: "desc" },
 			take: 200,
 			select: {

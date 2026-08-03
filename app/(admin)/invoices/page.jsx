@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { LocaleText } from "@/components/i18n/locale-text";
 import { tServer } from "@/lib/i18n-server";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { requireUser } from "@/lib/session";
+import { clientScope, invoiceScope, tripScope } from "@/lib/visibility-scope";
 
 const statusVariant = {
 	DRAFT: "secondary",
@@ -44,8 +46,13 @@ export const metadata = {
 
 export default async function InvoicesPage() {
 	const t = tServer;
+	const user = await requireUser();
+	const invoicesWhere = invoiceScope(user);
+	const clientsWhere = clientScope(user);
+	const tripsWhere = tripScope(user);
 	const [invoices, clients, trips] = await Promise.all([
 		prisma.invoice.findMany({
+			where: invoicesWhere,
 			orderBy: { issueDate: "desc" },
 			include: {
 				client: { select: { id: true, firstName: true, lastName: true } },
@@ -53,11 +60,13 @@ export default async function InvoicesPage() {
 			},
 		}),
 		prisma.client.findMany({
+			where: clientsWhere,
 			orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
 			select: { id: true, firstName: true, lastName: true },
 			take: 400,
 		}),
 		prisma.trip.findMany({
+			where: tripsWhere,
 			orderBy: { createdAt: "desc" },
 			select: { id: true, name: true, clientId: true },
 			take: 500,

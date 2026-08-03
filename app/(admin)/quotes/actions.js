@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
 import { tServer } from "@/lib/i18n-server";
+import { tripScope } from "@/lib/visibility-scope";
 
 export async function createQuoteFromHub(formData) {
 	const t = tServer;
@@ -20,8 +21,11 @@ export async function createQuoteFromHub(formData) {
 	if (!tripId) return t("errors.tripNotFound", "Trip not found.");
 	if (!title) return t("errors.requiredTitle", "Title is required.");
 
-	const trip = await prisma.trip.findUnique({
-		where: { id: tripId },
+	const trip = await prisma.trip.findFirst({
+		where: {
+			id: tripId,
+			...tripScope(user),
+		},
 		select: { id: true, name: true, clientId: true },
 	});
 	if (!trip) return t("errors.tripNotFound", "Trip not found.");
@@ -33,6 +37,11 @@ export async function createQuoteFromHub(formData) {
 			validUntil: typeof validUntilValue === "string" && validUntilValue ? new Date(validUntilValue) : null,
 			notes: typeof notesValue === "string" && notesValue.trim() ? notesValue.trim() : null,
 		},
+	});
+
+	await prisma.trip.updateMany({
+		where: { id: trip.id, status: "INQUIRY" },
+		data: { status: "QUOTED" },
 	});
 
 	await logActivity({

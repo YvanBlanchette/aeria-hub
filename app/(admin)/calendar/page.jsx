@@ -1,6 +1,4 @@
-import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
-import { LocaleText } from "@/components/i18n/locale-text";
 import { CrmCalendar } from "@/components/calendar/crm-calendar";
 import { buildCrmCalendarEvents } from "@/lib/calendar-events";
 
@@ -10,7 +8,7 @@ export const metadata = {
 
 export default async function CalendarPage() {
 	const user = await requireUser();
-	const events = await buildCrmCalendarEvents();
+	const events = await buildCrmCalendarEvents({ user });
 
 	return (
 		<div className="space-y-6">

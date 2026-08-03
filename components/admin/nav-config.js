@@ -25,7 +25,7 @@ export const navItems = [
 	{ label: "Quotes", labelKey: "nav.quotes", href: "/quotes", icon: FileText },
 	{ label: "Invoices", labelKey: "nav.invoices", href: "/invoices", icon: Receipt },
 	{ label: "Calendar", labelKey: "nav.calendar", href: "/calendar", icon: CalendarDays },
-	{ label: "Inquiries", labelKey: "nav.inquiries", href: null, icon: Inbox },
+	{ label: "Inquiries", labelKey: "nav.inquiries", href: "/inquiries", icon: Inbox },
 	{ label: "Suppliers", labelKey: "nav.suppliers", href: "/suppliers", icon: Building2 },
 	{ label: "Client Requests", labelKey: "nav.clientRequests", href: null, icon: MessageSquareText },
 	{ label: "Settings", labelKey: "nav.settings", href: "/settings", icon: Settings },

@@ -66,11 +66,11 @@ function matchesCruiseLineShip(shipLabel, cruiseLineLabel) {
 	return terms.some((term) => normalizedShip.includes(term));
 }
 
-function createFlightSegment() {
+function createFlightSegment(direction = "aller") {
 	return {
 		airline: "",
 		operator: "",
-		fromIata: "",
+		fromIata: direction === "aller" ? "YUL" : "",
 		departDate: "",
 		departTime: "",
 		arriveDate: "",
@@ -79,10 +79,10 @@ function createFlightSegment() {
 	};
 }
 
-function normalizeFlightSegments(value) {
+function normalizeFlightSegments(value, direction = "aller") {
 	const list = Array.isArray(value) ? value : [];
-	if (list.length === 0) return [createFlightSegment()];
-	return list.map((item) => ({ ...createFlightSegment(), ...(item || {}) }));
+	if (list.length === 0) return [createFlightSegment(direction)];
+	return list.map((item) => ({ ...createFlightSegment(direction), ...(item || {}) }));
 }
 
 function normalizeIata(value) {
@@ -90,6 +90,88 @@ function normalizeIata(value) {
 		.toUpperCase()
 		.replace(/[^A-Z]/g, "")
 		.slice(0, 3);
+}
+
+function parseDateString(value) {
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return null;
+	const [year, month, day] = String(value).split("-").map((part) => Number.parseInt(part, 10));
+	if (![year, month, day].every(Number.isFinite)) return null;
+	return Date.UTC(year, month - 1, day);
+}
+
+function formatDateString(timestamp) {
+	if (!Number.isFinite(timestamp)) return "";
+	const date = new Date(timestamp);
+	return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+}
+
+function addDays(dateValue, days) {
+	const timestamp = parseDateString(dateValue);
+	const dayCount = Number.parseInt(String(days), 10);
+	if (!Number.isFinite(timestamp) || !Number.isFinite(dayCount)) return "";
+	return formatDateString(timestamp + dayCount * 24 * 60 * 60 * 1000);
+}
+
+function diffDays(startValue, endValue) {
+	const start = parseDateString(startValue);
+	const end = parseDateString(endValue);
+	if (!Number.isFinite(start) || !Number.isFinite(end)) return "";
+	return Math.max(0, Math.round((end - start) / (24 * 60 * 60 * 1000)));
+}
+
+function normalizePortSearchText(value) {
+	return String(value || "")
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
+function matchCruisePortOption(text, options) {
+	const normalizedText = normalizePortSearchText(text);
+	if (!normalizedText) return null;
+	const list = Array.isArray(options) ? options : [];
+	return (
+		list.find((option) => normalizePortSearchText(option.label) === normalizedText) ||
+		list.find((option) => normalizePortSearchText(option.label).includes(normalizedText)) ||
+		list.find((option) => normalizedText.includes(normalizePortSearchText(option.label))) ||
+		null
+	);
+}
+
+function normalizeCruisePortItems(value, options) {
+	const list = Array.isArray(value) ? value : [];
+	return list
+		.map((item) => {
+			if (!item) return null;
+			if (typeof item === "string") {
+				const option = matchCruisePortOption(item, options);
+				return option || { id: item, value: item, label: item };
+			}
+			const option = matchCruisePortOption(item.label || item.value || item.id, options);
+			return {
+				id: String(item.id || option?.id || item.value || item.label || ""),
+				value: String(item.value || option?.value || item.label || item.id || ""),
+				label: String(item.label || option?.label || item.value || item.id || ""),
+			};
+		})
+		.filter((item) => item && item.value && item.label);
+}
+
+function parseCruisePortPaste(text, options) {
+	const rawParts = String(text || "")
+		.replace(/^ports\s+of\s+call\s*/i, "")
+		.split(/\s*\|\s*|\r?\n+/)
+		.map((part) => part.trim())
+		.filter(Boolean);
+
+	return rawParts
+		.map((part, index) => {
+			const cleaned = index === 0 ? part.replace(/^ports\s+of\s+call\s*/i, "").trim() : part;
+			const option = matchCruisePortOption(cleaned, options);
+			return option || { id: cleaned, value: cleaned, label: cleaned };
+		})
+		.filter((item) => item && item.value && item.label);
 }
 
 function makeDefaultDraft() {
@@ -101,6 +183,7 @@ function makeDefaultDraft() {
 		navire: "",
 		portDepart: "",
 		portArrivee: "",
+		cruisePortStops: [],
 		croisiereDebut: "",
 		croisiereFin: "",
 		croisiereNotes: "",
@@ -124,8 +207,8 @@ function makeDefaultDraft() {
 		hotelPostDebut: "",
 		hotelPostFin: "",
 		volsDetails: "",
-		volsAllerSegments: [createFlightSegment()],
-		volsRetourSegments: [createFlightSegment()],
+		volsAllerSegments: [createFlightSegment("aller")],
+		volsRetourSegments: [createFlightSegment("retour")],
 		vols: "",
 		volsMode: "pers",
 		bagAller: "",
@@ -465,6 +548,7 @@ export function ForfaitsWorkbench({
 	const [busy, setBusy] = useState(false);
 	const [revisions, setRevisions] = useState([]);
 	const [loadingRevisions, setLoadingRevisions] = useState(false);
+	const [routePaste, setRoutePaste] = useState("");
 	const importJsonRef = useRef(null);
 	const importCsvRef = useRef(null);
 
@@ -669,6 +753,11 @@ export function ForfaitsWorkbench({
 			.filter((option) => option.value && option.label);
 	}, [cruisePortOptions]);
 
+	const cruisePortStops = useMemo(
+		() => normalizeCruisePortItems(draft.cruisePortStops, normalizedCruisePortOptions),
+		[draft.cruisePortStops, normalizedCruisePortOptions],
+	);
+
 	const selectedCruiseLine = useMemo(() => {
 		return normalizedCruiseLineOptions.find((option) => option.value === draft.compagnie || option.label === draft.compagnie) || null;
 	}, [draft.compagnie, normalizedCruiseLineOptions]);
@@ -687,11 +776,60 @@ export function ForfaitsWorkbench({
 		return normalizedCruiseShipOptions.filter((ship) => matchesCruiseLineShip(ship.label, lineLabel));
 	}, [draft.compagnie, normalizedCruiseShipOptions, selectedCruiseLine]);
 
-	const volsAllerSegments = useMemo(() => normalizeFlightSegments(draft.volsAllerSegments), [draft.volsAllerSegments]);
-	const volsRetourSegments = useMemo(() => normalizeFlightSegments(draft.volsRetourSegments), [draft.volsRetourSegments]);
+	const volsAllerSegments = useMemo(() => normalizeFlightSegments(draft.volsAllerSegments, "aller"), [draft.volsAllerSegments]);
+	const volsRetourSegments = useMemo(() => normalizeFlightSegments(draft.volsRetourSegments, "retour"), [draft.volsRetourSegments]);
 
 	function setField(field, value) {
 		setDraft((prev) => ({ ...prev, [field]: value }));
+	}
+
+	function setCruisePortStops(updater) {
+		setDraft((prev) => {
+			const currentStops = normalizeCruisePortItems(prev.cruisePortStops, normalizedCruisePortOptions);
+			const nextRaw = typeof updater === "function" ? updater(currentStops) : updater;
+			return {
+				...prev,
+				cruisePortStops: normalizeCruisePortItems(nextRaw, normalizedCruisePortOptions),
+			};
+		});
+	}
+
+	function addCruisePortStop(portValue) {
+		const selected = normalizedCruisePortOptions.find((option) => option.value === portValue);
+		if (!selected) return;
+		setCruisePortStops((currentStops) => [...currentStops, selected]);
+	}
+
+	function moveCruisePortStop(index, direction) {
+		setCruisePortStops((currentStops) => {
+			const next = [...currentStops];
+			const swapIndex = direction === "up" ? index - 1 : index + 1;
+			if (swapIndex < 0 || swapIndex >= next.length) return next;
+			[next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+			return next;
+		});
+	}
+
+	function removeCruisePortStop(index) {
+		setCruisePortStops((currentStops) => currentStops.filter((_, i) => i !== index));
+	}
+
+	function importCruisePortPaste() {
+		const parsed = parseCruisePortPaste(routePaste, normalizedCruisePortOptions);
+		if (parsed.length === 0) return;
+
+		const [departure, ...rest] = parsed;
+		const arrival = rest.length > 0 ? rest[rest.length - 1] : departure;
+		const middleStops = rest.length > 1 ? rest.slice(0, -1) : [];
+
+		setDraft((prev) => ({
+			...prev,
+			portDepart: departure.value,
+			portArrivee: arrival.value,
+			cruisePortStops: middleStops,
+		}));
+		setRoutePaste("");
+		setNotice(tr(locale, "Itineraire ports importe.", "Cruise port itinerary imported."));
 	}
 
 	function setNested(section, key, value) {
@@ -707,11 +845,11 @@ export function ForfaitsWorkbench({
 	function setFlightSegments(direction, updater) {
 		const key = direction === "retour" ? "volsRetourSegments" : "volsAllerSegments";
 		setDraft((prev) => {
-			const current = normalizeFlightSegments(prev[key]);
+			const current = normalizeFlightSegments(prev[key], direction);
 			const nextRaw = typeof updater === "function" ? updater(current) : updater;
 			return {
 				...prev,
-				[key]: normalizeFlightSegments(nextRaw),
+				[key]: normalizeFlightSegments(nextRaw, direction),
 			};
 		});
 	}
@@ -727,13 +865,43 @@ export function ForfaitsWorkbench({
 	}
 
 	function addFlightSegment(direction) {
-		setFlightSegments(direction, (segments) => [...segments, createFlightSegment()]);
+		setFlightSegments(direction, (segments) => [...segments, createFlightSegment(direction)]);
 	}
 
 	function removeFlightSegment(direction, index) {
 		setFlightSegments(direction, (segments) => {
-			if (segments.length <= 1) return [createFlightSegment()];
+			if (segments.length <= 1) return [createFlightSegment(direction)];
 			return segments.filter((_, i) => i !== index);
+		});
+	}
+
+	function updateHotelStay(stayType, field, value) {
+		setDraft((prev) => {
+			if (stayType === "pre") {
+				if (field === "checkin") {
+					return { ...prev, hotelDebut: value, hotelFin: addDays(value, prev.nuitsHotel) };
+				}
+				if (field === "checkout") {
+					const nextNights = diffDays(prev.hotelDebut, value);
+					return { ...prev, hotelFin: value, nuitsHotel: nextNights === "" ? prev.nuitsHotel : nextNights };
+				}
+				if (field === "nights") {
+					return { ...prev, nuitsHotel: value, hotelFin: addDays(prev.hotelDebut, value) };
+				}
+			}
+
+			if (field === "checkin") {
+				return { ...prev, hotelPostDebut: value, hotelPostFin: addDays(value, prev.nuitsHotelPost) };
+			}
+			if (field === "checkout") {
+				const nextNights = diffDays(prev.hotelPostDebut, value);
+				return { ...prev, hotelPostFin: value, nuitsHotelPost: nextNights === "" ? prev.nuitsHotelPost : nextNights };
+			}
+			if (field === "nights") {
+				return { ...prev, nuitsHotelPost: value, hotelPostFin: addDays(prev.hotelPostDebut, value) };
+			}
+
+			return prev;
 		});
 	}
 
@@ -1297,6 +1465,107 @@ export function ForfaitsWorkbench({
 									emptyMessage={tr(locale, "Aucun port trouve.", "No port found.")}
 								/>
 							</Field>
+							<div className="md:col-span-2 space-y-4 rounded-2xl border border-border/70 bg-background/60 p-4">
+								<div className="flex flex-wrap items-center justify-between gap-3">
+									<div>
+										<p className="text-sm font-semibold">{tr(locale, "Itineraire ports", "Port itinerary")}</p>
+										<p className="text-xs text-muted-foreground">
+											{tr(locale, "Ajoute des ports un par un, ou colle l'itineraire de ton fournisseur pour le construire automatiquement.", "Add ports one by one, or paste your provider route to build it automatically.")}
+										</p>
+									</div>
+									<Button
+										type="button"
+										variant="outline"
+										onClick={() => {
+											if (!pendingCruisePort) return;
+											addCruisePortStop(pendingCruisePort);
+											setPendingCruisePort("");
+										}}
+										disabled={!pendingCruisePort}
+									>
+										<Plus className="mr-2 size-4" /> {tr(locale, "Ajouter port", "Add port")}
+									</Button>
+								</div>
+
+								<div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+									<CruiseSearchSelect
+										value={pendingCruisePort}
+										onValueChange={setPendingCruisePort}
+										options={normalizedCruisePortOptions}
+										placeholder={tr(locale, "Rechercher un port...", "Search a port...")}
+										searchPlaceholder={tr(locale, "Rechercher port de l'itineraire...", "Search itinerary port...")}
+										emptyMessage={tr(locale, "Aucun port trouve.", "No port found.")}
+									/>
+									<Button
+										type="button"
+										variant="secondary"
+										onClick={() => {
+											if (!routePaste.trim()) return;
+											importCruisePortPaste();
+										}}
+										disabled={!routePaste.trim()}
+									>
+										{tr(locale, "Parser le texte", "Parse text")}
+									</Button>
+								</div>
+
+								<div className="space-y-2">
+									<Label className="text-xs uppercase tracking-wide text-muted-foreground">
+										{tr(locale, "Coller l'itineraire fournisseur", "Paste provider itinerary")}
+									</Label>
+									<Textarea
+										rows={3}
+										value={routePaste}
+										onChange={(e) => setRoutePaste(e.target.value)}
+										placeholder="Ports of Call Los Angeles, California | Cabo San Lucas, Mexico | Mazatlan, Mexico | Puerto Vallarta, Mexico"
+									/>
+									<p className="text-xs text-muted-foreground">
+										{tr(locale, "Le premier port devient le depart et le dernier devient l'arrivee.", "The first port becomes departure and the last becomes arrival.")}
+									</p>
+								</div>
+
+								<div className="space-y-2 rounded-2xl border border-dashed border-border/70 bg-muted/25 p-3">
+									<div className="flex flex-wrap items-center gap-2 text-sm">
+										<Badge variant="outline">{tr(locale, "Depart", "Departure")}</Badge>
+										<span>{draft.portDepart || tr(locale, "Non defini", "Not set")}</span>
+										<span className="text-muted-foreground">→</span>
+										<Badge variant="outline">{tr(locale, "Arrivee", "Arrival")}</Badge>
+										<span>{draft.portArrivee || tr(locale, "Non defini", "Not set")}</span>
+									</div>
+
+									{cruisePortStops.length === 0 ? (
+										<p className="text-sm text-muted-foreground">
+											{tr(locale, "Ajoute des ports intermédiaires ici. Tu peux les remonter ou les descendre pour ajuster l'ordre.", "Add intermediate ports here. You can move them up or down to adjust the order.")}
+										</p>
+									) : (
+										<div className="space-y-2">
+											{cruisePortStops.map((stop, index) => (
+												<div
+													key={`${stop.value}-${index}`}
+													className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background px-3 py-2"
+												>
+													<div className="min-w-0">
+														<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Escale", "Stop")} {index + 1}</p>
+														<p className="truncate text-sm font-medium">{stop.label}</p>
+													</div>
+													<div className="flex items-center gap-1">
+														<Button type="button" variant="ghost" size="icon-sm" onClick={() => moveCruisePortStop(index, "up")} disabled={index === 0}>
+															<ChevronUp className="size-4" />
+														</Button>
+														<Button type="button" variant="ghost" size="icon-sm" onClick={() => moveCruisePortStop(index, "down")} disabled={index === cruisePortStops.length - 1}>
+															<ChevronDown className="size-4" />
+														</Button>
+														<Button type="button" variant="ghost" size="icon-sm" onClick={() => removeCruisePortStop(index)}>
+															<Trash2 className="size-4" />
+														</Button>
+													</div>
+												</div>
+											))}
+										</div>
+									)}
+								</div>
+							</div>
+
 							<Field label={tr(locale, "Date debut croisiere", "Cruise start date")}>
 								<Input
 									type="date"
@@ -1532,7 +1801,7 @@ export function ForfaitsWorkbench({
 												<Input
 													type="date"
 													value={draft.hotelDebut}
-													onChange={(e) => setField("hotelDebut", e.target.value)}
+													onChange={(e) => updateHotelStay("pre", "checkin", e.target.value)}
 												/>
 											</Field>
 											<Field label={tr(locale, "Nuits pre", "Pre-stay nights")}>
@@ -1540,14 +1809,14 @@ export function ForfaitsWorkbench({
 													type="number"
 													min="0"
 													value={draft.nuitsHotel}
-													onChange={(e) => setField("nuitsHotel", e.target.value)}
+													onChange={(e) => updateHotelStay("pre", "nights", e.target.value)}
 												/>
 											</Field>
 											<Field label={tr(locale, "Date depart pre", "Pre-stay check-out date")}>
 												<Input
 													type="date"
 													value={draft.hotelFin}
-													onChange={(e) => setField("hotelFin", e.target.value)}
+													onChange={(e) => updateHotelStay("pre", "checkout", e.target.value)}
 												/>
 											</Field>
 										</div>
@@ -1598,7 +1867,7 @@ export function ForfaitsWorkbench({
 												<Input
 													type="date"
 													value={draft.hotelPostDebut}
-													onChange={(e) => setField("hotelPostDebut", e.target.value)}
+													onChange={(e) => updateHotelStay("post", "checkin", e.target.value)}
 												/>
 											</Field>
 											<Field label={tr(locale, "Nuits post", "Post-stay nights")}>
@@ -1606,14 +1875,14 @@ export function ForfaitsWorkbench({
 													type="number"
 													min="0"
 													value={draft.nuitsHotelPost}
-													onChange={(e) => setField("nuitsHotelPost", e.target.value)}
+													onChange={(e) => updateHotelStay("post", "nights", e.target.value)}
 												/>
 											</Field>
 											<Field label={tr(locale, "Date depart post", "Post-stay check-out date")}>
 												<Input
 													type="date"
 													value={draft.hotelPostFin}
-													onChange={(e) => setField("hotelPostFin", e.target.value)}
+													onChange={(e) => updateHotelStay("post", "checkout", e.target.value)}
 												/>
 											</Field>
 										</div>
@@ -2066,8 +2335,8 @@ export function ForfaitsWorkbench({
 			)}
 
 			{/* RESULTS */}
-			<div className="grid gap-4 xl:grid-cols-3">
-				<Card className="xl:col-span-2">
+			<div className="space-y-4">
+				<Card className="w-full">
 					<CardHeader>
 						<CardTitle>{tr(locale, "Prix client par categorie", "Client price by category")}</CardTitle>
 						<CardDescription>
@@ -2084,15 +2353,29 @@ export function ForfaitsWorkbench({
 								{tr(locale, "Entre au moins une categorie de cabine pour afficher les resultats.", "Enter at least one cabin category to display results.")}
 							</p>
 						) : (
-							<div className="grid gap-3 md:grid-cols-2">
+							<div className="space-y-3">
 								{resultRows.map((row) => (
+									(() => {
+										const rowHealth =
+											row.margePct >= 16
+												? { label: tr(locale, "Forte", "Strong"), variant: "default" }
+												: row.margePct >= 10
+													? { label: tr(locale, "Solide", "Solid"), variant: "secondary" }
+													: row.margePct >= 6
+														? { label: tr(locale, "A surveiller", "Watch"), variant: "outline" }
+														: { label: tr(locale, "Faible", "Low"), variant: "destructive" };
+
+										return (
 									<article
 										key={row.id}
 										className="rounded-2xl border border-border/70 bg-background/60 p-4 shadow-sm"
 									>
 										<div className="mb-3 flex items-center justify-between gap-3">
 											<h3 className="font-semibold">{row.label}</h3>
-											<Badge variant="outline">{row.id}</Badge>
+												<div className="flex items-center gap-2">
+													<Badge variant={rowHealth.variant}>{rowHealth.label}</Badge>
+													<Badge variant="outline">{row.id}</Badge>
+												</div>
 										</div>
 										<div className="grid gap-3 xl:grid-cols-2">
 											<div className="rounded-2xl border border-border/60 bg-card/70 p-3">
@@ -2137,62 +2420,11 @@ export function ForfaitsWorkbench({
 											</div>
 										</div>
 									</article>
+										);
+									})()
 								))}
 							</div>
 						)}
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader>
-						<CardTitle>{tr(locale, "Analyse marge", "Margin analysis")}</CardTitle>
-						<CardDescription>
-							{tr(locale, "Amelioration: vue immediate de la rentabilite par categorie.", "Improvement: immediate profitability view by category.")}
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-3">
-						<div className="rounded-xl border border-border p-3">
-							<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Vente estimee", "Estimated sales")}</p>
-							<p className="mt-1 text-xl font-semibold tabular-nums">{fmtCad(summary.totalVente)}</p>
-						</div>
-						<div className="rounded-xl border border-border p-3">
-							<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Revenu estime", "Estimated revenue")}</p>
-							<p className="mt-1 text-xl font-semibold tabular-nums">{fmtCad(summary.totalRevenu)}</p>
-						</div>
-						<div className="rounded-xl border border-border p-3">
-							<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Sante marge", "Margin health")}</p>
-							<p className="mt-1 flex items-center gap-2 text-xl font-semibold tabular-nums">
-								{summary.margeMoy.toFixed(1)}% <Badge>{summary.health}</Badge>
-							</p>
-						</div>
-						<div className="space-y-2">
-							{resultRows.length === 0 ? (
-								<p className="text-sm text-muted-foreground">
-									{tr(locale, "Les barres de marge apparaitront par categorie active.", "Margin bars will appear for each active category.")}
-								</p>
-							) : (
-								resultRows.map((row) => {
-									const height = Math.max(6, Math.min(100, row.margePct));
-									return (
-										<div
-											key={`marge_${row.id}`}
-											className="space-y-1"
-										>
-											<div className="flex items-center justify-between text-xs">
-												<span>{row.label}</span>
-												<span>{row.margePct.toFixed(1)}%</span>
-											</div>
-											<div className="h-2 rounded-full bg-muted">
-												<div
-													className={cn("h-full rounded-full", row.margePct >= 14 ? "bg-emerald-500" : row.margePct >= 8 ? "bg-amber-500" : "bg-rose-500")}
-													style={{ width: `${height}%` }}
-												/>
-											</div>
-										</div>
-									);
-								})
-							)}
-						</div>
 					</CardContent>
 				</Card>
 			</div>
@@ -2414,6 +2646,18 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 								/>
 							</Field>
 
+							<Field label={tr(locale, "Aeroport arrivee (IATA)", "Arrival airport (IATA)")}>
+								<AirportIataPicker
+									value={segment.toIata}
+									onValueChange={(nextValue) => onUpdate(direction, index, "toIata", nextValue)}
+									airports={airportOptions}
+									placeholder={tr(locale, "Selectionner aeroport arrivee", "Select arrival airport")}
+									locale={locale}
+								/>
+							</Field>
+						</div>
+
+						<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
 							<Field label={tr(locale, "Date depart", "Departure date")}>
 								<Input
 									type="date"
@@ -2430,14 +2674,6 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 								/>
 							</Field>
 
-							<Field label={tr(locale, "Heure arrivee", "Arrival time")}>
-								<Input
-									type="time"
-									value={segment.arriveTime}
-									onChange={(e) => onUpdate(direction, index, "arriveTime", e.target.value)}
-								/>
-							</Field>
-
 							<Field label={tr(locale, "Date arrivee", "Arrival date")}>
 								<Input
 									type="date"
@@ -2446,13 +2682,11 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 								/>
 							</Field>
 
-							<Field label={tr(locale, "Aeroport arrivee (IATA)", "Arrival airport (IATA)")}>
-								<AirportIataPicker
-									value={segment.toIata}
-									onValueChange={(nextValue) => onUpdate(direction, index, "toIata", nextValue)}
-									airports={airportOptions}
-									placeholder={tr(locale, "Selectionner aeroport arrivee", "Select arrival airport")}
-									locale={locale}
+							<Field label={tr(locale, "Heure arrivee", "Arrival time")}>
+								<Input
+									type="time"
+									value={segment.arriveTime}
+									onChange={(e) => onUpdate(direction, index, "arriveTime", e.target.value)}
 								/>
 							</Field>
 						</div>

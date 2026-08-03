@@ -94,7 +94,9 @@ function normalizeIata(value) {
 
 function parseDateString(value) {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return null;
-	const [year, month, day] = String(value).split("-").map((part) => Number.parseInt(part, 10));
+	const [year, month, day] = String(value)
+		.split("-")
+		.map((part) => Number.parseInt(part, 10));
 	if (![year, month, day].every(Number.isFinite)) return null;
 	return Date.UTC(year, month - 1, day);
 }
@@ -1470,7 +1472,11 @@ export function ForfaitsWorkbench({
 									<div>
 										<p className="text-sm font-semibold">{tr(locale, "Itineraire ports", "Port itinerary")}</p>
 										<p className="text-xs text-muted-foreground">
-											{tr(locale, "Ajoute des ports un par un, ou colle l'itineraire de ton fournisseur pour le construire automatiquement.", "Add ports one by one, or paste your provider route to build it automatically.")}
+											{tr(
+												locale,
+												"Ajoute des ports un par un, ou colle l'itineraire de ton fournisseur pour le construire automatiquement.",
+												"Add ports one by one, or paste your provider route to build it automatically.",
+											)}
 										</p>
 									</div>
 									<Button
@@ -1520,7 +1526,11 @@ export function ForfaitsWorkbench({
 										placeholder="Ports of Call Los Angeles, California | Cabo San Lucas, Mexico | Mazatlan, Mexico | Puerto Vallarta, Mexico"
 									/>
 									<p className="text-xs text-muted-foreground">
-										{tr(locale, "Le premier port devient le depart et le dernier devient l'arrivee.", "The first port becomes departure and the last becomes arrival.")}
+										{tr(
+											locale,
+											"Le premier port devient le depart et le dernier devient l'arrivee.",
+											"The first port becomes departure and the last becomes arrival.",
+										)}
 									</p>
 								</div>
 
@@ -1535,7 +1545,11 @@ export function ForfaitsWorkbench({
 
 									{cruisePortStops.length === 0 ? (
 										<p className="text-sm text-muted-foreground">
-											{tr(locale, "Ajoute des ports intermédiaires ici. Tu peux les remonter ou les descendre pour ajuster l'ordre.", "Add intermediate ports here. You can move them up or down to adjust the order.")}
+											{tr(
+												locale,
+												"Ajoute des ports intermédiaires ici. Tu peux les remonter ou les descendre pour ajuster l'ordre.",
+												"Add intermediate ports here. You can move them up or down to adjust the order.",
+											)}
 										</p>
 									) : (
 										<div className="space-y-2">
@@ -1545,17 +1559,36 @@ export function ForfaitsWorkbench({
 													className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background px-3 py-2"
 												>
 													<div className="min-w-0">
-														<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Escale", "Stop")} {index + 1}</p>
+														<p className="text-xs uppercase tracking-wide text-muted-foreground">
+															{tr(locale, "Escale", "Stop")} {index + 1}
+														</p>
 														<p className="truncate text-sm font-medium">{stop.label}</p>
 													</div>
 													<div className="flex items-center gap-1">
-														<Button type="button" variant="ghost" size="icon-sm" onClick={() => moveCruisePortStop(index, "up")} disabled={index === 0}>
+														<Button
+															type="button"
+															variant="ghost"
+															size="icon-sm"
+															onClick={() => moveCruisePortStop(index, "up")}
+															disabled={index === 0}
+														>
 															<ChevronUp className="size-4" />
 														</Button>
-														<Button type="button" variant="ghost" size="icon-sm" onClick={() => moveCruisePortStop(index, "down")} disabled={index === cruisePortStops.length - 1}>
+														<Button
+															type="button"
+															variant="ghost"
+															size="icon-sm"
+															onClick={() => moveCruisePortStop(index, "down")}
+															disabled={index === cruisePortStops.length - 1}
+														>
 															<ChevronDown className="size-4" />
 														</Button>
-														<Button type="button" variant="ghost" size="icon-sm" onClick={() => removeCruisePortStop(index)}>
+														<Button
+															type="button"
+															variant="ghost"
+															size="icon-sm"
+															onClick={() => removeCruisePortStop(index)}
+														>
 															<Trash2 className="size-4" />
 														</Button>
 													</div>
@@ -2354,7 +2387,7 @@ export function ForfaitsWorkbench({
 							</p>
 						) : (
 							<div className="space-y-3">
-								{resultRows.map((row) => (
+								{resultRows.map((row) =>
 									(() => {
 										const rowHealth =
 											row.margePct >= 16
@@ -2366,63 +2399,63 @@ export function ForfaitsWorkbench({
 														: { label: tr(locale, "Faible", "Low"), variant: "destructive" };
 
 										return (
-									<article
-										key={row.id}
-										className="rounded-2xl border border-border/70 bg-background/60 p-4 shadow-sm"
-									>
-										<div className="mb-3 flex items-center justify-between gap-3">
-											<h3 className="font-semibold">{row.label}</h3>
-												<div className="flex items-center gap-2">
-													<Badge variant={rowHealth.variant}>{rowHealth.label}</Badge>
-													<Badge variant="outline">{row.id}</Badge>
+											<article
+												key={row.id}
+												className="rounded-2xl border border-border/70 bg-background/60 p-4 shadow-sm"
+											>
+												<div className="mb-3 flex items-center justify-between gap-3">
+													<h3 className="font-semibold">{row.label}</h3>
+													<div className="flex items-center gap-2">
+														<Badge variant={rowHealth.variant}>{rowHealth.label}</Badge>
+														<Badge variant="outline">{row.id}</Badge>
+													</div>
 												</div>
-										</div>
-										<div className="grid gap-3 xl:grid-cols-2">
-											<div className="rounded-2xl border border-border/60 bg-card/70 p-3">
-												<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Details du prix", "Price details")}</p>
-												<dl className="mt-2 space-y-2 text-sm">
-													{row.priceRows.map((item) => (
-														<StatLine
-															key={item.label}
-															label={item.label}
-															value={fmtCad(item.value)}
-														/>
-													))}
-												</dl>
-											</div>
-											<div className="rounded-2xl border border-border/60 bg-card/70 p-3">
-												<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Details commission", "Commission details")}</p>
-												<dl className="mt-2 space-y-2 text-sm">
-													{row.commissionRows.map((item) => (
-														<StatLine
-															key={item.label}
-															label={item.label}
-															value={fmtCad(item.value)}
-														/>
-													))}
-												</dl>
-											</div>
-										</div>
-										<div className="mt-4 grid gap-2 rounded-2xl border border-dashed border-border/70 bg-muted/30 p-3 sm:grid-cols-3">
-											<div>
-												<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Par personne", "Per person")}</p>
-												<p className="mt-1 text-xl font-semibold tabular-nums">{fmtCad(row.calc.prixPers)}</p>
-											</div>
-											<div>
-												<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Par pers / nuit", "Per person / night")}</p>
-												<p className="mt-1 text-xl font-semibold tabular-nums">{fmtCad(row.calc.prixPersNuit)}</p>
-											</div>
-											<div>
-												<p className="text-xs uppercase tracking-wide text-muted-foreground">
-													{tr(locale, `Total - ${base.pax} pax`, `Total - ${base.pax} pax`)}
-												</p>
-												<p className="mt-1 text-xl font-semibold tabular-nums text-primary">{fmtCad(row.calc.total)}</p>
-											</div>
-										</div>
-									</article>
+												<div className="grid gap-3 xl:grid-cols-2">
+													<div className="rounded-2xl border border-border/60 bg-card/70 p-3">
+														<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Details du prix", "Price details")}</p>
+														<dl className="mt-2 space-y-2 text-sm">
+															{row.priceRows.map((item) => (
+																<StatLine
+																	key={item.label}
+																	label={item.label}
+																	value={fmtCad(item.value)}
+																/>
+															))}
+														</dl>
+													</div>
+													<div className="rounded-2xl border border-border/60 bg-card/70 p-3">
+														<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Details commission", "Commission details")}</p>
+														<dl className="mt-2 space-y-2 text-sm">
+															{row.commissionRows.map((item) => (
+																<StatLine
+																	key={item.label}
+																	label={item.label}
+																	value={fmtCad(item.value)}
+																/>
+															))}
+														</dl>
+													</div>
+												</div>
+												<div className="mt-4 grid gap-2 rounded-2xl border border-dashed border-border/70 bg-muted/30 p-3 sm:grid-cols-3">
+													<div>
+														<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Par personne", "Per person")}</p>
+														<p className="mt-1 text-xl font-semibold tabular-nums">{fmtCad(row.calc.prixPers)}</p>
+													</div>
+													<div>
+														<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Par pers / nuit", "Per person / night")}</p>
+														<p className="mt-1 text-xl font-semibold tabular-nums">{fmtCad(row.calc.prixPersNuit)}</p>
+													</div>
+													<div>
+														<p className="text-xs uppercase tracking-wide text-muted-foreground">
+															{tr(locale, `Total - ${base.pax} pax`, `Total - ${base.pax} pax`)}
+														</p>
+														<p className="mt-1 text-xl font-semibold tabular-nums text-primary">{fmtCad(row.calc.total)}</p>
+													</div>
+												</div>
+											</article>
 										);
-									})()
-								))}
+									})(),
+								)}
 							</div>
 						)}
 					</CardContent>

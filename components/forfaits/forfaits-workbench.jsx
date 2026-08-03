@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Calculator, Check, ChevronDown, Copy, Download, FileText, FolderOpen, Plus, Save, Trash2, Upload } from "lucide-react";
+import { Calculator, Check, ChevronDown, ChevronUp, Copy, Download, FileText, FolderOpen, Plus, Save, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";

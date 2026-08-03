@@ -26,16 +26,21 @@ async function createInfluencer(formData) {
 		throw new Error("Name is required");
 	}
 
-	await prisma.influencer.create({
-		data: {
-			name,
-			email: email || null,
-			slug: slug || null,
-			commissionRate: Number.isFinite(commissionRate) ? commissionRate : 0,
-			status: status,
-			notes: notes || null,
-		},
-	});
+	try {
+		await prisma.influencer.create({
+			data: {
+				name,
+				email: email || null,
+				slug: slug || null,
+				commissionRate: Number.isFinite(commissionRate) ? commissionRate : 0,
+				status: status,
+				notes: notes || null,
+			},
+		});
+	} catch (error) {
+		console.error("Failed to create Inspire influencer", error);
+		throw new Error("Unable to create the influencer right now. Please ensure the Inspire tables exist on this server.");
+	}
 
 	revalidatePath("/inspire/influencers");
 	redirect("/inspire/influencers");

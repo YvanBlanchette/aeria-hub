@@ -12,15 +12,33 @@ export default async function InfluencerDashboardPage({ params }) {
 	await requireUser();
 	const { influencerId } = await params;
 
-	const influencer = await prisma.influencer.findUnique({
-		where: { id: influencerId },
-		include: {
-			offers: { orderBy: { createdAt: "desc" } },
-			sales: { orderBy: { createdAt: "desc" } },
-		},
-	});
+	let influencer = null;
+	let dataError = null;
+
+	try {
+		influencer = await prisma.influencer.findUnique({
+			where: { id: influencerId },
+			include: {
+				offers: { orderBy: { createdAt: "desc" } },
+				sales: { orderBy: { createdAt: "desc" } },
+			},
+		});
+	} catch (error) {
+		console.error("Failed to load Inspire influencer detail page", error);
+		dataError = error;
+	}
 
 	if (!influencer) {
+		if (dataError) {
+			return (
+				<Card className="border-destructive/20 bg-destructive/5">
+					<CardContent className="py-6">
+						<p className="font-medium">This influencer detail page is unavailable right now.</p>
+						<p className="mt-1 text-sm text-muted-foreground">The Inspire tables may not be available yet on this server.</p>
+					</CardContent>
+				</Card>
+			);
+		}
 		notFound();
 	}
 

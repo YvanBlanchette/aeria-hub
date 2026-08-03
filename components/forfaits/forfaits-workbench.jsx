@@ -71,7 +71,9 @@ function createFlightSegment() {
 		airline: "",
 		operator: "",
 		fromIata: "",
+		departDate: "",
 		departTime: "",
+		arriveDate: "",
 		arriveTime: "",
 		toIata: "",
 	};
@@ -88,31 +90,6 @@ function normalizeIata(value) {
 		.toUpperCase()
 		.replace(/[^A-Z]/g, "")
 		.slice(0, 3);
-}
-
-function parseTimeToMinutes(value) {
-	if (!/^\d{2}:\d{2}$/.test(String(value || ""))) return null;
-	const [h, m] = value.split(":").map((part) => Number.parseInt(part, 10));
-	if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
-	if (h < 0 || h > 23 || m < 0 || m > 59) return null;
-	return h * 60 + m;
-}
-
-function minutesDiff(start, end) {
-	const startMin = parseTimeToMinutes(start);
-	const endMin = parseTimeToMinutes(end);
-	if (startMin === null || endMin === null) return null;
-	const raw = endMin - startMin;
-	return raw >= 0 ? raw : raw + 24 * 60;
-}
-
-function formatDuration(minutes) {
-	if (!Number.isFinite(minutes) || minutes < 0) return "-";
-	const h = Math.floor(minutes / 60);
-	const m = minutes % 60;
-	if (h <= 0) return `${m} min`;
-	if (m === 0) return `${h} h`;
-	return `${h} h ${m} min`;
 }
 
 function makeDefaultDraft() {
@@ -168,6 +145,8 @@ function makeDefaultDraft() {
 		trAComp: "",
 		trBComp: "",
 		trCComp: "",
+		trDComp: "",
+		trEComp: "",
 		commissionHotelPre: "",
 		commissionHotelPost: "",
 		commissionTransferts: "",
@@ -505,7 +484,9 @@ export function ForfaitsWorkbench({
 		return cabinRows.map((cab) => {
 			const calc = cabinCalc(base, constants, cab.facture);
 			const commCroisiere = toNumber(draft.commissions[cab.id]);
-			const commHotel = toNumber(draft.commissionHotelPre) + toNumber(draft.commissionHotelPost);
+			const commHotelPre = toNumber(draft.commissionHotelPre);
+			const commHotelPost = toNumber(draft.commissionHotelPost);
+			const commHotel = commHotelPre + commHotelPost;
 			const commTransferts = toNumber(draft.commissionTransferts);
 			const commVols = toNumber(draft.commissionVols);
 			const markupRev = base.markup * base.pax;
@@ -513,6 +494,63 @@ export function ForfaitsWorkbench({
 			const coussinRev = calc.coussin * base.pax;
 			const revenu = commCroisiere + commHotel + commTransferts + commVols + markupRev + adminRev + coussinRev;
 			const margePct = calc.total > 0 ? (revenu / calc.total) * 100 : 0;
+			const priceRows = [
+				{
+					label: tr(locale, `${cab.label} (${fmtCad(cab.facture)} ÷ ${base.pax})`, `${cab.label} (${fmtCad(cab.facture)} ÷ ${base.pax})`),
+					value: calc.cabinePers,
+				},
+				{ label: tr(locale, "Vols", "Flights"), value: base.vols },
+				{
+					label: tr(
+						locale,
+						`Bagages (${fmtCad(base.bagAller)} aller + ${fmtCad(base.bagRetour)} retour)`,
+						`Baggage (${fmtCad(base.bagAller)} outbound + ${fmtCad(base.bagRetour)} return)`,
+					),
+					value: base.bagages,
+				},
+				{
+					label: tr(
+						locale,
+						`Hotel pre (${fmtCad(toNumber(draft.hotelNuit))} × ${base.nuitsHotel} × ${base.pax})`,
+						`Pre-stay hotel (${fmtCad(toNumber(draft.hotelNuit))} × ${base.nuitsHotel} × ${base.pax})`,
+					),
+					value: base.hasPre ? base.hotelChambre / base.pax : 0,
+				},
+				{
+					label: tr(
+						locale,
+						`Hotel post (${fmtCad(toNumber(draft.hotelNuitPost))} × ${base.nuitsHotelPost} × ${base.pax})`,
+						`Post-stay hotel (${fmtCad(toNumber(draft.hotelNuitPost))} × ${base.nuitsHotelPost} × ${base.pax})`,
+					),
+					value: base.hasPost ? base.hotelChambrePost / base.pax : 0,
+				},
+				{ label: tr(locale, `Transferts (${base.nbTransferts} segments)`, `Transfers (${base.nbTransferts} segments)`), value: base.transferts },
+				{
+					label: tr(
+						locale,
+						base.pourboiresMode === "inclus" ? "Pourboires inclus" : base.pourboiresMode === "manuel" ? "Pourboires manuels" : "Pourboires auto",
+						base.pourboiresMode === "inclus" ? "Gratuities included" : base.pourboiresMode === "manuel" ? "Manual gratuities" : "Auto gratuities",
+					),
+					value: base.pourboires,
+				},
+				{ label: tr(locale, "Frais administratifs", "Administrative fees"), value: admin * base.pax },
+				{ label: tr(locale, "Markup hotel applique", "Applied hotel markup"), value: base.markup * base.pax },
+			];
+			const commissionRows = [
+				{ label: tr(locale, "Commission croisiere", "Cruise commission"), value: commCroisiere },
+				{ label: tr(locale, "Commission hotel pre", "Pre-stay hotel commission"), value: commHotelPre },
+				{ label: tr(locale, "Commission hotel post", "Post-stay hotel commission"), value: commHotelPost },
+				{ label: tr(locale, "Commission transferts", "Transfer commission"), value: commTransferts },
+				{ label: tr(locale, "Commission vols", "Flight commission"), value: commVols },
+				{
+					label: tr(locale, `Frais de service vols vises (${constants.pctVols}%)`, `Target flight service fee (${constants.pctVols}%)`),
+					value: base.fraisVises,
+				},
+				{ label: tr(locale, `Markup hotel maximal (${constants.pctMarkup}%)`, `Max hotel markup (${constants.pctMarkup}%)`), value: base.markupMax },
+				{ label: tr(locale, "Markup hotel applique", "Applied hotel markup"), value: base.markup },
+				{ label: tr(locale, "Perte absorbee", "Absorbed loss"), value: base.perte },
+				{ label: tr(locale, "Revenu agence total", "Total agency revenue"), value: revenu },
+			];
 
 			return {
 				...cab,
@@ -520,6 +558,13 @@ export function ForfaitsWorkbench({
 				revenu,
 				margePct,
 				commCroisiere,
+				commHotelPre,
+				commHotelPost,
+				commHotel,
+				commTransferts,
+				commVols,
+				priceRows,
+				commissionRows,
 			};
 		});
 	}, [
@@ -527,6 +572,7 @@ export function ForfaitsWorkbench({
 		base,
 		cabinRows,
 		constants,
+		locale,
 		draft.commissionHotelPost,
 		draft.commissionHotelPre,
 		draft.commissionTransferts,
@@ -1601,11 +1647,8 @@ export function ForfaitsWorkbench({
 								{tr(locale, "Segments aeroport/hotel/port avec mode total ou par personne.", "Airport/hotel/port segments in total or per-person mode.")}
 							</CardDescription>
 						</CardHeader>
-						<CardContent className="grid gap-3 md:grid-cols-2">
-							<Field
-								label={tr(locale, "Transferts actives", "Transfers enabled")}
-								className="md:col-span-2"
-							>
+						<CardContent className="space-y-3">
+							<Field label={tr(locale, "Transferts actives", "Transfers enabled")}>
 								<select
 									value={String(draft.hasTransferts)}
 									onChange={(e) => setField("hasTransferts", e.target.value === "true")}
@@ -1621,63 +1664,85 @@ export function ForfaitsWorkbench({
 									))}
 								</select>
 							</Field>
-							<MoneyWithMode
-								label={tr(locale, "Aeroport -> Hotel", "Airport -> Hotel")}
-								value={draft.trA}
-								mode={draft.trAMode}
-								onValue={(v) => setField("trA", v)}
-								onMode={(v) => setField("trAMode", v)}
-							/>
-							<MoneyWithMode
-								label={tr(locale, "Hotel -> Port", "Hotel -> Port")}
-								value={draft.trB}
-								mode={draft.trBMode}
-								onValue={(v) => setField("trB", v)}
-								onMode={(v) => setField("trBMode", v)}
-							/>
-							<MoneyWithMode
-								label={tr(locale, "Port -> Aeroport", "Port -> Airport")}
-								value={draft.trC}
-								mode={draft.trCMode}
-								onValue={(v) => setField("trC", v)}
-								onMode={(v) => setField("trCMode", v)}
-							/>
+							<div className="grid gap-3 md:grid-cols-2">
+								<MoneyWithMode
+									label={tr(locale, "Aeroport -> Hotel", "Airport -> Hotel")}
+									value={draft.trA}
+									mode={draft.trAMode}
+									onValue={(v) => setField("trA", v)}
+									onMode={(v) => setField("trAMode", v)}
+								/>
+								<Field label={tr(locale, "Detail", "Detail")}>
+									<Input
+										value={draft.trAComp}
+										onChange={(e) => setField("trAComp", e.target.value)}
+									/>
+								</Field>
+							</div>
+							<div className="grid gap-3 md:grid-cols-2">
+								<MoneyWithMode
+									label={tr(locale, "Hotel -> Port", "Hotel -> Port")}
+									value={draft.trB}
+									mode={draft.trBMode}
+									onValue={(v) => setField("trB", v)}
+									onMode={(v) => setField("trBMode", v)}
+								/>
+								<Field label={tr(locale, "Detail", "Detail")}>
+									<Input
+										value={draft.trBComp}
+										onChange={(e) => setField("trBComp", e.target.value)}
+									/>
+								</Field>
+							</div>
+							<div className="grid gap-3 md:grid-cols-2">
+								<MoneyWithMode
+									label={tr(locale, "Port -> Aeroport", "Port -> Airport")}
+									value={draft.trC}
+									mode={draft.trCMode}
+									onValue={(v) => setField("trC", v)}
+									onMode={(v) => setField("trCMode", v)}
+								/>
+								<Field label={tr(locale, "Detail", "Detail")}>
+									<Input
+										value={draft.trCComp}
+										onChange={(e) => setField("trCComp", e.target.value)}
+									/>
+								</Field>
+							</div>
 							{hotelPost ? (
 								<>
-									<MoneyWithMode
-										label={tr(locale, "Port -> Hotel post", "Port -> Post-stay hotel")}
-										value={draft.trD}
-										mode={draft.trDMode}
-										onValue={(v) => setField("trD", v)}
-										onMode={(v) => setField("trDMode", v)}
-									/>
-									<MoneyWithMode
-										label={tr(locale, "Hotel post -> Aeroport", "Post-stay hotel -> Airport")}
-										value={draft.trE}
-										mode={draft.trEMode}
-										onValue={(v) => setField("trE", v)}
-										onMode={(v) => setField("trEMode", v)}
-									/>
+									<div className="grid gap-3 md:grid-cols-2">
+										<MoneyWithMode
+											label={tr(locale, "Port -> Hotel post", "Port -> Post-stay hotel")}
+											value={draft.trD}
+											mode={draft.trDMode}
+											onValue={(v) => setField("trD", v)}
+											onMode={(v) => setField("trDMode", v)}
+										/>
+										<Field label={tr(locale, "Detail", "Detail")}>
+											<Input
+												value={draft.trDComp}
+												onChange={(e) => setField("trDComp", e.target.value)}
+											/>
+										</Field>
+									</div>
+									<div className="grid gap-3 md:grid-cols-2">
+										<MoneyWithMode
+											label={tr(locale, "Hotel post -> Aeroport", "Post-stay hotel -> Airport")}
+											value={draft.trE}
+											mode={draft.trEMode}
+											onValue={(v) => setField("trE", v)}
+											onMode={(v) => setField("trEMode", v)}
+										/>
+										<Field label={tr(locale, "Detail", "Detail")}>
+											<Input
+												value={draft.trEComp}
+												onChange={(e) => setField("trEComp", e.target.value)}
+											/>
+										</Field>
+									</div>
 								</>
 							) : null}
-							<Field label={tr(locale, "Compagnie A->H", "Carrier A->H")}>
-								<Input
-									value={draft.trAComp}
-									onChange={(e) => setField("trAComp", e.target.value)}
-								/>
-							</Field>
-							<Field label={tr(locale, "Compagnie H->P", "Carrier H->P")}>
-								<Input
-									value={draft.trBComp}
-									onChange={(e) => setField("trBComp", e.target.value)}
-								/>
-							</Field>
-							<Field label={tr(locale, "Compagnie P->A", "Carrier P->A")}>
-								<Input
-									value={draft.trCComp}
-									onChange={(e) => setField("trCComp", e.target.value)}
-								/>
-							</Field>
 							<Field
 								label={tr(locale, "Commission transferts", "Transfer commission")}
 								className="md:col-span-2"
@@ -2023,36 +2088,54 @@ export function ForfaitsWorkbench({
 								{resultRows.map((row) => (
 									<article
 										key={row.id}
-										className="rounded-2xl border border-border/70 bg-background/60 p-4"
+										className="rounded-2xl border border-border/70 bg-background/60 p-4 shadow-sm"
 									>
-										<div className="mb-2 flex items-center justify-between">
+										<div className="mb-3 flex items-center justify-between gap-3">
 											<h3 className="font-semibold">{row.label}</h3>
 											<Badge variant="outline">{row.id}</Badge>
 										</div>
-										<dl className="space-y-1 text-sm">
-											<StatLine
-												label={tr(locale, "Prix / personne", "Price / person")}
-												value={fmtCad(row.calc.prixPers)}
-											/>
-											<StatLine
-												label={tr(locale, "Prix / pers / nuit", "Price / person / night")}
-												value={fmtCad(row.calc.prixPersNuit)}
-											/>
-											<StatLine
-												label={`${tr(locale, "Total", "Total")} (${base.pax} ${tr(locale, "pax", "pax")})`}
-												value={fmtCad(row.calc.total)}
-											/>
-											<StatLine
-												label={tr(locale, "TAAP hotel pre", "TAAP pre-stay hotel")}
-												value={fmtCad(base.hotelClientChambre)}
-											/>
-											{base.hasPost ? (
-												<StatLine
-													label={tr(locale, "TAAP hotel post", "TAAP post-stay hotel")}
-													value={fmtCad(base.hotelClientChambrePost)}
-												/>
-											) : null}
-										</dl>
+										<div className="grid gap-3 xl:grid-cols-2">
+											<div className="rounded-2xl border border-border/60 bg-card/70 p-3">
+												<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Details du prix", "Price details")}</p>
+												<dl className="mt-2 space-y-2 text-sm">
+													{row.priceRows.map((item) => (
+														<StatLine
+															key={item.label}
+															label={item.label}
+															value={fmtCad(item.value)}
+														/>
+													))}
+												</dl>
+											</div>
+											<div className="rounded-2xl border border-border/60 bg-card/70 p-3">
+												<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Details commission", "Commission details")}</p>
+												<dl className="mt-2 space-y-2 text-sm">
+													{row.commissionRows.map((item) => (
+														<StatLine
+															key={item.label}
+															label={item.label}
+															value={fmtCad(item.value)}
+														/>
+													))}
+												</dl>
+											</div>
+										</div>
+										<div className="mt-4 grid gap-2 rounded-2xl border border-dashed border-border/70 bg-muted/30 p-3 sm:grid-cols-3">
+											<div>
+												<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Par personne", "Per person")}</p>
+												<p className="mt-1 text-xl font-semibold tabular-nums">{fmtCad(row.calc.prixPers)}</p>
+											</div>
+											<div>
+												<p className="text-xs uppercase tracking-wide text-muted-foreground">{tr(locale, "Par pers / nuit", "Per person / night")}</p>
+												<p className="mt-1 text-xl font-semibold tabular-nums">{fmtCad(row.calc.prixPersNuit)}</p>
+											</div>
+											<div>
+												<p className="text-xs uppercase tracking-wide text-muted-foreground">
+													{tr(locale, `Total - ${base.pax} pax`, `Total - ${base.pax} pax`)}
+												</p>
+												<p className="mt-1 text-xl font-semibold tabular-nums text-primary">{fmtCad(row.calc.total)}</p>
+											</div>
+										</div>
 									</article>
 								))}
 							</div>
@@ -2276,10 +2359,6 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 			</div>
 
 			{segments.map((segment, index) => {
-				const duration = minutesDiff(segment.departTime, segment.arriveTime);
-				const prev = index > 0 ? segments[index - 1] : null;
-				const layover = prev ? minutesDiff(prev.arriveTime, segment.departTime) : null;
-
 				return (
 					<div
 						key={`${direction}-${index}`}
@@ -2300,7 +2379,7 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 							</Button>
 						</div>
 
-						<div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+						<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
 							<Field label={tr(locale, "Compagnie aerienne", "Airline")}>
 								<SmartSelect
 									value={segment.airline}
@@ -2335,6 +2414,14 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 								/>
 							</Field>
 
+							<Field label={tr(locale, "Date depart", "Departure date")}>
+								<Input
+									type="date"
+									value={segment.departDate}
+									onChange={(e) => onUpdate(direction, index, "departDate", e.target.value)}
+								/>
+							</Field>
+
 							<Field label={tr(locale, "Heure depart", "Departure time")}>
 								<Input
 									type="time"
@@ -2351,6 +2438,14 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 								/>
 							</Field>
 
+							<Field label={tr(locale, "Date arrivee", "Arrival date")}>
+								<Input
+									type="date"
+									value={segment.arriveDate}
+									onChange={(e) => onUpdate(direction, index, "arriveDate", e.target.value)}
+								/>
+							</Field>
+
 							<Field label={tr(locale, "Aeroport arrivee (IATA)", "Arrival airport (IATA)")}>
 								<AirportIataPicker
 									value={segment.toIata}
@@ -2360,17 +2455,6 @@ function FlightSegmentsEditor({ title, direction, segments, airlineOptions, airp
 									locale={locale}
 								/>
 							</Field>
-						</div>
-
-						<div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
-							<div className="rounded-md border border-border/60 bg-background/70 px-2 py-1.5">
-								<p className="uppercase tracking-wide">{tr(locale, "Temps de vol", "Flight time")}</p>
-								<p className="font-medium text-foreground">{formatDuration(duration)}</p>
-							</div>
-							<div className="rounded-md border border-border/60 bg-background/70 px-2 py-1.5">
-								<p className="uppercase tracking-wide">{tr(locale, "Escale", "Layover")}</p>
-								<p className="font-medium text-foreground">{index === 0 ? "-" : formatDuration(layover)}</p>
-							</div>
 						</div>
 					</div>
 				);

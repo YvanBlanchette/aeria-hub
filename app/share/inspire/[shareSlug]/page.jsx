@@ -5,30 +5,58 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export async function generateMetadata({ params }) {
 	const slug = (await params).shareSlug;
-	const offer = await prisma.inspireOffer.findFirst({
-		where: { shareUrl: `/share/inspire/${slug}` },
-		select: { title: true, description: true },
-	});
 
-	if (!offer) return {};
+	try {
+		const offer = await prisma.inspireOffer.findFirst({
+			where: { shareUrl: `/share/inspire/${slug}` },
+			select: { title: true, description: true },
+		});
 
-	return {
-		title: `${offer.title} — ÆRIA Inspire`,
-		description: offer.description || "A special offer from ÆRIA Inspire.",
-	};
+		if (!offer) return {};
+
+		return {
+			title: `${offer.title} — ÆRIA Inspire`,
+			description: offer.description || "A special offer from ÆRIA Inspire.",
+		};
+	} catch (error) {
+		console.error("Failed to load Inspire share metadata", error);
+		return {};
+	}
 }
 
 export default async function PublicInspireOfferPage({ params }) {
 	const slug = (await params).shareSlug;
-	const offer = await prisma.inspireOffer.findFirst({
-		where: { shareUrl: `/share/inspire/${slug}` },
-		include: {
-			influencer: { select: { id: true, name: true, slug: true } },
-			media: { orderBy: { sortOrder: "asc" } },
-		},
-	});
+	let offer = null;
+	let dataError = null;
+
+	try {
+		offer = await prisma.inspireOffer.findFirst({
+			where: { shareUrl: `/share/inspire/${slug}` },
+			include: {
+				influencer: { select: { id: true, name: true, slug: true } },
+				media: { orderBy: { sortOrder: "asc" } },
+			},
+		});
+	} catch (error) {
+		console.error("Failed to load Inspire share page", error);
+		dataError = error;
+	}
 
 	if (!offer) {
+		if (dataError) {
+			return (
+				<div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),_transparent_45%)] px-4 py-10 sm:px-6 lg:px-8">
+					<div className="mx-auto flex max-w-5xl flex-col gap-6">
+						<Card className="border-destructive/20 bg-destructive/5">
+							<CardContent className="py-6">
+								<p className="font-medium">This offer page is temporarily unavailable.</p>
+								<p className="mt-1 text-sm text-muted-foreground">The Inspire tables may not be available on this server yet.</p>
+							</CardContent>
+						</Card>
+					</div>
+				</div>
+			);
+		}
 		notFound();
 	}
 

@@ -45,24 +45,29 @@ async function createOffer(formData) {
 		throw new Error("Title is required");
 	}
 
-	await prisma.inspireOffer.create({
-		data: {
-			title,
-			description: description || null,
-			priceCents: Number.isFinite(priceCents) ? priceCents : 0,
-			status: status,
-			createdById: user.id,
-			influencerId,
-			shareUrl: `/inspire/shared/${Math.random().toString(36).slice(2, 10)}`,
-			media: {
-				create: mediaAssets.map((asset, index) => ({
-					kind: asset.kind,
-					url: asset.url,
-					sortOrder: index,
-				})),
+	try {
+		await prisma.inspireOffer.create({
+			data: {
+				title,
+				description: description || null,
+				priceCents: Number.isFinite(priceCents) ? priceCents : 0,
+				status: status,
+				createdById: user.id,
+				influencerId,
+				shareUrl: `/inspire/shared/${Math.random().toString(36).slice(2, 10)}`,
+				media: {
+					create: mediaAssets.map((asset, index) => ({
+						kind: asset.kind,
+						url: asset.url,
+						sortOrder: index,
+					})),
+				},
 			},
-		},
-	});
+		});
+	} catch (error) {
+		console.error("Failed to create Inspire offer", error);
+		throw new Error("Unable to create the offer right now. Please ensure the Inspire tables exist on this server.");
+	}
 
 	revalidatePath("/inspire/offers");
 	redirect("/inspire/offers");

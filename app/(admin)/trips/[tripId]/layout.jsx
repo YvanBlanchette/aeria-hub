@@ -22,6 +22,11 @@ const STATUS_VARIANT = {
 export default async function TripLayout({ children, params }) {
 	const { tripId } = await params;
 	const { user } = await requireTripStaffAccess(tripId);
+	await prisma.recentView.upsert({
+		where: { userId_entityType_entityId: { userId: user.id, entityType: "Trip", entityId: tripId } },
+		create: { userId: user.id, entityType: "Trip", entityId: tripId },
+		update: { viewedAt: new Date() },
+	});
 
 	const [trip, clients] = await Promise.all([
 		prisma.trip.findUnique({

@@ -139,6 +139,7 @@ model User {
   inspireOffers   InspireOffer[]
   inquiries       Inquiry[]
   googleCalendarConnection GoogleCalendarConnection?
+  recentViews  RecentView[]
 }
 
 model Influencer {
@@ -771,4 +772,16 @@ model ActivityLog {
   client   Client? @relation(fields: [clientId], references: [id])
 
   createdAt DateTime @default(now())
+}
+
+model RecentView {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entityType String
+  entityId   String
+  viewedAt   DateTime @default(now())
+
+  @@unique([userId, entityType, entityId])
+  @@index([userId, viewedAt])
 }

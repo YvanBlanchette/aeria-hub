@@ -103,7 +103,7 @@ export default async function DashboardPage() {
 	const scopedInvoices = invoiceScope(user);
 	const scopedTasks = taskScope(user);
 
-	const [activeBookings, departuresIn30Days, openInvoiceSummary, openTasks, recentClients, recentTrips] = await Promise.all([
+	const [activeBookings, departuresIn30Days, openInvoiceSummary, openTasks, recentClients, recentTripViews] = await Promise.all([
 		prisma.trip.count({ where: { ...scopedTrips, status: { in: ["BOOKED", "TRAVELING"] } } }),
 		prisma.trip.count({
 			where: { ...scopedTrips, startDate: { gte: now, lte: horizon }, status: { in: ["BOOKED", "TRAVELING"] } },
@@ -119,13 +119,21 @@ export default async function DashboardPage() {
 			take: 10,
 			select: { id: true, firstName: true, lastName: true, primaryEmail: true, primaryPhone: true, status: true, createdAt: true },
 		}),
-		prisma.trip.findMany({
-			where: tripScope(user),
-			orderBy: { updatedAt: "desc" },
+		prisma.recentView.findMany({
+			where: { userId: user.id, entityType: "Trip" },
+			orderBy: { viewedAt: "desc" },
 			take: 10,
-			include: { client: { select: { id: true, firstName: true, lastName: true } } },
+			select: { entityId: true },
 		}),
 	]);
+	const recentTripIds = recentTripViews.map((view) => view.entityId);
+	const recentTripRows = recentTripIds.length
+		? await prisma.trip.findMany({
+				where: { ...tripScope(user), id: { in: recentTripIds } },
+				include: { client: { select: { id: true, firstName: true, lastName: true } } },
+			})
+		: [];
+	const recentTrips = recentTripIds.map((id) => recentTripRows.find((trip) => trip.id === id)).filter(Boolean);
 
 	const openBalance = (openInvoiceSummary._sum.amount || 0) - (openInvoiceSummary._sum.amountPaid || 0);
 	return (

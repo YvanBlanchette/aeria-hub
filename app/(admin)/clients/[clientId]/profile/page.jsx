@@ -14,7 +14,10 @@ export default async function ClientProfilePage({ params }) {
 	const { clientId } = await params;
 	const sessionUser = await requireUser();
 
-	const client = await prisma.client.findUnique({ where: { id: clientId }, include: { portalUser: { select: { id: true } } } });
+	const client = await prisma.client.findUnique({
+		where: { id: clientId },
+		include: { portalUser: { select: { id: true, portalEnabled: true, email: true } } },
+	});
 	if (!client) notFound();
 
 	const [loyaltyPrograms, activity] = await Promise.all([
@@ -42,7 +45,11 @@ export default async function ClientProfilePage({ params }) {
 					</CardHeader>
 					<CardContent className="flex flex-wrap items-center justify-between gap-3">
 						<p className="text-sm text-muted-foreground">
-							{client.portalUser ? "This client can sign in to the portal." : "No portal login has been created for this client."}
+							{client.portalUser
+								? client.portalUser.portalEnabled
+									? `Portal access enabled for ${client.portalUser.email}.`
+									: "Portal access is disabled for this client."
+								: "No portal login has been created for this client yet."}
 						</p>
 					</CardContent>
 				</Card>
@@ -158,35 +165,34 @@ export default async function ClientProfilePage({ params }) {
 							value={client.mobilityNotes}
 						/>
 					</dl>
+				</CardContent>
+			</Card>
 
-					<div className="space-y-3 border-t border-border pt-6">
-						<div className="flex items-center justify-between px-4">
-							<h3 className="text-sm font-medium">Loyalty programs</h3>
-							<LoyaltyProgramFormDialog
-								clientId={clientId}
-								trigger={
-									<Button
-										size="sm"
-										variant="outline"
-									>
-										<Plus className="size-4" />
-										Add loyalty program
-									</Button>
-								}
-							/>
-						</div>
-
-						{loyaltyPrograms.length === 0 ? (
-							<p className="p-4 text-sm text-muted-foreground">No loyalty programs on file.</p>
-						) : (
-							<div className="overflow-hidden rounded-lg  w-full rounded-t-none">
-								<LoyaltyProgramsTable
-									loyaltyPrograms={loyaltyPrograms}
-									clientId={clientId}
-								/>
-							</div>
-						)}
-					</div>
+			<Card className="p-0">
+				<CardHeader className="flex flex-row items-center justify-between gap-3">
+					<CardTitle>Loyalty programs</CardTitle>
+					<LoyaltyProgramFormDialog
+						clientId={clientId}
+						trigger={
+							<Button
+								size="sm"
+								variant="outline"
+							>
+								<Plus className="size-4" />
+								Add loyalty program
+							</Button>
+						}
+					/>
+				</CardHeader>
+				<CardContent className="p-0">
+					{loyaltyPrograms.length === 0 ? (
+						<p className="p-4 text-sm text-muted-foreground">No loyalty programs on file.</p>
+					) : (
+						<LoyaltyProgramsTable
+							loyaltyPrograms={loyaltyPrograms}
+							clientId={clientId}
+						/>
+					)}
 				</CardContent>
 			</Card>
 

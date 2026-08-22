@@ -106,45 +106,45 @@ export async function updateClient(clientId, prevState, formData) {
 	redirect(`/clients/${clientId}`);
 }
 
-export async function createClientPortalAccess(clientId) {
+export async function createClientPortalAccess(clientId, prevState, formData) {
 	const admin = await requireAdmin();
-	const client = await prisma.client.findUnique({
-		where: { id: clientId },
-		select: { id: true, firstName: true, lastName: true, primaryEmail: true, portalUser: { select: { id: true, email: true } } },
-	});
-	if (!client) return { error: "Client not found." };
-	if (!client.primaryEmail) return { error: "This client needs a primary email before portal access can be created." };
-
-	const email = client.primaryEmail.trim().toLowerCase();
-	const existingUser = await prisma.user.findUnique({ where: { email }, select: { id: true, role: true, clientId: true } });
-	if (existingUser && existingUser.clientId !== client.id) {
-		return { error: "This email is already used by another account." };
-	}
-
-	const temporaryPassword = `Aeria-${crypto.randomBytes(5).toString("base64url")}`;
-	const passwordHash = await bcrypt.hash(temporaryPassword, 10);
-	const user = client.portalUser || existingUser;
-	if (user) {
-		await prisma.user.update({ where: { id: user.id }, data: { email, role: "CLIENT", clientId: client.id, passwordHash } });
-	} else {
-		await prisma.user.create({
-			data: { name: `${client.firstName} ${client.lastName}`.trim(), email, role: "CLIENT", clientId: client.id, passwordHash },
+	try {
+		const client = await prisma.client.findUnique({
+			where: { id: clientId },
+			select: { id: true, firstName: true, lastName: true, primaryEmail: true, portalUser: { select: { id: true, email: true } } },
 		});
+		if (!client) return { error: "Client not found." };
+		if (!client.primaryEmail) return { error: "This client needs a primary email before portal access can be created." };
+
+		const email = client.primaryEmail.trim().toLowerCase();
+		const existingUser = await prisma.user.findUnique({ where: { email }, select: { id: true, role: true, clientId: true } });
+		if (existingUser && existingUser.clientId !== client.id) return { error: "This email is already used by another account." };
+
+		const temporaryPassword = `Aeria-${crypto.randomBytes(5).toString("base64url")}`;
+		const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+		const user = client.portalUser || existingUser;
+		if (user) {
+			await prisma.user.update({ where: { id: user.id }, data: { email, role: "CLIENT", clientId: client.id, passwordHash } });
+		} else {
+			await prisma.user.create({ data: { name: `${client.firstName} ${client.lastName}`.trim(), email, role: "CLIENT", clientId: client.id, passwordHash } });
+		}
+
+		await logActivity({
+			entityType: "Client",
+			entityId: client.id,
+			action: "portal_access_created",
+			description: `Portal access created for ${client.firstName} ${client.lastName}`,
+			userId: admin.id,
+			clientId: client.id,
+		});
+		revalidatePath(`/clients/${client.id}`);
+		revalidatePath(`/clients/${client.id}/profile`);
+		revalidatePath("/settings");
+		return { email, temporaryPassword };
+	} catch (error) {
+		console.error("createClientPortalAccess failed", error);
+		return { error: "Unable to create portal access. Please try again." };
 	}
-
-	await logActivity({
-		entityType: "Client",
-		entityId: client.id,
-		action: "portal_access_created",
-		description: `Portal access created for ${client.firstName} ${client.lastName}`,
-		userId: admin.id,
-		clientId: client.id,
-	});
-
-	revalidatePath(`/clients/${client.id}`);
-	revalidatePath(`/clients/${client.id}/profile`);
-	revalidatePath("/settings");
-	return { email, temporaryPassword };
 }
 
 /**

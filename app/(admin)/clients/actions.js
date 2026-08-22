@@ -161,24 +161,26 @@ export async function createClientPortalAccess(clientId, prevState, formData) {
 		const temporaryPassword = `Aeria-${crypto.randomBytes(5).toString("hex")}`;
 		const passwordHash = await bcrypt.hash(temporaryPassword, 10);
 		const user = client.portalUser || existingUser;
-		await prisma.$transaction(async (tx) => {
-			if (user) {
-				await tx.user.update({ where: { id: user.id }, data: { email, role: "CLIENT", clientId: client.id, passwordHash } });
-			} else {
-				await tx.user.create({ data: { name: `${client.firstName} ${client.lastName}`.trim(), email, role: "CLIENT", clientId: client.id, passwordHash } });
-			}
-
-			await tx.activityLog.create({
-				data: {
-					entityType: "Client",
-					entityId: client.id,
-					action: "portal_access_created",
-					description: `Portal access created for ${client.firstName} ${client.lastName}`,
-					userId: admin.id,
-					clientId: client.id,
-				},
+		if (user) {
+			await prisma.user.update({ where: { id: user.id }, data: { email, role: "CLIENT", clientId: client.id, portalEnabled: true, passwordHash } });
+		} else {
+			await prisma.user.create({
+				data: { name: `${client.firstName} ${client.lastName}`.trim(), email, role: "CLIENT", clientId: client.id, portalEnabled: true, passwordHash },
 			});
-		});
+		}
+
+		try {
+			await logActivity({
+				entityType: "Client",
+				entityId: client.id,
+				action: "portal_access_created",
+				description: `Portal access created for ${client.firstName} ${client.lastName}`,
+				userId: admin.id,
+				clientId: client.id,
+			});
+		} catch (activityError) {
+			console.error("Portal access audit log failed", activityError);
+		}
 		revalidatePath(`/clients/${client.id}`);
 		revalidatePath(`/clients/${client.id}/profile`);
 		revalidatePath("/settings");
@@ -187,6 +189,7 @@ export async function createClientPortalAccess(clientId, prevState, formData) {
 		console.error("createClientPortalAccess failed", error);
 		if (error?.code === "P2002") return { error: "This email is already used by another account." };
 		if (error?.code === "P2025") return { error: "The client or account could not be found. Refresh the page and try again." };
+		if (error?.code === "P2003") return { error: "The database is missing the client portal relationship. Apply the latest Prisma migration." };
 		return { error: "Unable to create portal access. Please try again." };
 	}
 }

@@ -42,7 +42,7 @@ import { ImportCsvDialog } from "@/components/clients/import-csv-dialog";
 import { ExportCsvMenu } from "@/components/clients/export-csv-menu";
 import { TripImportDialog } from "@/components/settings/trip-import-dialog";
 
-export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary, googleCalendarConnection, googleStatus }) {
+export function SettingsTabs({ user, isAdmin, teamUsers, portalClients = [], workspaceSummary, googleCalendarConnection, googleStatus }) {
 	const { t } = useLocale();
 	const quickLinks = [
 		{ href: "/dashboard", label: t("nav.dashboard", "Dashboard"), icon: Activity },

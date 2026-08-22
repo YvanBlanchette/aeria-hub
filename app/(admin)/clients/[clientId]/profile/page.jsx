@@ -7,11 +7,14 @@ import { CopyableField } from "@/components/clients/copyable-field";
 import { LoyaltyProgramFormDialog } from "@/components/clients/loyalty-program-form-dialog";
 import { LoyaltyProgramsTable } from "@/components/clients/loyalty-programs-table";
 import { formatDate } from "@/lib/format";
+import { requireUser } from "@/lib/session";
+import { ClientPortalAccessDialog } from "@/components/clients/client-portal-access-dialog";
 
 export default async function ClientProfilePage({ params }) {
 	const { clientId } = await params;
+	const sessionUser = await requireUser();
 
-	const client = await prisma.client.findUnique({ where: { id: clientId } });
+	const client = await prisma.client.findUnique({ where: { id: clientId }, include: { portalUser: { select: { id: true } } } });
 	if (!client) notFound();
 
 	const [loyaltyPrograms, activity] = await Promise.all([
@@ -26,6 +29,24 @@ export default async function ClientProfilePage({ params }) {
 
 	return (
 		<div className="space-y-6">
+			{sessionUser.role === "ADMIN" && (
+				<Card className="p-0">
+					<CardHeader className="flex flex-row items-center justify-between gap-3">
+						<CardTitle>Client portal access</CardTitle>
+						<ClientPortalAccessDialog
+							clientId={client.id}
+							clientName={`${client.firstName} ${client.lastName}`}
+							email={client.primaryEmail}
+							hasPortalAccess={Boolean(client.portalUser)}
+						/>
+					</CardHeader>
+					<CardContent className="flex flex-wrap items-center justify-between gap-3">
+						<p className="text-sm text-muted-foreground">
+							{client.portalUser ? "This client can sign in to the portal." : "No portal login has been created for this client."}
+						</p>
+					</CardContent>
+				</Card>
+			)}
 			<Card className="pt-0">
 				<CardHeader className="bg-sidebar text-sidebar-foreground py-2">
 					<CardTitle>Contact & address</CardTitle>
@@ -159,7 +180,10 @@ export default async function ClientProfilePage({ params }) {
 							<p className="p-4 text-sm text-muted-foreground">No loyalty programs on file.</p>
 						) : (
 							<div className="overflow-hidden rounded-lg  w-full rounded-t-none">
-								<LoyaltyProgramsTable loyaltyPrograms={loyaltyPrograms} clientId={clientId} />
+								<LoyaltyProgramsTable
+									loyaltyPrograms={loyaltyPrograms}
+									clientId={clientId}
+								/>
 							</div>
 						)}
 					</div>

@@ -158,6 +158,20 @@ export async function updateUserRole(userId, role) {
 	revalidatePath("/settings");
 }
 
+export async function updateUserClientLink(userId, clientId) {
+	await requireAdmin();
+	const target = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+	if (!target || target.role !== "CLIENT") return "Only client accounts can be linked to a client profile.";
+
+	if (clientId) {
+		const client = await prisma.client.findUnique({ where: { id: clientId }, select: { id: true } });
+		if (!client) return "Client profile not found.";
+	}
+
+	await prisma.user.update({ where: { id: userId }, data: { clientId: clientId || null } });
+	revalidatePath("/settings");
+}
+
 /**
  * @param {string} userId
  * @param {string | undefined} prevState

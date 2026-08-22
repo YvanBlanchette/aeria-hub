@@ -27,12 +27,13 @@ export default async function SettingsPage({ searchParams }) {
 
 	const isAdmin = user.role === "ADMIN";
 
-	const [teamUsers, workspaceMetrics] = isAdmin
+	const [teamUsers, portalClients, workspaceMetrics] = isAdmin
 		? await Promise.all([
 				prisma.user.findMany({
 					orderBy: { createdAt: "asc" },
-					select: { id: true, name: true, email: true, role: true, createdAt: true },
+					select: { id: true, name: true, email: true, role: true, clientId: true, createdAt: true },
 				}),
+				prisma.client.findMany({ orderBy: [{ lastName: "asc" }, { firstName: "asc" }], select: { id: true, firstName: true, lastName: true } }),
 				Promise.all([
 					prisma.user.count(),
 					prisma.user.count({ where: { role: "ADMIN" } }),
@@ -66,7 +67,7 @@ export default async function SettingsPage({ searchParams }) {
 					}),
 				]),
 			])
-		: [[], null];
+		: [[], null, []];
 
 	const workspaceSummary = workspaceMetrics
 		? {
@@ -100,6 +101,7 @@ export default async function SettingsPage({ searchParams }) {
 				isAdmin={isAdmin}
 				teamUsers={teamUsers}
 				workspaceSummary={workspaceSummary}
+				portalClients={portalClients}
 				googleCalendarConnection={googleCalendarConnection}
 				googleStatus={typeof params.google === "string" ? params.google : null}
 			/>

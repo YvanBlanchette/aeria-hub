@@ -550,6 +550,7 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary, googl
 							<TeamTable
 								users={teamUsers}
 								currentUserId={user.id}
+								portalClients={portalClients}
 							/>
 						</CardContent>
 					</Card>

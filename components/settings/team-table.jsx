@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfirmDeleteButton } from "@/components/shared/confirm-delete-button";
 import { ResetPasswordDialog } from "@/components/settings/reset-password-dialog";
-import { updateUserRole, removeUser } from "@/app/(admin)/settings/actions";
+import { updateUserRole, updateUserClientLink, removeUser } from "@/app/(admin)/settings/actions";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { formatDate } from "@/lib/format";
 
@@ -35,7 +35,33 @@ function RoleSelect({ user, t }) {
 	);
 }
 
-export function TeamTable({ users, currentUserId }) {
+function ClientLinkSelect({ user, clients }) {
+	const [isPending, startTransition] = useTransition();
+	return (
+		<Select
+			value={user.clientId || "none"}
+			disabled={isPending || user.role !== "CLIENT"}
+			onValueChange={(clientId) => startTransition(async () => updateUserClientLink(user.id, clientId === "none" ? "" : clientId))}
+		>
+			<SelectTrigger className="w-44">
+				<SelectValue placeholder="No client linked" />
+			</SelectTrigger>
+			<SelectContent>
+				<SelectItem value="none">No client linked</SelectItem>
+				{clients.map((client) => (
+					<SelectItem
+						key={client.id}
+						value={client.id}
+					>
+						{client.firstName} {client.lastName}
+					</SelectItem>
+				))}
+			</SelectContent>
+		</Select>
+	);
+}
+
+export function TeamTable({ users, currentUserId, portalClients = [] }) {
 	const { t } = useLocale();
 
 	async function handleRemove(userId) {
@@ -52,6 +78,7 @@ export function TeamTable({ users, currentUserId }) {
 						<TableHead>{t("settings.form.name", "Name")}</TableHead>
 						<TableHead>{t("settings.form.email", "Email")}</TableHead>
 						<TableHead>{t("settings.team.role", "Role")}</TableHead>
+						<TableHead>Portal client</TableHead>
 						<TableHead>{t("settings.team.joined", "Joined")}</TableHead>
 						<TableHead className="w-24 text-right">{t("settings.team.actions", "Actions")}</TableHead>
 					</TableRow>
@@ -78,6 +105,12 @@ export function TeamTable({ users, currentUserId }) {
 								<RoleSelect
 									user={u}
 									t={t}
+								/>
+							</TableCell>
+							<TableCell>
+								<ClientLinkSelect
+									user={u}
+									clients={portalClients}
 								/>
 							</TableCell>
 							<TableCell className="text-muted-foreground">{formatDate(u.createdAt)}</TableCell>

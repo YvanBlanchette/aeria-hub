@@ -38,6 +38,9 @@ import { cn } from "@/lib/utils";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { disconnectGoogleCalendar, syncGoogleCalendar } from "@/app/(admin)/calendar/actions";
 import { DatabaseBackupButton } from "@/components/settings/database-backup-button";
+import { ImportCsvDialog } from "@/components/clients/import-csv-dialog";
+import { ExportCsvMenu } from "@/components/clients/export-csv-menu";
+import { TripImportDialog } from "@/components/settings/trip-import-dialog";
 
 export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary, googleCalendarConnection, googleStatus }) {
 	const { t } = useLocale();
@@ -232,15 +235,39 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary, googl
 				</Card>
 
 				{isAdmin && (
-					<Card>
-						<CardHeader>
-							<CardTitle>{t("settings.system.backup", "Database backup")}</CardTitle>
-						</CardHeader>
-						<CardContent className="flex flex-wrap items-center justify-between gap-3">
-							<p className="text-sm text-muted-foreground">Download a complete PostgreSQL backup of this workspace.</p>
-							<DatabaseBackupButton />
-						</CardContent>
-					</Card>
+					<>
+						<Card>
+							<CardHeader>
+								<CardTitle>{t("settings.system.backup", "Database backup")}</CardTitle>
+							</CardHeader>
+							<CardContent className="flex flex-wrap items-center justify-between gap-3">
+								<p className="text-sm text-muted-foreground">Download a complete PostgreSQL backup of this workspace.</p>
+								<DatabaseBackupButton />
+							</CardContent>
+						</Card>
+
+						<Card>
+							<CardHeader>
+								<CardTitle>Data import and export</CardTitle>
+							</CardHeader>
+							<CardContent className="flex flex-wrap gap-2">
+								<ImportCsvDialog />
+								<ExportCsvMenu />
+								<TripImportDialog />
+								<Button
+									variant="outline"
+									asChild
+								>
+									<a
+										href="/api/trips/export"
+										download
+									>
+										Download trips CSV
+									</a>
+								</Button>
+							</CardContent>
+						</Card>
+					</>
 				)}
 
 				<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">

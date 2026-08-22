@@ -5,8 +5,6 @@ import { StatCard } from "@/components/admin/stat-card";
 import { LocaleText } from "@/components/i18n/locale-text";
 import { ClientFilters } from "@/components/clients/client-filters";
 import { ClientsTable } from "@/components/clients/clients-table";
-import { ExportCsvMenu } from "@/components/clients/export-csv-menu";
-import { ImportCsvDialog } from "@/components/clients/import-csv-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -104,8 +102,6 @@ export default async function ClientsPage({ searchParams }) {
 					<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
 						<ClientFilters defaultQuery={q} />
 						<div className="flex items-center justify-end gap-2">
-							<ImportCsvDialog />
-							<ExportCsvMenu />
 							<Button asChild>
 								<Link href="/clients/new">
 									<Plus className="size-4" />

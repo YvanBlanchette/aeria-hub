@@ -127,6 +127,9 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  clientId     String?  @unique
+  client       Client?  @relation("ClientPortalUser", fields: [clientId], references: [id], onDelete: SetNull)
+
   assignedClients Client[]      @relation("ClientAgent")
   notes           Note[]
   activityLogs    ActivityLog[]
@@ -263,6 +266,7 @@ model Client {
 
   assignedAgentId String?
   assignedAgent   User?   @relation("ClientAgent", fields: [assignedAgentId], references: [id])
+  portalUser      User?   @relation("ClientPortalUser")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

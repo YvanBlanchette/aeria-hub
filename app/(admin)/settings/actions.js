@@ -7,6 +7,8 @@ import { requireUser, requireAdmin } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
 import { validateAvatarFile, saveAvatarFile, deleteAvatarFile } from "@/lib/avatars";
 import { tServer } from "@/lib/i18n-server";
+import { parseTripCsv } from "@/lib/trips-csv";
+import { dollarsToCents } from "@/lib/format";
 
 function refreshSessionViews() {
 	// Topbar/sidebar read the session in the shared (admin) layout, so a
@@ -199,4 +201,60 @@ export async function removeUser(userId) {
 	}
 
 	revalidatePath("/settings");
+}
+
+export async function importTripsCsv(prevState, formData) {
+	const t = tServer;
+	await requireAdmin();
+	const file = formData.get("file");
+	if (!(file instanceof File) || file.size === 0) return t("errors.csvChooseFile", "Please choose a CSV file to import.");
+
+	const rows = parseTripCsv(await file.text());
+	if (rows.length === 0) return t("errors.csvNoRows", "That CSV file doesn't contain any trip rows.");
+
+	const clients = await prisma.client.findMany({ select: { id: true, primaryEmail: true, secondaryEmail: true } });
+	const clientsByEmail = new Map();
+	for (const client of clients) {
+		for (const email of [client.primaryEmail, client.secondaryEmail]) {
+			if (email) clientsByEmail.set(email.trim().toLowerCase(), client.id);
+		}
+	}
+
+	const statuses = new Set(["INQUIRY", "QUOTED", "BOOKED", "TRAVELING", "COMPLETED", "CANCELLED"]);
+	let created = 0;
+	let skipped = 0;
+	for (const row of rows) {
+		const clientId = clientsByEmail.get(row.clientEmail);
+		const startDate = row.startDate ? new Date(`${row.startDate}T00:00:00.000Z`) : null;
+		const endDate = row.endDate ? new Date(`${row.endDate}T00:00:00.000Z`) : null;
+		if (
+			!clientId ||
+			!row.name ||
+			!row.destination ||
+			(startDate && Number.isNaN(startDate.getTime())) ||
+			(endDate && Number.isNaN(endDate.getTime())) ||
+			(startDate && endDate && endDate < startDate) ||
+			!statuses.has(row.status)
+		) {
+			skipped += 1;
+			continue;
+		}
+		await prisma.trip.create({
+			data: {
+				clientId,
+				name: row.name,
+				destination: row.destination,
+				startDate,
+				endDate,
+				status: row.status,
+				totalPrice: dollarsToCents(row.totalPrice),
+				finalPaymentDate: row.finalPaymentDate ? new Date(`${row.finalPaymentDate}T00:00:00.000Z`) : null,
+			},
+		});
+		created += 1;
+	}
+
+	revalidatePath("/trips");
+	revalidatePath("/dashboard");
+	return { created, skipped };
 }

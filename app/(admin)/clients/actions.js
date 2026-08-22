@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireUser, requireAdmin } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
 import { tServer } from "@/lib/i18n-server";
 import { parseCsv, rowsToObjects } from "@/lib/csv";
@@ -114,7 +114,7 @@ export async function updateClient(clientId, prevState, formData) {
  */
 export async function importClientsCsv(prevState, formData) {
 	const t = tServer;
-	const user = await requireUser();
+	const user = await requireAdmin();
 	const file = formData.get("file");
 
 	if (!(file instanceof File) || file.size === 0) {

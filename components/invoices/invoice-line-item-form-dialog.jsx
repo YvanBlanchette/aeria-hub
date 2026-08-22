@@ -36,6 +36,7 @@ export function InvoiceLineItemFormDialog({ invoiceId, lineItem, trigger }) {
 					<Button
 						variant="outline"
 						size="sm"
+						className="text-[#12202b]! [&_svg]:text-[#12202b]!"
 					>
 						<Plus className="size-4" />
 						{t("invoices.lineItems.add", "Add line item")}

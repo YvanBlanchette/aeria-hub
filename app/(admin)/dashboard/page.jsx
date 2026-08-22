@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/session";
 import { getClientPortalRecord, getClientOutstandingBalance, getNextDeparture, getNextPaymentDate } from "@/lib/client-portal";
 import { tripScope, invoiceScope, taskScope, clientScope } from "@/lib/visibility-scope";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { getInvoiceOutstandingBalance } from "@/lib/invoices";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -103,14 +104,14 @@ export default async function DashboardPage() {
 	const scopedInvoices = invoiceScope(user);
 	const scopedTasks = taskScope(user);
 
-	const [activeBookings, departuresIn30Days, openInvoiceSummary, openTasks, recentClients, recentTripViews] = await Promise.all([
+	const [activeBookings, departuresIn30Days, openInvoices, openTasks, recentClients, recentTripViews] = await Promise.all([
 		prisma.trip.count({ where: { ...scopedTrips, status: { in: ["BOOKED", "TRAVELING"] } } }),
 		prisma.trip.count({
 			where: { ...scopedTrips, startDate: { gte: now, lte: horizon }, status: { in: ["BOOKED", "TRAVELING"] } },
 		}),
-		prisma.invoice.aggregate({
+		prisma.invoice.findMany({
 			where: { ...scopedInvoices, status: { in: ["SENT", "PARTIALLY_PAID", "OVERDUE"] } },
-			_sum: { amount: true, amountPaid: true },
+			select: { amount: true, amountPaid: true, trip: { select: { payments: { where: { cancelled: false }, select: { amount: true } } } } },
 		}),
 		prisma.tripTask.count({ where: { ...scopedTasks, completed: false } }),
 		prisma.client.findMany({
@@ -135,7 +136,7 @@ export default async function DashboardPage() {
 		: [];
 	const recentTrips = recentTripIds.map((id) => recentTripRows.find((trip) => trip.id === id)).filter(Boolean);
 
-	const openBalance = (openInvoiceSummary._sum.amount || 0) - (openInvoiceSummary._sum.amountPaid || 0);
+	const openBalance = openInvoices.reduce((sum, invoice) => sum + getInvoiceOutstandingBalance(invoice), 0);
 	return (
 		<div className="flex min-h-0 flex-col gap-4 overflow-hidden">
 			<div className="flex flex-wrap items-end justify-between gap-4">

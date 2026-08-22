@@ -4,24 +4,27 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/components/i18n/locale-provider";
-import { LayoutList, Route, ListChecks, FileText, CreditCard, Percent } from "lucide-react";
+import { CalendarDays, CreditCard, FileText, LayoutList, ListChecks, Percent, Receipt, Route } from "lucide-react";
 
 const tabs = [
-	{ label: "Overview", labelKey: "trips.tabs.overview", segment: "overview", icon: LayoutList },
-	{ label: "Itinerary", labelKey: "trips.tabs.itinerary", segment: "itinerary", icon: Route },
+	{ label: "Overview", labelKey: "trips.tabs.overview", segment: "overview", icon: LayoutList, client: true },
+	{ label: "Details", labelKey: "trips.tabs.details", segment: "details", icon: Route, client: true },
 	{ label: "Quotes", labelKey: "trips.tabs.quotes", segment: "quotes", icon: FileText },
+	{ label: "Invoices", labelKey: "trips.tabs.invoices", segment: "invoices", icon: Receipt },
+	{ label: "Itinerary", labelKey: "trips.tabs.itinerary", segment: "itinerary", icon: CalendarDays, client: true },
 	{ label: "Payments", labelKey: "trips.tabs.payments", segment: "payments", icon: CreditCard },
 	{ label: "Commissions", labelKey: "trips.tabs.commissions", segment: "commissions", icon: Percent },
 	{ label: "Tasks", labelKey: "trips.tabs.tasks", segment: "tasks", icon: ListChecks },
 ];
 
-export function TripTabNav({ tripId }) {
+export function TripTabNav({ tripId, role }) {
 	const { t } = useLocale();
 	const pathname = usePathname();
+	const visibleTabs = role === "CLIENT" ? tabs.filter((tab) => tab.client) : tabs;
 
 	return (
 		<nav className="flex gap-1 overflow-x-auto pb-2 md:w-48 md:shrink-0 md:flex-col md:overflow-visible md:pb-0">
-			{tabs.map((tab) => {
+			{visibleTabs.map((tab) => {
 				const href = `/trips/${tripId}/${tab.segment}`;
 				const isActive = pathname === href;
 				const Icon = tab.icon;

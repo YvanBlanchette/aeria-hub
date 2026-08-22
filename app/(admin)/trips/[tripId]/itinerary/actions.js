@@ -17,6 +17,15 @@ function readSegmentFields(formData) {
 		return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 	};
 	const getDateTime = (name) => parseLocalDateTime(get(name));
+	const getJson = (name) => {
+		const value = get(name);
+		if (!value) return null;
+		try {
+			return JSON.parse(value);
+		} catch {
+			return null;
+		}
+	};
 
 	const type = SEGMENT_TYPE_MAP[get("type")] ? get("type") : "OTHER";
 	const detailFields = SEGMENT_DETAIL_FIELDS[type] || [];
@@ -25,12 +34,27 @@ function readSegmentFields(formData) {
 		const value = get(`detail_${field.key}`);
 		if (value != null) details[field.key] = value;
 	}
+	if (type === "CRUISE") {
+		const cruiseItinerary = getJson("detail_cruiseItinerary");
+		if (Array.isArray(cruiseItinerary)) {
+			details.cruiseItinerary = cruiseItinerary
+				.map((row) => ({
+					date: typeof row?.date === "string" ? row.date : "",
+					port: typeof row?.port === "string" ? row.port.trim() : "",
+					arrivalTime: typeof row?.arrivalTime === "string" ? row.arrivalTime : "",
+					departureTime: typeof row?.departureTime === "string" ? row.departureTime : "",
+				}))
+				.filter((row) => row.date);
+		}
+	}
 
 	const supplierId = get("supplierId");
+	const commissionAmount = dollarsToCents(get("commissionAmount"));
 
 	return {
 		type,
 		title: get("title"),
+		commissionAmount,
 		supplierId: supplierId === "none" ? null : supplierId,
 		confirmationNumber: get("confirmationNumber"),
 		startDateTime: getDateTime("startDateTime"),
@@ -42,6 +66,49 @@ function readSegmentFields(formData) {
 	};
 }
 
+async function syncSegmentCommission(segmentId, amount) {
+	const segment = await prisma.tripSegment.findUnique({
+		where: { id: segmentId },
+		include: {
+			trip: { select: { id: true, createdAt: true, endDate: true } },
+			commissions: { orderBy: { createdAt: "asc" } },
+			supplier: { select: { name: true } },
+		},
+	});
+	if (!segment) return null;
+
+	if (amount == null || amount === 0) {
+		await prisma.segmentCommission.deleteMany({ where: { segmentId, status: "PENDING" } });
+		return segment;
+	}
+
+	const portions = computeCommissionPortions(amount, segment, segment.trip);
+	const existing = segment.commissions;
+
+	await prisma.$transaction(async (tx) => {
+		for (let i = 0; i < Math.max(portions.length, existing.length); i++) {
+			const target = portions[i];
+			const current = existing[i];
+			if (current?.status === "RECEIVED") continue;
+
+			if (target && current) {
+				await tx.segmentCommission.update({
+					where: { id: current.id },
+					data: { amount: target.amount, dueDate: target.dueDate },
+				});
+			} else if (target && !current) {
+				await tx.segmentCommission.create({
+					data: { segmentId, amount: target.amount, dueDate: target.dueDate },
+				});
+			} else if (!target && current) {
+				await tx.segmentCommission.delete({ where: { id: current.id } });
+			}
+		}
+	});
+
+	return segment;
+}
+
 /**
  * @param {string} tripId
  * @param {string | undefined} prevState
@@ -50,8 +117,9 @@ function readSegmentFields(formData) {
 export async function createSegment(tripId, prevState, formData) {
 	const t = tServer;
 	const { user } = await requireTripStaffAccess(tripId);
-	const fields = readSegmentFields(formData);
+	const { commissionAmount, ...fields } = readSegmentFields(formData);
 	if (!fields.title) return t("errors.requiredTitle", "Title is required.");
+	if (commissionAmount != null && commissionAmount < 0) return t("errors.validCommissionAmount", "Enter a valid commission amount.");
 	if (fields.startDateTime && fields.endDateTime && fields.endDateTime < fields.startDateTime) {
 		return t("errors.endBeforeStart", "End can't be before the start.");
 	}
@@ -63,6 +131,7 @@ export async function createSegment(tripId, prevState, formData) {
 	const segment = await prisma.tripSegment.create({
 		data: { ...fields, tripId, sortOrder: (maxSort._max.sortOrder ?? 0) + 1 },
 	});
+	await syncSegmentCommission(segment.id, commissionAmount);
 
 	await logActivity({
 		entityType: "TripSegment",
@@ -74,6 +143,7 @@ export async function createSegment(tripId, prevState, formData) {
 	});
 
 	revalidatePath(`/trips/${tripId}/itinerary`);
+	revalidatePath(`/trips/${tripId}/details`);
 	revalidatePath(`/trips/${tripId}/overview`);
 }
 
@@ -85,8 +155,9 @@ export async function createSegment(tripId, prevState, formData) {
 export async function updateSegment(segmentId, prevState, formData) {
 	const t = tServer;
 	const { user } = await requireTripStaffAccessBySegment(segmentId);
-	const fields = readSegmentFields(formData);
+	const { commissionAmount, ...fields } = readSegmentFields(formData);
 	if (!fields.title) return t("errors.requiredTitle", "Title is required.");
+	if (commissionAmount != null && commissionAmount < 0) return t("errors.validCommissionAmount", "Enter a valid commission amount.");
 	if (fields.startDateTime && fields.endDateTime && fields.endDateTime < fields.startDateTime) {
 		return t("errors.endBeforeStart", "End can't be before the start.");
 	}
@@ -96,6 +167,7 @@ export async function updateSegment(segmentId, prevState, formData) {
 		data: { ...fields, details: fields.details ?? null },
 		include: { trip: { select: { id: true, clientId: true, name: true } } },
 	});
+	await syncSegmentCommission(segmentId, commissionAmount);
 
 	await logActivity({
 		entityType: "TripSegment",
@@ -107,6 +179,7 @@ export async function updateSegment(segmentId, prevState, formData) {
 	});
 
 	revalidatePath(`/trips/${segment.trip.id}/itinerary`);
+	revalidatePath(`/trips/${segment.trip.id}/details`);
 	revalidatePath(`/trips/${segment.trip.id}/overview`);
 }
 
@@ -120,6 +193,7 @@ export async function deleteSegment(segmentId, tripId) {
 	if (!existing) return;
 	await prisma.tripSegment.delete({ where: { id: segmentId } });
 	revalidatePath(`/trips/${tripId}/itinerary`);
+	revalidatePath(`/trips/${tripId}/details`);
 	revalidatePath(`/trips/${tripId}/overview`);
 }
 
@@ -224,6 +298,7 @@ export async function importCruiseMapperItinerary(tripId, prevState, formData) {
 	});
 
 	revalidatePath(`/trips/${tripId}/itinerary`);
+	revalidatePath(`/trips/${tripId}/details`);
 	revalidatePath(`/trips/${tripId}/overview`);
 
 	return {
@@ -273,6 +348,7 @@ export async function reorderSegment(segmentId, tripId, direction) {
 	}
 
 	revalidatePath(`/trips/${tripId}/itinerary`);
+	revalidatePath(`/trips/${tripId}/details`);
 }
 
 /**
@@ -320,6 +396,7 @@ export async function uploadSegmentDocument(segmentId, prevState, formData) {
 	});
 
 	revalidatePath(`/trips/${segment.trip.id}/itinerary`);
+	revalidatePath(`/trips/${segment.trip.id}/details`);
 	revalidatePath(`/clients/${segment.trip.clientId}/documents`);
 }
 
@@ -337,6 +414,7 @@ export async function deleteSegmentDocument(documentId, segmentId, tripId) {
 	await deleteStoredFile(document.storagePath);
 
 	revalidatePath(`/trips/${tripId}/itinerary`);
+	revalidatePath(`/trips/${tripId}/details`);
 	if (document.clientId) {
 		revalidatePath(`/clients/${document.clientId}/documents`);
 	}
@@ -357,42 +435,15 @@ export async function setSegmentCommission(segmentId, prevState, formData) {
 	const amount = dollarsToCents(formData.get("amount"));
 	if (amount == null || amount < 0) return t("errors.validCommissionAmount", "Enter a valid commission amount.");
 
-	const segment = await prisma.tripSegment.findUnique({
-		where: { id: segmentId },
-		include: {
-			trip: { select: { id: true, createdAt: true, endDate: true } },
-			commissions: { orderBy: { createdAt: "asc" } },
-			supplier: { select: { name: true } },
-		},
-	});
+	const existingSegment = await prisma.tripSegment.findUnique({ where: { id: segmentId }, select: { tripId: true } });
+	if (!existingSegment) return "Segment not found.";
+	await requireTripStaffAccess(existingSegment.tripId);
+
+	const segment = await syncSegmentCommission(segmentId, amount);
 	if (!segment) return "Segment not found.";
-	await requireTripStaffAccess(segment.trip.id);
-
-	const portions = computeCommissionPortions(amount, segment, segment.trip);
-	const existing = segment.commissions;
-
-	await prisma.$transaction(async (tx) => {
-		for (let i = 0; i < Math.max(portions.length, existing.length); i++) {
-			const target = portions[i];
-			const current = existing[i];
-			if (current?.status === "RECEIVED") continue;
-
-			if (target && current) {
-				await tx.segmentCommission.update({
-					where: { id: current.id },
-					data: { amount: target.amount, dueDate: target.dueDate },
-				});
-			} else if (target && !current) {
-				await tx.segmentCommission.create({
-					data: { segmentId, amount: target.amount, dueDate: target.dueDate },
-				});
-			} else if (!target && current) {
-				await tx.segmentCommission.delete({ where: { id: current.id } });
-			}
-		}
-	});
 
 	revalidatePath(`/trips/${segment.trip.id}/itinerary`);
+	revalidatePath(`/trips/${segment.trip.id}/details`);
 	revalidatePath("/commissions");
 }
 
@@ -406,6 +457,7 @@ export async function deleteSegmentCommission(segmentId, tripId) {
 	if (!segment) return;
 	await prisma.segmentCommission.deleteMany({ where: { segmentId } });
 	revalidatePath(`/trips/${tripId}/itinerary`);
+	revalidatePath(`/trips/${tripId}/details`);
 	revalidatePath("/commissions");
 }
 
@@ -427,5 +479,6 @@ export async function setCommissionReceived(portionId, received) {
 	});
 
 	revalidatePath(`/trips/${portion.segment.tripId}/itinerary`);
+	revalidatePath(`/trips/${portion.segment.tripId}/details`);
 	revalidatePath("/commissions");
 }

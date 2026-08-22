@@ -1,24 +1,32 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import NextAuth from "next-auth";
 
 const publicRoutes = ["/login"];
 
-export default auth((req) => {
-  const isLoggedIn = !!req.auth;
-  const { pathname } = req.nextUrl;
-  const isPublicRoute = publicRoutes.includes(pathname);
+const { auth } = NextAuth({
+	session: { strategy: "jwt" },
+	pages: {
+		signIn: "/login",
+	},
+	providers: [],
+});
 
-  if (!isLoggedIn && !isPublicRoute) {
-    const loginUrl = new URL("/login", req.nextUrl);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
+export const proxy = auth((req) => {
+	const isLoggedIn = !!req.auth;
+	const { pathname } = req.nextUrl;
+	const isPublicRoute = publicRoutes.includes(pathname);
 
-  if (isLoggedIn && isPublicRoute) {
-    return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
-  }
+	if (!isLoggedIn && !isPublicRoute) {
+		const loginUrl = new URL("/login", req.nextUrl);
+		loginUrl.searchParams.set("callbackUrl", pathname);
+		return NextResponse.redirect(loginUrl);
+	}
+
+	if (isLoggedIn && isPublicRoute) {
+		return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
+	}
 });
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp)$).*)"],
+	matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp)$).*)"],
 };

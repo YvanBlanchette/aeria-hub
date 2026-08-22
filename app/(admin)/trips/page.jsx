@@ -16,7 +16,7 @@ import { tripScope } from "@/lib/visibility-scope";
 import { CrmCalendar } from "@/components/calendar/crm-calendar";
 
 export const metadata = {
-	title: "Trips — ÆRIA Hub",
+	title: "Trips | ÆRIA Hub",
 };
 
 const PAGE_SIZE = 25;
@@ -43,31 +43,37 @@ async function ClientTripsView({ user }) {
 						<p className="text-sm text-muted-foreground">No trips are currently associated with your account.</p>
 					) : (
 						trips.map((trip) => (
-							<Card key={trip.id}>
-								<CardHeader className="pb-2">
-									<div className="flex items-start justify-between gap-3">
-										<div>
-											<CardTitle className="text-lg">{trip.name}</CardTitle>
-											<CardDescription>{trip.destination}</CardDescription>
+							<Link
+								key={trip.id}
+								href={`/trips/${trip.id}/overview`}
+								className="block"
+							>
+								<Card>
+									<CardHeader className="pb-2">
+										<div className="flex items-start justify-between gap-3">
+											<div>
+												<CardTitle className="text-lg">{trip.name}</CardTitle>
+												<CardDescription>{trip.destination}</CardDescription>
+											</div>
+											<Badge variant={trip.status === "BOOKED" || trip.status === "TRAVELING" ? "default" : "secondary"}>{trip.status}</Badge>
 										</div>
-										<Badge variant={trip.status === "BOOKED" || trip.status === "TRAVELING" ? "default" : "secondary"}>{trip.status}</Badge>
-									</div>
-								</CardHeader>
-								<CardContent className="space-y-3 text-sm">
-									<div className="flex items-center gap-2 text-muted-foreground">
-										<span>
-											{trip.startDate ? formatDate(trip.startDate) : "—"} to {trip.endDate ? formatDate(trip.endDate) : "—"}
-										</span>
-									</div>
-									<div className="text-muted-foreground">
-										{trip.finalPaymentDate ? `Final payment: ${formatDate(trip.finalPaymentDate)}` : "Final payment date not set"}
-									</div>
-									<div className="border-t border-border pt-2">
-										<span className="text-muted-foreground">Trip total</span>
-										<div className="mt-1 text-lg font-semibold">{trip.totalPrice != null ? formatCurrency(trip.totalPrice) : "—"}</div>
-									</div>
-								</CardContent>
-							</Card>
+									</CardHeader>
+									<CardContent className="space-y-3 text-sm">
+										<div className="flex items-center gap-2 text-muted-foreground">
+											<span>
+												{trip.startDate ? formatDate(trip.startDate) : "—"} to {trip.endDate ? formatDate(trip.endDate) : "—"}
+											</span>
+										</div>
+										<div className="text-muted-foreground">
+											{trip.finalPaymentDate ? `Final payment: ${formatDate(trip.finalPaymentDate)}` : "Final payment date not set"}
+										</div>
+										<div className="border-t border-border pt-2">
+											<span className="text-muted-foreground">Trip total</span>
+											<div className="mt-1 text-lg font-semibold">{trip.totalPrice != null ? formatCurrency(trip.totalPrice) : "—"}</div>
+										</div>
+									</CardContent>
+								</Card>
+							</Link>
 						))
 					)}
 				</CardContent>
@@ -94,7 +100,7 @@ export default async function TripsPage({ searchParams }) {
 		prisma.trip.count({ where }),
 		prisma.trip.findMany({
 			where,
-			orderBy: { createdAt: "desc" },
+			orderBy: [{ startDate: "asc" }, { createdAt: "desc" }],
 			skip: (page - 1) * PAGE_SIZE,
 			take: PAGE_SIZE,
 			include: {
@@ -102,6 +108,7 @@ export default async function TripsPage({ searchParams }) {
 				segments: { select: { id: true } },
 				tasks: { select: { completed: true, dueDate: true } },
 				invoices: { select: { amount: true, amountPaid: true, status: true } },
+				payments: { where: { cancelled: false }, select: { amount: true } },
 			},
 		}),
 	]);

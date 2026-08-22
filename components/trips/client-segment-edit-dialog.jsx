@@ -1,18 +1,19 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ClientPicker } from "@/components/trips/client-picker";
-import { addTripClient } from "@/app/(admin)/trips/actions";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { updateClientSegmentDetails } from "@/app/(admin)/trips/[tripId]/details/actions";
 
-export function AddTripClientDialog({ tripId, clients }) {
+export function ClientSegmentEditDialog({ segment }) {
 	const [open, setOpen] = useState(false);
-	const action = addTripClient.bind(null, tripId);
+	const action = updateClientSegmentDetails.bind(null, segment.id);
 	const [error, formAction, pending] = useActionState(action, undefined);
 	const wasPending = useRef(false);
+	const canEditSeat = segment.type === "FLIGHT";
 
 	useEffect(() => {
 		if (wasPending.current && !pending && !error) {
@@ -28,30 +29,40 @@ export function AddTripClientDialog({ tripId, clients }) {
 		>
 			<DialogTrigger asChild>
 				<Button
-					variant="outline"
-					size="sm"
-					className="text-[#12202b]! [&_svg]:text-[#12202b]!"
+					variant="ghost"
+					size="icon-sm"
 				>
-					<Plus className="size-4" />
-					Add client
+					<Pencil className="size-4" />
+					<span className="sr-only">Edit your booking details for {segment.title}</span>
 				</Button>
 			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Add client to trip</DialogTitle>
+					<DialogTitle>Edit booking details</DialogTitle>
 				</DialogHeader>
 				<form
 					action={formAction}
 					className="space-y-4"
 				>
 					<div className="space-y-2">
-						<Label htmlFor="clientId">Client</Label>
-						<ClientPicker
-							clients={clients}
-							name="clientId"
+						<Label htmlFor="confirmationNumber">Confirmation #</Label>
+						<Input
+							id="confirmationNumber"
+							name="confirmationNumber"
+							defaultValue={segment.confirmationNumber || ""}
 						/>
 					</div>
-
+					{canEditSeat && (
+						<div className="space-y-2">
+							<Label htmlFor="seatNumber">Seat</Label>
+							<Input
+								id="seatNumber"
+								name="seatNumber"
+								defaultValue={segment.details?.seatNumber || ""}
+								placeholder="12A"
+							/>
+						</div>
+					)}
 					{error && (
 						<p
 							className="text-sm text-destructive"
@@ -60,13 +71,12 @@ export function AddTripClientDialog({ tripId, clients }) {
 							{error}
 						</p>
 					)}
-
 					<DialogFooter>
 						<Button
 							type="submit"
 							disabled={pending}
 						>
-							{pending ? "Adding..." : "Add"}
+							{pending ? "Saving..." : "Save changes"}
 						</Button>
 					</DialogFooter>
 				</form>

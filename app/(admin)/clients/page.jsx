@@ -43,14 +43,17 @@ export default async function ClientsPage({ searchParams }) {
 	]);
 
 	const clientIds = clients.map((client) => client.id);
-	const invoiceSums = clientIds.length
-		? await prisma.invoice.groupBy({
-				by: ["clientId"],
-				where: { clientId: { in: clientIds } },
-				_sum: { amountPaid: true },
+	const payments = clientIds.length
+		? await prisma.tripPayment.findMany({
+				where: { cancelled: false, trip: { clientId: { in: clientIds } } },
+				select: { amount: true, trip: { select: { clientId: true } } },
 			})
 		: [];
-	const spentByClient = Object.fromEntries(invoiceSums.map((sum) => [sum.clientId, sum._sum.amountPaid || 0]));
+	const spentByClient = payments.reduce((totals, payment) => {
+		const clientId = payment.trip.clientId;
+		totals[clientId] = (totals[clientId] || 0) + payment.amount;
+		return totals;
+	}, {});
 
 	return (
 		<div className="space-y-6">

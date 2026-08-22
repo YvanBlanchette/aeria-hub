@@ -134,7 +134,7 @@ export function CrmCalendar({ initialEvents, currentUserId }) {
 			<Card>
 				<CardHeader className="flex flex-row items-center justify-between gap-3">
 					<CardTitle className="text-xl capitalize sm:text-2xl">{displayMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</CardTitle>
-					<div className="flex items-center gap-1 rounded-xl border border-border/70 bg-background/60 p-1 shadow-sm">
+					<div className="flex items-center gap-2 rounded-xl  p-1 ">
 						<Button
 							variant="ghost"
 							size="icon-sm"

@@ -17,7 +17,6 @@ import {
 	Users,
 	UserCircle,
 	KeyRound,
-	Palette,
 	SlidersHorizontal,
 	UserCog,
 } from "lucide-react";
@@ -28,8 +27,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { StatCard } from "@/components/admin/stat-card";
 import { AvatarUpload } from "@/components/settings/avatar-upload";
 import { ProfileForm } from "@/components/settings/profile-form";
+import { ClientProfileRequestForm } from "@/components/settings/client-profile-request-form";
 import { PasswordForm } from "@/components/settings/password-form";
-import { AppearanceForm } from "@/components/settings/appearance-form";
 import { LanguageForm } from "@/components/settings/language-form";
 import { TeamTable } from "@/components/settings/team-table";
 import { InviteAgentDialog } from "@/components/settings/invite-agent-dialog";
@@ -42,8 +41,9 @@ import { ImportCsvDialog } from "@/components/clients/import-csv-dialog";
 import { ExportCsvMenu } from "@/components/clients/export-csv-menu";
 import { TripImportDialog } from "@/components/settings/trip-import-dialog";
 
-export function SettingsTabs({ user, isAdmin, teamUsers, portalClients = [], workspaceSummary, googleCalendarConnection, googleStatus }) {
+export function SettingsTabs({ user, client = null, isAdmin, teamUsers, portalClients = [], workspaceSummary, googleCalendarConnection, googleStatus }) {
 	const { t } = useLocale();
+	const isClient = user.role === "CLIENT";
 	const quickLinks = [
 		{ href: "/dashboard", label: t("nav.dashboard", "Dashboard"), icon: Activity },
 		{ href: "/clients", label: t("nav.clients", "Clients"), icon: Users },
@@ -55,8 +55,7 @@ export function SettingsTabs({ user, isAdmin, teamUsers, portalClients = [], wor
 	const tabs = [
 		{ value: "profile", label: t("settings.tab.profile", "Profile"), icon: UserCircle },
 		{ value: "security", label: t("settings.tab.security", "Security"), icon: KeyRound },
-		{ value: "appearance", label: t("settings.tab.appearance", "Appearance"), icon: Palette },
-		{ value: "system", label: t("settings.tab.system", "System"), icon: SlidersHorizontal },
+		...(!isClient ? [{ value: "system", label: t("settings.tab.system", "System"), icon: SlidersHorizontal }] : []),
 		...(isAdmin ? [{ value: "workspace", label: t("settings.tab.workspace", "Workspace"), icon: BriefcaseBusiness }] : []),
 		...(isAdmin ? [{ value: "team", label: t("settings.tab.team", "Team"), icon: UserCog }] : []),
 	];
@@ -101,10 +100,18 @@ export function SettingsTabs({ user, isAdmin, teamUsers, portalClients = [], wor
 					</Card>
 					<Card>
 						<CardHeader>
-							<CardTitle>{t("settings.profile.info", "Profile info")}</CardTitle>
+							<CardTitle>{isClient ? "Client profile" : t("settings.profile.info", "Profile info")}</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<ProfileForm user={user} />
+							{isClient ? (
+								client ? (
+									<ClientProfileRequestForm client={client} />
+								) : (
+									<p className="text-sm text-muted-foreground">No client profile is linked to this account.</p>
+								)
+							) : (
+								<ProfileForm user={user} />
+							)}
 						</CardContent>
 					</Card>
 				</div>
@@ -125,214 +132,174 @@ export function SettingsTabs({ user, isAdmin, teamUsers, portalClients = [], wor
 							<PasswordForm />
 						</CardContent>
 					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>{t("settings.security.hygiene", "Security hygiene")}</CardTitle>
-							<CardDescription>{t("settings.security.hygieneDesc", "Operational guardrails for account safety and team admin actions.")}</CardDescription>
-						</CardHeader>
-						<CardContent className="space-y-2.5 text-sm">
-							<div className="rounded-lg border border-border p-3">
-								<p className="font-medium">{t("settings.security.rule1Title", "Use unique, high-entropy passwords")}</p>
-								<p className="mt-1 text-muted-foreground">
-									{t("settings.security.rule1Body", "Minimum 8 characters is enforced; use passphrases whenever possible.")}
-								</p>
-							</div>
-							<div className="rounded-lg border border-border p-3">
-								<p className="font-medium">{t("settings.security.rule2Title", "Reset teammate passwords on role changes")}</p>
-								<p className="mt-1 text-muted-foreground">
-									{t("settings.security.rule2Body", "Admins can rotate any teammate password in Team settings immediately.")}
-								</p>
-							</div>
-							<div className="rounded-lg border border-border p-3">
-								<p className="font-medium">{t("settings.security.rule3Title", "Review activity regularly")}</p>
-								<p className="mt-1 text-muted-foreground">
-									{t("settings.security.rule3Body", "Use Dashboard and Workspace activity logs to detect suspicious edits quickly.")}
-								</p>
-							</div>
-						</CardContent>
-					</Card>
 				</div>
-			</TabsContent>
-
-			{/* APPEARANCE TAB */}
-			<TabsContent
-				value="appearance"
-				className="pt-4"
-			>
-				<Card>
-					<CardHeader>
-						<CardTitle>{t("settings.appearance.theme", "Theme")}</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<AppearanceForm />
-					</CardContent>
-				</Card>
 			</TabsContent>
 
 			{/* SYSTEM TAB */}
-			<TabsContent
-				value="system"
-				className="space-y-4 pt-4"
-			>
-				<Card>
-					<CardHeader>
-						<CardTitle>{t("calendar.google.title", "Google Calendar")}</CardTitle>
-						<CardDescription>
-							{t("calendar.google.notConnected", "Connect Google Calendar to mirror important CRM dates into your primary calendar.")}
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="flex flex-wrap items-center gap-3">
-						{googleCalendarConnection ? (
-							<>
-								<p className="text-sm text-muted-foreground">
-									{t("calendar.google.connectedAs", "Connected as")} {googleCalendarConnection.googleEmail || user.email}
-								</p>
-								<form action={syncGoogleCalendar}>
-									<Button type="submit">{t("calendar.google.sync", "Sync CRM events to Google")}</Button>
-								</form>
-								<form action={disconnectGoogleCalendar}>
-									<Button
-										type="submit"
-										variant="outline"
-									>
-										{t("calendar.google.disconnect", "Disconnect")}
-									</Button>
-								</form>
-								{googleCalendarConnection.lastSyncAt && (
-									<p className="text-xs text-muted-foreground">
-										{t("calendar.google.lastSync", "Last sync")}: {formatDate(googleCalendarConnection.lastSyncAt)}
+			{!isClient && (
+				<TabsContent
+					value="system"
+					className="space-y-4 pt-4"
+				>
+					<Card>
+						<CardHeader>
+							<CardTitle>{t("calendar.google.title", "Google Calendar")}</CardTitle>
+							<CardDescription>
+								{t("calendar.google.notConnected", "Connect Google Calendar to mirror important CRM dates into your primary calendar.")}
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="flex flex-wrap items-center gap-3">
+							{googleCalendarConnection ? (
+								<>
+									<p className="text-sm text-muted-foreground">
+										{t("calendar.google.connectedAs", "Connected as")} {googleCalendarConnection.googleEmail || user.email}
 									</p>
-								)}
-								{googleCalendarConnection.lastSyncError && <p className="text-xs text-destructive">{googleCalendarConnection.lastSyncError}</p>}
-							</>
-						) : (
-							<Button asChild>
-								<a href="/api/google-calendar/connect">{t("calendar.google.connect", "Connect Google Calendar")}</a>
-							</Button>
-						)}
-
-						{googleStatus === "connected" && <p className="text-sm text-emerald-600">Google Calendar connected.</p>}
-						{googleStatus === "connect_error" && (
-							<p className="text-sm text-destructive">Google connection failed. Verify OAuth credentials and redirect URI.</p>
-						)}
-						{googleStatus === "state_error" && <p className="text-sm text-destructive">Google OAuth state mismatch. Try again.</p>}
-
-						<p className="text-xs text-muted-foreground">
-							{t("calendar.google.cronHint", "For automatic daily sync, call /api/cron/google-calendar-sync with Authorization: Bearer CRON_SECRET.")}
-						</p>
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader>
-						<CardTitle>{t("settings.language.title", "Language")}</CardTitle>
-						<CardDescription>{t("settings.language.description", "Choose the application display language.")}</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<LanguageForm />
-					</CardContent>
-				</Card>
-
-				{isAdmin && (
-					<>
-						<Card>
-							<CardHeader>
-								<CardTitle>{t("settings.system.backup", "Database backup")}</CardTitle>
-							</CardHeader>
-							<CardContent className="flex flex-wrap items-center justify-between gap-3">
-								<p className="text-sm text-muted-foreground">Download a complete PostgreSQL backup of this workspace.</p>
-								<DatabaseBackupButton />
-							</CardContent>
-						</Card>
-
-						<Card>
-							<CardHeader>
-								<CardTitle>Data import and export</CardTitle>
-							</CardHeader>
-							<CardContent className="flex flex-wrap gap-2">
-								<ImportCsvDialog />
-								<ExportCsvMenu />
-								<TripImportDialog />
-								<Button
-									variant="outline"
-									asChild
-								>
-									<a
-										href="/api/trips/export"
-										download
-									>
-										Download trips CSV
-									</a>
+									<form action={syncGoogleCalendar}>
+										<Button type="submit">{t("calendar.google.sync", "Sync CRM events to Google")}</Button>
+									</form>
+									<form action={disconnectGoogleCalendar}>
+										<Button
+											type="submit"
+											variant="outline"
+										>
+											{t("calendar.google.disconnect", "Disconnect")}
+										</Button>
+									</form>
+									{googleCalendarConnection.lastSyncAt && (
+										<p className="text-xs text-muted-foreground">
+											{t("calendar.google.lastSync", "Last sync")}: {formatDate(googleCalendarConnection.lastSyncAt)}
+										</p>
+									)}
+									{googleCalendarConnection.lastSyncError && <p className="text-xs text-destructive">{googleCalendarConnection.lastSyncError}</p>}
+								</>
+							) : (
+								<Button asChild>
+									<a href="/api/google-calendar/connect">{t("calendar.google.connect", "Connect Google Calendar")}</a>
 								</Button>
+							)}
+
+							{googleStatus === "connected" && <p className="text-sm text-emerald-600">Google Calendar connected.</p>}
+							{googleStatus === "connect_error" && (
+								<p className="text-sm text-destructive">Google connection failed. Verify OAuth credentials and redirect URI.</p>
+							)}
+							{googleStatus === "state_error" && <p className="text-sm text-destructive">Google OAuth state mismatch. Try again.</p>}
+
+							<p className="text-xs text-muted-foreground">
+								{t("calendar.google.cronHint", "For automatic daily sync, call /api/cron/google-calendar-sync with Authorization: Bearer CRON_SECRET.")}
+							</p>
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle>{t("settings.language.title", "Language")}</CardTitle>
+							<CardDescription>{t("settings.language.description", "Choose the application display language.")}</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<LanguageForm />
+						</CardContent>
+					</Card>
+
+					{isAdmin && (
+						<>
+							<Card>
+								<CardHeader>
+									<CardTitle>{t("settings.system.backup", "Database backup")}</CardTitle>
+								</CardHeader>
+								<CardContent className="flex flex-wrap items-center justify-between gap-3">
+									<p className="text-sm text-muted-foreground">Download a complete PostgreSQL backup of this workspace.</p>
+									<DatabaseBackupButton />
+								</CardContent>
+							</Card>
+
+							<Card>
+								<CardHeader>
+									<CardTitle>Data import and export</CardTitle>
+								</CardHeader>
+								<CardContent className="flex flex-wrap gap-2">
+									<ImportCsvDialog />
+									<ExportCsvMenu />
+									<TripImportDialog />
+									<Button
+										variant="outline"
+										asChild
+									>
+										<a
+											href="/api/trips/export"
+											download
+										>
+											Download trips CSV
+										</a>
+									</Button>
+								</CardContent>
+							</Card>
+						</>
+					)}
+
+					<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+						<Card>
+							<CardHeader>
+								<CardTitle>{t("settings.system.behavior", "System behavior")}</CardTitle>
+								<CardDescription>{t("settings.system.behaviorDesc", "How key CRM data is interpreted and displayed.")}</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-2.5 text-sm">
+								<div className="rounded-lg border border-border p-3">
+									<p className="font-medium">{t("settings.system.rule1Title", "Date and time normalization")}</p>
+									<p className="mt-1 text-muted-foreground">
+										{t("settings.system.rule1Body", "Date formatting is standardized to UTC for consistency across environments.")}
+									</p>
+								</div>
+								<div className="rounded-lg border border-border p-3">
+									<p className="font-medium">{t("settings.system.rule2Title", "Financial precision")}</p>
+									<p className="mt-1 text-muted-foreground">
+										{t("settings.system.rule2Body", "Currency values are stored as integer cents to avoid floating-point drift.")}
+									</p>
+								</div>
+								<div className="rounded-lg border border-border p-3">
+									<p className="font-medium">{t("settings.system.rule3Title", "Document privacy")}</p>
+									<p className="mt-1 text-muted-foreground">
+										{t("settings.system.rule3Body", "Uploaded files are stored privately and served through authenticated API routes.")}
+									</p>
+								</div>
 							</CardContent>
 						</Card>
-					</>
-				)}
 
-				<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-					<Card>
-						<CardHeader>
-							<CardTitle>{t("settings.system.behavior", "System behavior")}</CardTitle>
-							<CardDescription>{t("settings.system.behaviorDesc", "How key CRM data is interpreted and displayed.")}</CardDescription>
-						</CardHeader>
-						<CardContent className="space-y-2.5 text-sm">
-							<div className="rounded-lg border border-border p-3">
-								<p className="font-medium">{t("settings.system.rule1Title", "Date and time normalization")}</p>
-								<p className="mt-1 text-muted-foreground">
-									{t("settings.system.rule1Body", "Date formatting is standardized to UTC for consistency across environments.")}
-								</p>
-							</div>
-							<div className="rounded-lg border border-border p-3">
-								<p className="font-medium">{t("settings.system.rule2Title", "Financial precision")}</p>
-								<p className="mt-1 text-muted-foreground">
-									{t("settings.system.rule2Body", "Currency values are stored as integer cents to avoid floating-point drift.")}
-								</p>
-							</div>
-							<div className="rounded-lg border border-border p-3">
-								<p className="font-medium">{t("settings.system.rule3Title", "Document privacy")}</p>
-								<p className="mt-1 text-muted-foreground">
-									{t("settings.system.rule3Body", "Uploaded files are stored privately and served through authenticated API routes.")}
-								</p>
-							</div>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>{t("settings.system.playbook", "Operational playbook")}</CardTitle>
-							<CardDescription>{t("settings.system.playbookDesc", "Suggested cadence for CRM maintenance.")}</CardDescription>
-						</CardHeader>
-						<CardContent className="space-y-2.5 text-sm">
-							<div className="flex items-start gap-2 rounded-lg border border-border p-3">
-								<Shield className="mt-0.5 size-4 text-primary" />
-								<div>
-									<p className="font-medium">{t("settings.system.weekly", "Weekly")}</p>
-									<p className="text-muted-foreground">{t("settings.system.weeklyBody", "Review overdue tasks/reminders and role assignments.")}</p>
+						<Card>
+							<CardHeader>
+								<CardTitle>{t("settings.system.playbook", "Operational playbook")}</CardTitle>
+								<CardDescription>{t("settings.system.playbookDesc", "Suggested cadence for CRM maintenance.")}</CardDescription>
+							</CardHeader>
+							<CardContent className="space-y-2.5 text-sm">
+								<div className="flex items-start gap-2 rounded-lg border border-border p-3">
+									<Shield className="mt-0.5 size-4 text-primary" />
+									<div>
+										<p className="font-medium">{t("settings.system.weekly", "Weekly")}</p>
+										<p className="text-muted-foreground">{t("settings.system.weeklyBody", "Review overdue tasks/reminders and role assignments.")}</p>
+									</div>
 								</div>
-							</div>
-							<div className="flex items-start gap-2 rounded-lg border border-border p-3">
-								<Database className="mt-0.5 size-4 text-primary" />
-								<div>
-									<p className="font-medium">{t("settings.system.monthly", "Monthly")}</p>
-									<p className="text-muted-foreground">
-										{t("settings.system.monthlyBody", "Audit open invoice balances, pending commissions, and stale inquiries.")}
-									</p>
+								<div className="flex items-start gap-2 rounded-lg border border-border p-3">
+									<Database className="mt-0.5 size-4 text-primary" />
+									<div>
+										<p className="font-medium">{t("settings.system.monthly", "Monthly")}</p>
+										<p className="text-muted-foreground">
+											{t("settings.system.monthlyBody", "Audit open invoice balances, pending commissions, and stale inquiries.")}
+										</p>
+									</div>
 								</div>
-							</div>
-							<div className="flex items-start gap-2 rounded-lg border border-border p-3">
-								<FileText className="mt-0.5 size-4 text-primary" />
-								<div>
-									<p className="font-medium">{t("settings.system.departureCycle", "Per departure cycle")}</p>
-									<p className="text-muted-foreground">
-										{t("settings.system.departureCycleBody", "Validate traveler documents and reminder queues before final payment windows.")}
-									</p>
+								<div className="flex items-start gap-2 rounded-lg border border-border p-3">
+									<FileText className="mt-0.5 size-4 text-primary" />
+									<div>
+										<p className="font-medium">{t("settings.system.departureCycle", "Per departure cycle")}</p>
+										<p className="text-muted-foreground">
+											{t("settings.system.departureCycleBody", "Validate traveler documents and reminder queues before final payment windows.")}
+										</p>
+									</div>
 								</div>
-							</div>
-						</CardContent>
-					</Card>
-				</div>
-			</TabsContent>
+							</CardContent>
+						</Card>
+					</div>
+				</TabsContent>
+			)}
 
 			{/* WORKSPACE TAB */}
 			{isAdmin && workspaceSummary && (

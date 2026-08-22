@@ -12,7 +12,7 @@ export const navItems = [
 	// { label: "Invoices", labelKey: "nav.invoices", href: "/invoices", icon: Receipt, isAdmin: true },
 	{ label: "Itinerary", labelKey: "nav.itinerary", href: "/itinerary", icon: FileText, isAdmin: false, isClient: true },
 	{ label: "Requests", labelKey: "nav.clientRequests", href: "/requests", icon: MessageSquareText, isAdmin: false, isClient: true },
-	// { label: "Inquiries", labelKey: "nav.inquiries", href: "/inquiries", icon: Inbox, isAdmin: true },
+	{ label: "Inquiries", labelKey: "nav.inquiries", href: "/inquiries", icon: Inbox, isAdmin: true },
 	{ label: "Suppliers", labelKey: "nav.suppliers", href: "/suppliers", icon: Building2, isAdmin: true },
 	// { label: "Client Requests", labelKey: "nav.clientRequests", href: null, icon: MessageSquareText, isAdmin: false },
 	{ label: "Settings", labelKey: "nav.settings", href: "/settings", icon: Settings, isAdmin: false },

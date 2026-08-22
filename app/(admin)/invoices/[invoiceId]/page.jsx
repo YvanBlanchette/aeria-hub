@@ -11,6 +11,7 @@ import { InvoiceLineItemFormDialog } from "@/components/invoices/invoice-line-it
 import { InvoiceLineItemsTable } from "@/components/invoices/invoice-line-items-table";
 import { LocaleText } from "@/components/i18n/locale-text";
 import { tServer } from "@/lib/i18n-server";
+import { getInvoiceBalance, getInvoicePaidAmount } from "@/lib/invoices";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { requireUser } from "@/lib/session";
@@ -53,13 +54,14 @@ export default async function InvoiceDetailPage({ params }) {
 		where: { id: invoiceId, ...invoiceScope(user) },
 		include: {
 			client: { select: { id: true, firstName: true, lastName: true } },
-			trip: { select: { id: true, name: true } },
+			trip: { select: { id: true, name: true, payments: { where: { cancelled: false }, select: { amount: true } } } },
 			lineItems: { orderBy: { sortOrder: "asc" } },
 		},
 	});
 	if (!invoice) notFound();
 
-	const balance = invoice.amount - invoice.amountPaid;
+	const amountPaid = getInvoicePaidAmount(invoice);
+	const balance = getInvoiceBalance(invoice);
 
 	return (
 		<div className="mx-auto max-w-3xl space-y-6">
@@ -169,7 +171,7 @@ export default async function InvoiceDetailPage({ params }) {
 								fallback="Paid"
 							/>
 						</dt>
-						<dd className="mt-0.5 text-sm">{formatCurrency(invoice.amountPaid)}</dd>
+						<dd className="mt-0.5 text-sm">{formatCurrency(amountPaid)}</dd>
 					</div>
 					<div>
 						<dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -183,7 +185,7 @@ export default async function InvoiceDetailPage({ params }) {
 				</CardContent>
 			</Card>
 
-			<Card>
+			<Card className="p-0">
 				<CardHeader className="flex flex-row items-center justify-between space-y-0">
 					<CardTitle>
 						<LocaleText
@@ -193,9 +195,9 @@ export default async function InvoiceDetailPage({ params }) {
 					</CardTitle>
 					<InvoiceLineItemFormDialog invoiceId={invoice.id} />
 				</CardHeader>
-				<CardContent className="space-y-3">
+				<CardContent className="p-0">
 					{invoice.lineItems.length === 0 ? (
-						<p className="text-sm text-muted-foreground">
+						<p className="p-4 text-sm text-muted-foreground">
 							<LocaleText
 								messageKey="invoices.detail.noLineItems"
 								fallback="No line items yet."
@@ -208,7 +210,7 @@ export default async function InvoiceDetailPage({ params }) {
 						/>
 					)}
 
-					<div className="flex justify-end border-t border-border pt-3">
+					<div className="flex justify-end border-t border-border px-4 py-3">
 						<p className="text-sm font-medium">{t("invoices.detail.total", "Total: {amount}").replace("{amount}", formatCurrency(invoice.amount))}</p>
 					</div>
 				</CardContent>

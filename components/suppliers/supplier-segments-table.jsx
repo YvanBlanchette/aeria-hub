@@ -51,7 +51,7 @@ export function SupplierSegmentsTable({ segments }) {
 						<TableRow
 							key={segment.id}
 							className="cursor-pointer bg-card hover:bg-muted/40"
-							onClick={() => router.push(`/trips/${segment.trip.id}/itinerary`)}
+							onClick={() => router.push(`/trips/${segment.trip.id}/details`)}
 						>
 							<TableCell className="font-medium">{segment.title}</TableCell>
 							<TableCell className="text-muted-foreground">{segment.typeLabel}</TableCell>

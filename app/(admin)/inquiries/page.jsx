@@ -25,6 +25,12 @@ const STATUS_VARIANT = {
 
 const STATUS_OPTIONS = ["NEW", "CONTACTED", "QUALIFIED", "CONVERTED", "LOST"];
 
+function sourceLabel(source) {
+	if (source === "client_profile_update") return "Profile update";
+	if (source === "client_portal") return "Client portal";
+	return source || "-";
+}
+
 export default async function InquiriesPage() {
 	const user = await requireUser();
 
@@ -200,7 +206,7 @@ export default async function InquiriesPage() {
 												{inquiry.email || "-"}
 												{inquiry.phone ? ` · ${inquiry.phone}` : ""}
 											</TableCell>
-											<TableCell>{inquiry.source || "-"}</TableCell>
+											<TableCell>{sourceLabel(inquiry.source)}</TableCell>
 											<TableCell className="text-xs text-muted-foreground">
 												{inquiry.assignedAgent?.name || inquiry.assignedAgent?.email || "Unassigned"}
 											</TableCell>

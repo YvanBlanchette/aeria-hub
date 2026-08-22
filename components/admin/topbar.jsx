@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
-import { Bell, LogOut, Sun, Moon, Settings } from "lucide-react";
+import { Bell, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -21,7 +20,6 @@ import { useLocale } from "@/components/i18n/locale-provider";
 
 export function Topbar({ user }) {
 	const pathname = usePathname();
-	const { resolvedTheme, setTheme } = useTheme();
 	const { t } = useLocale();
 
 	function getPageTitle() {
@@ -53,7 +51,7 @@ export function Topbar({ user }) {
 	}
 
 	return (
-		<header className="flex h-[4.75rem] shrink-0 items-center gap-3 border-b border-border/80 bg-card/90 px-4 shadow-[0_1px_0_rgba(255,255,255,0.4)_inset] backdrop-blur-xl">
+		<header className="flex h-[80px] shrink-0 items-center gap-3 border-b border-border/80 bg-card/90 px-4 shadow-[0_1px_0_rgba(255,255,255,0.4)_inset] backdrop-blur-xl">
 			<MobileSidebar />
 
 			<div className="flex w-full items-center justify-between gap-4 px-2 sm:px-4">
@@ -63,16 +61,6 @@ export function Topbar({ user }) {
 				</div>
 
 				<div className="flex items-center gap-1.5">
-					<Button
-						size="icon"
-						variant="ghost"
-						onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-					>
-						<Sun className="size-4 dark:hidden" />
-						<Moon className="hidden size-4 dark:block" />
-						<span className="sr-only">{t("topbar.toggleTheme", "Toggle theme")}</span>
-					</Button>
-
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button

@@ -7,9 +7,9 @@
 @theme inline {
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
-	--font-sans: var(--font-sans);
-	--font-mono: var(--font-geist-mono);
-	--font-heading: var(--font-sans);
+	--font-sans: var(--app-font-sans);
+	--font-mono: var(--app-font-mono);
+	--font-heading: var(--app-font-sans);
 	--color-sidebar-ring: var(--sidebar-ring);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -196,14 +196,27 @@
 	color: color-mix(in srgb, var(--primary-foreground) 78%, transparent);
 }
 
-[data-slot="card"] > [data-slot="card-header"] [data-slot="button"] {
-	background: color-mix(in srgb, var(--primary-foreground) 10%, transparent) !important;
-	border-color: color-mix(in srgb, var(--primary-foreground) 55%, transparent) !important;
-	color: var(--primary-foreground);
+[data-slot="card"] > [data-slot="card-header"] [data-slot="button"],
+[data-slot="card-header"].bg-primary [data-slot="button"],
+[data-slot="card-header"].bg-sidebar [data-slot="button"] {
+	background: #f4f0e8 !important;
+	border-color: #cbbfaa !important;
+	color: #12202b !important;
+	box-shadow: 0 1px 2px rgba(18, 32, 43, 0.14);
 }
 
-[data-slot="card"] > [data-slot="card-header"] [data-slot="button"]:hover {
-	background: color-mix(in srgb, var(--primary-foreground) 20%, transparent) !important;
+[data-slot="card"] > [data-slot="card-header"] [data-slot="button"] :where(svg, span),
+[data-slot="card-header"].bg-primary [data-slot="button"] :where(svg, span),
+[data-slot="card-header"].bg-sidebar [data-slot="button"] :where(svg, span) {
+	color: inherit !important;
+}
+
+[data-slot="card"] > [data-slot="card-header"] [data-slot="button"]:hover,
+[data-slot="card-header"].bg-primary [data-slot="button"]:hover,
+[data-slot="card-header"].bg-sidebar [data-slot="button"]:hover {
+	background: #e7dccb !important;
+	border-color: #b8aa91 !important;
+	color: #12202b !important;
 }
 
 /* Table cards keep the blue header attached to the beige column header. */

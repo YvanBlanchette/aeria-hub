@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { AddTripClientDialog } from "@/components/trips/add-trip-client-dialog";
 import { RemoveTripClientButton } from "@/components/trips/remove-trip-client-button";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { getInvoicePaidAmount } from "@/lib/invoices";
 import { SEGMENT_TYPE_MAP } from "@/lib/trip-segments";
-import { requireTripStaffAccess } from "@/lib/trip-access";
+import { requireTripAccess } from "@/lib/trip-access";
 
 function Field({ label, value }) {
 	return (
@@ -29,13 +30,14 @@ const INVOICE_STATUS_VARIANT = {
 
 export default async function TripOverviewPage({ params }) {
 	const { tripId } = await params;
-	await requireTripStaffAccess(tripId);
+	const { access } = await requireTripAccess(tripId);
+	const isStaff = access === "staff";
 
 	const trip = await prisma.trip.findUnique({
 		where: { id: tripId },
 		include: {
 			client: true,
-			invoices: { orderBy: { issueDate: "desc" } },
+			invoices: { orderBy: { issueDate: "desc" }, include: { trip: { select: { payments: { where: { cancelled: false }, select: { amount: true } } } } } },
 			segments: { select: { type: true, cost: true } },
 			payments: { where: { cancelled: false }, select: { amount: true } },
 			additionalClients: { include: { client: true }, orderBy: { createdAt: "asc" } },
@@ -45,11 +47,13 @@ export default async function TripOverviewPage({ params }) {
 	if (!trip) notFound();
 
 	const excludedIds = new Set([trip.clientId, ...trip.additionalClients.map((ac) => ac.clientId)]);
-	const availableClients = await prisma.client.findMany({
-		where: { id: { notIn: [...excludedIds] } },
-		orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-		select: { id: true, firstName: true, lastName: true, primaryEmail: true },
-	});
+	const availableClients = isStaff
+		? await prisma.client.findMany({
+				where: { id: { notIn: [...excludedIds] } },
+				orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+				select: { id: true, firstName: true, lastName: true, primaryEmail: true },
+			})
+		: [];
 
 	const segmentsByType = trip.segments.reduce((acc, s) => {
 		acc[s.type] = (acc[s.type] || 0) + 1;
@@ -61,18 +65,9 @@ export default async function TripOverviewPage({ params }) {
 
 	return (
 		<div className="space-y-6">
-			<div className="rounded-3xl border border-border/70 bg-card/85 p-5 shadow-sm backdrop-blur-sm sm:p-6">
-				<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">Trip summary</p>
-				<h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-[2rem]">{trip.name}</h1>
-				<p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-					A consolidated view of itinerary value, payment position, client coverage, and invoice readiness.
-				</p>
-			</div>
-
 			<Card>
 				<CardHeader>
 					<CardTitle>Trip details</CardTitle>
-					<p className="text-sm leading-6 text-muted-foreground">Commercial and operational fields that define the booking at a glance.</p>
 				</CardHeader>
 				<CardContent>
 					<dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -116,12 +111,13 @@ export default async function TripOverviewPage({ params }) {
 				<CardHeader className="flex flex-row items-center justify-between space-y-0">
 					<div>
 						<CardTitle>Clients</CardTitle>
-						<p className="text-sm leading-6 text-muted-foreground">Primary and additional households attached to this booking.</p>
 					</div>
-					<AddTripClientDialog
-						tripId={tripId}
-						clients={availableClients}
-					/>
+					{isStaff && (
+						<AddTripClientDialog
+							tripId={tripId}
+							clients={availableClients}
+						/>
+					)}
 				</CardHeader>
 				<CardContent className="space-y-3">
 					<div>
@@ -160,11 +156,13 @@ export default async function TripOverviewPage({ params }) {
 									{ac.client.primaryEmail || "No email"} {ac.client.primaryPhone ? `· ${ac.client.primaryPhone}` : ""}
 								</p>
 							</div>
-							<RemoveTripClientButton
-								tripClientId={ac.id}
-								tripId={tripId}
-								clientName={`${ac.client.firstName} ${ac.client.lastName}`}
-							/>
+							{isStaff && (
+								<RemoveTripClientButton
+									tripClientId={ac.id}
+									tripId={tripId}
+									clientName={`${ac.client.firstName} ${ac.client.lastName}`}
+								/>
+							)}
 						</div>
 					))}
 				</CardContent>
@@ -173,11 +171,10 @@ export default async function TripOverviewPage({ params }) {
 			<Card>
 				<CardHeader>
 					<CardTitle>Itinerary summary</CardTitle>
-					<p className="text-sm leading-6 text-muted-foreground">Segment mix across flights, hotels, cruises, transfers, and other booked services.</p>
 				</CardHeader>
 				<CardContent>
 					{trip.segments.length === 0 ? (
-						<p className="text-sm text-muted-foreground">No segments yet. Add flights, hotels, and more from the Itinerary tab.</p>
+						<p className="text-sm text-muted-foreground">No segments yet. Add flights, hotels, and more from the Details tab.</p>
 					) : (
 						<div className="flex flex-wrap gap-2">
 							{Object.entries(segmentsByType).map(([type, count]) => {
@@ -202,7 +199,6 @@ export default async function TripOverviewPage({ params }) {
 			<Card>
 				<CardHeader>
 					<CardTitle>Invoices</CardTitle>
-					<p className="text-sm leading-6 text-muted-foreground">Billing records linked to this trip and their current collection status.</p>
 				</CardHeader>
 				<CardContent>
 					{trip.invoices.length === 0 ? (
@@ -221,7 +217,7 @@ export default async function TripOverviewPage({ params }) {
 										{invoice.invoiceNumber}
 									</Link>
 									<span className="flex items-center gap-3 text-muted-foreground">
-										{formatCurrency(invoice.amountPaid)} / {formatCurrency(invoice.amount)}
+										{formatCurrency(getInvoicePaidAmount(invoice))} / {formatCurrency(invoice.amount)}
 										<Badge variant={INVOICE_STATUS_VARIANT[invoice.status] || "secondary"}>{invoice.status}</Badge>
 									</span>
 								</li>

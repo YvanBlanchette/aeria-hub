@@ -4,10 +4,12 @@ import { useState, useTransition } from "react";
 import { Ban, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SortableTableHead, useSortableRows } from "@/components/ui/sortable-table";
+import { PaymentForm } from "@/components/trips/payment-form";
 import { PaymentEditDialog } from "@/components/trips/payment-edit-dialog";
 import { setPaymentCancelled } from "@/app/(admin)/trips/[tripId]/payments/actions";
 import { PAYMENT_TYPES } from "@/components/trips/payment-fields";
@@ -47,25 +49,31 @@ export function PaymentsTable({ payments, tripId }) {
 	const { sorted, sortKey, sortDir, toggleSort } = useSortableRows(rows, COLUMNS);
 
 	return (
-		<div className="space-y-3">
-			<div className="flex items-center justify-end gap-2">
-				<Checkbox
-					id="hideCancelled"
-					checked={hideCancelled}
-					onCheckedChange={(v) => setHideCancelled(Boolean(v))}
-				/>
-				<Label
-					htmlFor="hideCancelled"
-					className="text-sm font-normal text-muted-foreground"
-				>
-					Hide cancelled payments
-				</Label>
-			</div>
+		<>
+			<CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+				<CardTitle>Payments</CardTitle>
+				<div className="flex flex-wrap items-center justify-end gap-3">
+					<div className="flex items-center gap-2">
+						<Checkbox
+							id="hideCancelled"
+							checked={hideCancelled}
+							onCheckedChange={(v) => setHideCancelled(Boolean(v))}
+						/>
+						<Label
+							htmlFor="hideCancelled"
+							className="text-sm font-normal text-primary-foreground/85"
+						>
+							Hide cancelled payments
+						</Label>
+					</div>
+					<PaymentForm tripId={tripId} />
+				</div>
+			</CardHeader>
 
-			{rows.length === 0 ? (
-				<p className="text-sm text-muted-foreground">No payments yet.</p>
-			) : (
-				<div className="overflow-hidden">
+			<CardContent className="p-0">
+				{rows.length === 0 ? (
+					<p className="p-4 text-sm text-muted-foreground">No payments yet.</p>
+				) : (
 					<Table>
 						<TableHeader>
 							<TableRow>
@@ -121,8 +129,8 @@ export function PaymentsTable({ payments, tripId }) {
 							))}
 						</TableBody>
 					</Table>
-				</div>
-			)}
-		</div>
+				)}
+			</CardContent>
+		</>
 	);
 }

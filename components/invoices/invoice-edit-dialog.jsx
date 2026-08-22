@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { updateInvoice } from "@/app/(admin)/invoices/actions";
-import { centsToDollarsInputValue } from "@/lib/format";
 import { useLocale } from "@/components/i18n/locale-provider";
 
 const STATUSES = ["DRAFT", "SENT", "PARTIALLY_PAID", "PAID", "OVERDUE", "CANCELLED"];
@@ -53,6 +52,16 @@ export function InvoiceEditDialog({ invoice, trigger }) {
 					action={formAction}
 					className="space-y-4"
 				>
+					<div className="space-y-2">
+						<Label htmlFor="invoiceNumber">{t("invoices.form.invoiceNumber", "Invoice title")}</Label>
+						<Input
+							id="invoiceNumber"
+							name="invoiceNumber"
+							defaultValue={invoice.invoiceNumber}
+							required
+						/>
+					</div>
+
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 						<div className="space-y-2">
 							<Label htmlFor="status">{t("invoices.form.status", "Status")}</Label>
@@ -95,17 +104,6 @@ export function InvoiceEditDialog({ invoice, trigger }) {
 								name="dueDate"
 								type="date"
 								defaultValue={dateInputValue(invoice.dueDate)}
-							/>
-						</div>
-						<div className="space-y-2 sm:col-span-2">
-							<Label htmlFor="amountPaid">{t("invoices.form.amountPaid", "Amount paid")}</Label>
-							<Input
-								id="amountPaid"
-								name="amountPaid"
-								type="number"
-								step="0.01"
-								min="0"
-								defaultValue={centsToDollarsInputValue(invoice.amountPaid)}
 							/>
 						</div>
 					</div>

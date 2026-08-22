@@ -7,6 +7,7 @@ import { requireUser, requireAdmin } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
 import { validateAvatarFile, saveAvatarFile, deleteAvatarFile } from "@/lib/avatars";
 import { tServer } from "@/lib/i18n-server";
+import { getClientPortalRecord } from "@/lib/client-portal";
 import { parseTripCsv } from "@/lib/trips-csv";
 import { dollarsToCents } from "@/lib/format";
 
@@ -72,6 +73,71 @@ export async function removeAvatar() {
 	await prisma.user.update({ where: { id: user.id }, data: { avatarUrl: null } });
 	if (previous?.avatarUrl) await deleteAvatarFile(previous.avatarUrl);
 	refreshSessionViews();
+}
+
+/**
+ * @param {string | undefined} prevState
+ * @param {FormData} formData
+ */
+export async function requestClientProfileUpdate(prevState, formData) {
+	const user = await requireUser();
+	if (user.role !== "CLIENT") return tServer("errors.clientOnlyAction", "This action is only available in the client portal.");
+
+	const portal = await getClientPortalRecord(user);
+	if (!portal?.client) return tServer("errors.clientNotFound", "Client not found.");
+
+	const client = portal.client;
+	const fieldLabels = {
+		firstName: "First name",
+		lastName: "Last name",
+		primaryEmail: "Primary email",
+		secondaryEmail: "Secondary email",
+		primaryPhone: "Primary phone",
+		secondaryPhone: "Secondary phone",
+		address: "Address",
+		city: "City",
+		stateProvince: "Province / State",
+		postalCode: "Postal code",
+		country: "Country",
+		dateOfBirth: "Date of birth",
+		passportNumber: "Passport number",
+		passportIssueDate: "Passport issue date",
+		passportExpiry: "Passport expiry date",
+		redressNumber: "Redress number",
+		knownTravelerNumber: "Known traveler number",
+		nationality: "Nationality",
+		travelPreferences: "Travel preferences",
+		dietaryNotes: "Dietary / medical notes",
+		mobilityNotes: "Mobility notes",
+	};
+
+	const changes = Object.entries(fieldLabels)
+		.map(([key, label]) => {
+			const proposed = String(formData.get(key) || "").trim();
+			const currentValue = client[key] instanceof Date ? client[key].toISOString().slice(0, 10) : String(client[key] || "").trim();
+			if (proposed === currentValue) return null;
+			return `${label}: "${currentValue || "-"}" -> "${proposed || "-"}"`;
+		})
+		.filter(Boolean);
+
+	if (changes.length === 0) return tServer("settings.profile.noChanges", "No profile changes to submit.");
+
+	await prisma.inquiry.create({
+		data: {
+			name: `${client.firstName} ${client.lastName}`.trim(),
+			email: user.email || client.primaryEmail,
+			phone: client.primaryPhone,
+			source: "client_profile_update",
+			status: "NEW",
+			notes: [`Client profile update request`, "", ...changes].join("\n"),
+			assignedAgentId: client.assignedAgentId,
+			convertedClientId: client.id,
+		},
+	});
+
+	revalidatePath("/settings");
+	revalidatePath("/inquiries");
+	return { ok: true };
 }
 
 /**

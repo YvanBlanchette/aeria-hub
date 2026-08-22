@@ -1,98 +1,161 @@
 import { notFound } from "next/navigation";
+import { Anchor, CalendarDays, Clock, Ship } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { SegmentFormDialog } from "@/components/trips/segment-form-dialog";
-import { SegmentCard } from "@/components/trips/segment-card";
-import { ImportCruiseItineraryDialog } from "@/components/trips/import-cruise-itinerary-dialog";
-import { ConvertToInvoiceButton } from "@/components/invoices/convert-to-invoice-button";
-import { convertItineraryToInvoice } from "@/app/(admin)/invoices/actions";
-import { requireTripStaffAccess } from "@/lib/trip-access";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { formatDate, formatTime } from "@/lib/format";
+import { SEGMENT_TYPE_MAP } from "@/lib/trip-segments";
+import { requireTripAccess } from "@/lib/trip-access";
+
+function dateKey(date) {
+	if (!date) return null;
+	const d = new Date(date);
+	return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+function dateFromKey(key) {
+	const [year, month, day] = key.split("-").map(Number);
+	return new Date(Date.UTC(year, month - 1, day));
+}
+
+function buildTripDays(trip, segments) {
+	const startKey = dateKey(trip.startDate);
+	const endKey = dateKey(trip.endDate || trip.startDate);
+	if (!startKey || !endKey) {
+		const keys = [...new Set(segments.map((segment) => dateKey(segment.startDateTime)).filter(Boolean))].sort();
+		return keys.map((key, index) => ({ key, label: `Day ${index + 1}`, date: dateFromKey(key) }));
+	}
+
+	const start = dateFromKey(startKey);
+	const end = dateFromKey(endKey);
+	const days = [];
+	let index = 1;
+	for (const cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
+		days.push({ key: dateKey(cursor), label: `Day ${index}`, date: new Date(cursor) });
+		index += 1;
+	}
+	return days;
+}
+
+function getCruiseCallsForDay(segments, key) {
+	return segments.flatMap((segment) => {
+		if (segment.type !== "CRUISE" || !Array.isArray(segment.details?.cruiseItinerary)) return [];
+		return segment.details.cruiseItinerary.filter((call) => call.date === key).map((call) => ({ ...call, segment }));
+	});
+}
+
+function timeRange(segment) {
+	const start = formatTime(segment.startDateTime);
+	const end = formatTime(segment.endDateTime);
+	if (start && end && start !== end) return `${start} - ${end}`;
+	return start || end || null;
+}
+
+function ItineraryTime({ children }) {
+	return (
+		<div className="ml-auto flex shrink-0 items-center gap-2 text-sm tabular-nums text-muted-foreground">
+			<Clock className="size-3.5" />
+			<span>{children || "Time TBD"}</span>
+		</div>
+	);
+}
 
 export default async function ItineraryPage({ params }) {
 	const { tripId } = await params;
-	await requireTripStaffAccess(tripId);
+	await requireTripAccess(tripId);
 
 	const trip = await prisma.trip.findUnique({
 		where: { id: tripId },
-		select: { id: true, startDate: true, endDate: true },
+		select: {
+			id: true,
+			startDate: true,
+			endDate: true,
+			segments: {
+				where: { type: { not: "INSURANCE" } },
+				orderBy: [{ startDateTime: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
+				include: { supplier: { select: { id: true, name: true } } },
+			},
+		},
 	});
 	if (!trip) notFound();
 
-	const [segments, suppliers] = await Promise.all([
-		prisma.tripSegment.findMany({
-			where: { tripId },
-			orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-			include: { documents: true, commissions: { orderBy: { createdAt: "asc" } }, supplier: true },
-		}),
-		prisma.supplier.findMany({ orderBy: { name: "asc" } }),
-	]);
-
-	const scrapedRows = await prisma.scrapedCruiseItinerary.findMany({
-		orderBy: [{ scrapedAt: "desc" }, { updatedAt: "desc" }],
-		take: 1000,
-		select: {
-			id: true,
-			shipName: true,
-			title: true,
-			startDate: true,
-			shipId: true,
-		},
-	});
-
-	const scrapedItineraries = scrapedRows.map((row) => ({
-		id: row.id,
-		label: `${row.shipName}${row.title ? ` | ${row.title}` : ""} | ${row.startDate ? row.startDate.toISOString().slice(0, 10) : "?"}${row.shipId ? ` | #${row.shipId}` : ""}`,
-	}));
+	const days = buildTripDays(trip, trip.segments);
 
 	return (
-		<div className="space-y-6">
-			<div className="flex items-center justify-between">
-				<div>
-					<h2 className="text-lg font-semibold">Travel elements</h2>
-					<p className="text-sm text-muted-foreground">
-						Build the trip from flights, hotels, cruises, transfers, excursions, and other travel elements. Dates can be added now or when the itinerary is
-						ready to generate.
-					</p>
-				</div>
-				<div className="flex items-center gap-2">
-					<ImportCruiseItineraryDialog
-						tripId={tripId}
-						itineraries={scrapedItineraries}
-					/>
-					{segments.length > 0 && (
-						<ConvertToInvoiceButton
-							action={convertItineraryToInvoice.bind(null, tripId)}
-							description="Creates a new invoice with one line item per segment, using each segment's title and cost. You can edit the line items afterward."
-						/>
-					)}
-					<SegmentFormDialog
-						tripId={tripId}
-						suppliers={suppliers}
-					/>
-				</div>
-			</div>
+		<div className="space-y-4">
+			<Card className="p-0">
+				<CardHeader className="flex flex-row items-center gap-2">
+					<CalendarDays className="size-4" />
+					<CardTitle>Itinerary</CardTitle>
+				</CardHeader>
+				<CardContent className="space-y-4 p-4">
+					{days.length === 0 ? <p className="text-sm text-muted-foreground">Add dated travel elements to build the itinerary.</p> : null}
+					{days.map((day) => {
+						const daySegments = trip.segments.filter((segment) => dateKey(segment.startDateTime) === day.key);
+						const cruiseCalls = getCruiseCallsForDay(trip.segments, day.key);
+						const visibleSegments = daySegments.filter((segment) => segment.type !== "CRUISE" || !Array.isArray(segment.details?.cruiseItinerary));
+						const itemCount = visibleSegments.length + cruiseCalls.length;
 
-			{segments.length === 0 ? (
-				<p className="text-sm text-muted-foreground">No travel elements yet. Add the first one to start building this trip.</p>
-			) : (
-				<div className="space-y-3">
-					<div className="flex items-center justify-between border-b border-border pb-2">
-						<h3 className="text-sm font-semibold text-foreground">Travel elements</h3>
-						<p className="text-xs text-muted-foreground">
-							{segments.length} item{segments.length === 1 ? "" : "s"} · ordered for itinerary generation
-						</p>
-					</div>
-					{segments.map((segment, index) => (
-						<SegmentCard
-							key={segment.id}
-							segment={segment}
-							tripId={tripId}
-							suppliers={suppliers}
-							canMoveUp={index > 0}
-							canMoveDown={index < segments.length - 1}
-						/>
-					))}
-				</div>
-			)}
+						return (
+							<section
+								key={day.key}
+								className="overflow-hidden rounded-lg border border-border bg-background/60"
+							>
+								<div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/35 px-4 py-3">
+									<div>
+										<p className="text-sm font-semibold">{day.label}</p>
+										<p className="text-xs text-muted-foreground">{formatDate(day.date)}</p>
+									</div>
+									<Badge variant={itemCount ? "secondary" : "outline"}>{itemCount ? `${itemCount} item${itemCount === 1 ? "" : "s"}` : "Open day"}</Badge>
+								</div>
+								<div className="space-y-3 p-4">
+									{itemCount === 0 && <p className="text-sm text-muted-foreground">No scheduled items.</p>}
+									{cruiseCalls.map((call, index) => (
+										<div
+											key={`${call.segment.id}-${call.date}-${index}`}
+											className="flex flex-wrap items-center gap-3 rounded-lg bg-card px-3 py-2 shadow-sm ring-1 ring-border/70"
+										>
+											<div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+												<Anchor className="size-4" />
+											</div>
+											<div className="min-w-0 flex-1">
+												<p className="font-medium">{call.port || "At sea"}</p>
+												<p className="text-xs text-muted-foreground">
+													<Ship className="mr-1 inline size-3" />
+													{call.segment.details?.shipName || call.segment.title}
+												</p>
+											</div>
+											<ItineraryTime>{`${call.arrivalTime || "--:--"} / ${call.departureTime || "--:--"}`}</ItineraryTime>
+										</div>
+									))}
+									{visibleSegments.map((segment) => {
+										const meta = SEGMENT_TYPE_MAP[segment.type] || SEGMENT_TYPE_MAP.OTHER;
+										const Icon = meta.icon;
+										return (
+											<div
+												key={segment.id}
+												className="flex flex-wrap items-center gap-3 rounded-lg bg-card px-3 py-2 shadow-sm ring-1 ring-border/70"
+											>
+												<div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+													<Icon className="size-4" />
+												</div>
+												<div className="min-w-0 flex-1">
+													<p className="font-medium">{segment.title}</p>
+													<p className="text-xs text-muted-foreground">
+														{segment.location || "Location TBD"}
+														{segment.supplier?.name ? ` · ${segment.supplier.name}` : ""}
+													</p>
+												</div>
+												<ItineraryTime>{timeRange(segment)}</ItineraryTime>
+											</div>
+										);
+									})}
+								</div>
+							</section>
+						);
+					})}
+				</CardContent>
+			</Card>
 		</div>
 	);
 }

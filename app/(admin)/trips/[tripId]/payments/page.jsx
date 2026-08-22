@@ -1,11 +1,10 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireTripStaffAccess } from "@/lib/trip-access";
-import { PaymentForm } from "@/components/trips/payment-form";
 import { PaymentsTable } from "@/components/trips/payments-table";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 
 export default async function TripPaymentsPage({ params }) {
 	const { tripId } = await params;
@@ -28,25 +27,19 @@ export default async function TripPaymentsPage({ params }) {
 
 	return (
 		<div className="space-y-4">
+			<Card className="p-0">
+				<PaymentsTable
+					payments={payments}
+					tripId={tripId}
+				/>
+			</Card>
+
 			<div className="flex flex-wrap items-center justify-end gap-2">
 				<p className="text-sm">
 					Segments {formatCurrency(segmentsSubtotal)} − Payments {formatCurrency(paymentsTotal)} ={" "}
 					<span className={cn("font-medium", balanceDue > 0 && "text-destructive")}>Balance due {formatCurrency(balanceDue)}</span>
 				</p>
 			</div>
-
-			<PaymentForm tripId={tripId} />
-			<Card className="p-0">
-				<CardHeader>
-					<CardTitle>Payments</CardTitle>
-				</CardHeader>
-				<CardContent className="p-0">
-					<PaymentsTable
-						payments={payments}
-						tripId={tripId}
-					/>
-				</CardContent>
-			</Card>
 		</div>
 	);
 }

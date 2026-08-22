@@ -217,17 +217,25 @@ export async function updateInvoice(invoiceId, prevState, formData) {
 		return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 	};
 
+	const invoiceNumber = get("invoiceNumber");
 	const status = get("status") || "DRAFT";
 	const dueDateValue = get("dueDate");
 	const dueDate = dueDateValue ? new Date(dueDateValue) : null;
-	const amountPaid = dollarsToCents(get("amountPaid")) ?? 0;
+
+	if (!invoiceNumber) return tServer("errors.invoiceNumberRequired", "Invoice title is required.");
 
 	const existing = await prisma.invoice.findFirst({ where: { id: invoiceId, ...invoiceScope(user) }, select: { id: true } });
 	if (!existing) return tServer("errors.invoiceNotFound", "Invoice not found.");
 
+	const duplicate = await prisma.invoice.findFirst({
+		where: { invoiceNumber, NOT: { id: invoiceId } },
+		select: { id: true },
+	});
+	if (duplicate) return tServer("errors.invoiceNumberTaken", "An invoice with this title already exists.");
+
 	const invoice = await prisma.invoice.update({
 		where: { id: invoiceId },
-		data: { status, dueDate, amountPaid },
+		data: { invoiceNumber, status, dueDate },
 		select: { id: true, invoiceNumber: true, clientId: true, tripId: true, status: true },
 	});
 
@@ -248,6 +256,7 @@ export async function updateInvoice(invoiceId, prevState, formData) {
 	});
 
 	revalidatePath(`/invoices/${invoiceId}`);
+	revalidatePath("/invoices");
 	if (invoice.tripId) revalidatePath(`/trips/${invoice.tripId}/overview`);
 	revalidatePath(`/clients/${invoice.clientId}/invoices`);
 }

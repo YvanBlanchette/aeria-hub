@@ -1,18 +1,8 @@
-import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "@/components/theme-provider";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { RegisterServiceWorker } from "@/components/pwa/register-sw";
 import "./globals.css";
 
-const geistSans = Geist({
-	variable: "--font-sans",
-	subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-	variable: "--font-geist-mono",
-	subsets: ["latin"],
-});
+const fontVariables = "[--app-font-sans:'Segoe_UI',sans-serif] [--app-font-mono:'Cascadia_Code','Consolas',monospace]";
 
 export const metadata = {
 	title: "ÆRIA Hub",
@@ -34,7 +24,7 @@ export default function RootLayout({ children }) {
 		<html
 			lang="en"
 			suppressHydrationWarning
-			className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+			className={`${fontVariables} h-full antialiased`}
 		>
 			<head>
 				<meta
@@ -48,17 +38,10 @@ export default function RootLayout({ children }) {
 			>
 				<div
 					aria-hidden="true"
-					className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(232,163,61,0.14),transparent_34%),radial-gradient(circle_at_top_right,rgba(11,79,108,0.12),transparent_28%),linear-gradient(to_bottom,rgba(255,255,255,0.7),transparent_18%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(232,163,61,0.08),transparent_30%),radial-gradient(circle_at_top_right,rgba(62,150,190,0.1),transparent_26%),linear-gradient(to_bottom,rgba(255,255,255,0.03),transparent_18%)]"
+					className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(232,163,61,0.14),transparent_34%),radial-gradient(circle_at_top_right,rgba(11,79,108,0.12),transparent_28%),linear-gradient(to_bottom,rgba(255,255,255,0.7),transparent_18%)]"
 				/>
-				<ThemeProvider
-					attribute="class"
-					defaultTheme="light"
-					enableSystem={false}
-					disableTransitionOnChange
-				>
-					<RegisterServiceWorker />
-					<LocaleProvider>{children}</LocaleProvider>
-				</ThemeProvider>
+				<RegisterServiceWorker />
+				<LocaleProvider>{children}</LocaleProvider>
 			</body>
 		</html>
 	);

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LocaleText } from "@/components/i18n/locale-text";
 import { tServer } from "@/lib/i18n-server";
+import { getInvoiceBalance, getInvoicePaidAmount } from "@/lib/invoices";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { clientScope, invoiceScope, tripScope } from "@/lib/visibility-scope";
@@ -56,7 +57,7 @@ export default async function InvoicesPage() {
 			orderBy: { issueDate: "desc" },
 			include: {
 				client: { select: { id: true, firstName: true, lastName: true } },
-				trip: { select: { id: true, name: true } },
+				trip: { select: { id: true, name: true, payments: { where: { cancelled: false }, select: { amount: true } } } },
 			},
 		}),
 		prisma.client.findMany({
@@ -208,32 +209,37 @@ export default async function InvoicesPage() {
 				</Card>
 			) : (
 				<div className="space-y-2">
-					{invoices.map((invoice) => (
-						<Link
-							key={invoice.id}
-							href={`/invoices/${invoice.id}`}
-							className="block"
-						>
-							<Card className="transition-colors hover:bg-muted/40">
-								<CardContent className="flex flex-wrap items-center justify-between gap-2 p-4">
-									<div>
-										<p className="font-medium">{invoice.invoiceNumber}</p>
-										<p className="text-sm text-muted-foreground">
-											{invoice.client.firstName} {invoice.client.lastName}
-											{invoice.trip?.name ? ` · ${invoice.trip.name}` : ""}· {t("invoices.list.issued", "Issued")} {formatDate(invoice.issueDate)}
-											{invoice.dueDate ? ` · ${t("invoices.list.due", "Due")} ${formatDate(invoice.dueDate)}` : ""}
-										</p>
-									</div>
-									<div className="flex items-center gap-3">
-										<span className="text-sm tabular-nums text-muted-foreground">
-											{formatCurrency(invoice.amountPaid)} / {formatCurrency(invoice.amount)}
-										</span>
-										<Badge variant={statusVariant[invoice.status] || "secondary"}>{statusLabel(invoice.status, t)}</Badge>
-									</div>
-								</CardContent>
-							</Card>
-						</Link>
-					))}
+					{invoices.map((invoice) => {
+						const amountPaid = getInvoicePaidAmount(invoice);
+						const balance = getInvoiceBalance(invoice);
+
+						return (
+							<Link
+								key={invoice.id}
+								href={`/invoices/${invoice.id}`}
+								className="block"
+							>
+								<Card className="transition-colors hover:bg-muted/40">
+									<CardContent className="flex flex-wrap items-center justify-between gap-2 p-4">
+										<div>
+											<p className="font-medium">{invoice.invoiceNumber}</p>
+											<p className="text-sm text-muted-foreground">
+												{invoice.client.firstName} {invoice.client.lastName}
+												{invoice.trip?.name ? ` · ${invoice.trip.name}` : ""}· {t("invoices.list.issued", "Issued")} {formatDate(invoice.issueDate)}
+												{invoice.dueDate ? ` · ${t("invoices.list.due", "Due")} ${formatDate(invoice.dueDate)}` : ""}
+											</p>
+										</div>
+										<div className="flex items-center gap-3">
+											<span className="text-sm tabular-nums text-muted-foreground">
+												Paid {formatCurrency(amountPaid)} · Balance {formatCurrency(balance)}
+											</span>
+											<Badge variant={statusVariant[invoice.status] || "secondary"}>{statusLabel(invoice.status, t)}</Badge>
+										</div>
+									</CardContent>
+								</Card>
+							</Link>
+						);
+					})}
 				</div>
 			)}
 		</div>

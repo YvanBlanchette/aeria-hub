@@ -48,7 +48,7 @@ export function SortableTableHead({ col, sortKey, sortDir, onToggle, className }
 			className={cn("cursor-pointer select-none", col.align === "right" && "text-right", className)}
 			onClick={() => onToggle(col.key)}
 		>
-			<span className={cn("inline-flex items-center gap-1.5", col.align === "right" && "flex-row-reverse")}>
+			<span className={cn("inline-flex items-center gap-1.5", col.align === "right" && "justify-end")}>
 				{col.label}
 				{sortKey === col.key ? (
 					sortDir === "asc" ? (

@@ -25,12 +25,12 @@ export function TripsTable({ trips }) {
 		{ key: "destination", label: t("trips.table.destination", "Destination") },
 		{ key: "startDate", label: t("trips.table.departure", "Departure date"), kind: "date" },
 		{ key: "endDate", label: t("trips.table.return", "Return date"), kind: "date" },
-		{ key: "totalPrice", label: t("trips.table.totalPrice", "Total price"), align: "right", kind: "number" },
+		// { key: "totalPrice", label: t("trips.table.totalPrice", "Total price"), align: "right", kind: "number" },
 		{ key: "readiness", label: t("trips.table.readiness", "Readiness") },
-		{ key: "status", label: t("trips.table.status", "Status"), align: "right" },
+		// { key: "status", label: t("trips.table.status", "Status"), align: "right" },
 	];
 	const rows = trips.map((t) => ({ ...t, clientName: `${t.client.firstName} ${t.client.lastName}`, readiness: t.segments?.length || 0 }));
-	const { sorted, sortKey, sortDir, toggleSort } = useSortableRows(rows, COLUMNS);
+	const { sorted, sortKey, sortDir, toggleSort } = useSortableRows(rows, COLUMNS, { defaultKey: "startDate", defaultDir: "asc" });
 
 	if (rows.length === 0) {
 		return (
@@ -72,7 +72,6 @@ export function TripsTable({ trips }) {
 								className="block hover:underline"
 							>
 								<p className="font-medium">{trip.name}</p>
-								<p className="text-xs text-muted-foreground">{t("trips.table.workspace", "Trip workspace")}</p>
 							</Link>
 						</TableCell>
 						<TableCell>
@@ -86,12 +85,14 @@ export function TripsTable({ trips }) {
 						<TableCell className="text-muted-foreground">{trip.destination}</TableCell>
 						<TableCell className="text-muted-foreground">{trip.startDate ? formatDate(trip.startDate) : "—"}</TableCell>
 						<TableCell className="text-muted-foreground">{trip.endDate ? formatDate(trip.endDate) : "—"}</TableCell>
-						<TableCell className="text-right tabular-nums">{trip.totalPrice != null ? formatCurrency(trip.totalPrice) : "—"}</TableCell>
+						{/* <TableCell className="text-right tabular-nums">{trip.totalPrice != null ? formatCurrency(trip.totalPrice) : "—"}</TableCell> */}
 						<TableCell>
 							<div className="flex flex-wrap gap-1">
 								<Badge variant={trip.segments?.length ? "secondary" : "outline"}>{trip.segments?.length || 0} elements</Badge>
 								{(() => {
-									const outstanding = (trip.invoices || []).reduce((sum, invoice) => sum + Math.max((invoice.amount || 0) - (invoice.amountPaid || 0), 0), 0);
+									const invoiceTotal = (trip.invoices || []).reduce((sum, invoice) => sum + (invoice.amount || 0), 0);
+									const paymentTotal = (trip.payments || []).reduce((sum, payment) => sum + (payment.amount || 0), 0);
+									const outstanding = Math.max(invoiceTotal - paymentTotal, 0);
 									const overdueTasks = (trip.tasks || []).filter((task) => !task.completed && task.dueDate && new Date(task.dueDate) < new Date()).length;
 									return (
 										<>
@@ -102,9 +103,9 @@ export function TripsTable({ trips }) {
 								})()}
 							</div>
 						</TableCell>
-						<TableCell className="text-right">
+						{/* <TableCell className="text-right">
 							<Badge variant={STATUS_VARIANT[trip.status] || "secondary"}>{trip.status}</Badge>
-						</TableCell>
+						</TableCell> */}
 						<TableCell>
 							<DeleteTripButton
 								tripId={trip.id}

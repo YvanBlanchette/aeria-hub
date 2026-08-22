@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { SettingsTabs } from "@/components/settings/settings-tabs";
+import { getInvoiceOutstandingBalance } from "@/lib/invoices";
+import { getClientPortalRecord } from "@/lib/client-portal";
 
 export const metadata = {
 	title: "Settings — ÆRIA Hub",
@@ -21,10 +23,12 @@ export default async function SettingsPage({ searchParams }) {
 	});
 	if (!user) return null;
 	if (user.role === "CLIENT") {
+		const portal = await getClientPortalRecord(user);
 		return (
 			<div className="space-y-6">
 				<SettingsTabs
 					user={user}
+					client={portal?.client || null}
 					isAdmin={false}
 					teamUsers={[]}
 					portalClients={[]}
@@ -65,11 +69,11 @@ export default async function SettingsPage({ searchParams }) {
 					prisma.reminder.count({ where: { completed: false, dueDate: { lt: now } } }),
 					prisma.invoice.count({ where: { status: { in: ["SENT", "PARTIALLY_PAID", "OVERDUE"] } } }),
 					prisma.invoice.count({ where: { status: "OVERDUE" } }),
-					prisma.invoice.aggregate({
+					prisma.invoice.findMany({
 						where: { status: { in: ["SENT", "PARTIALLY_PAID", "OVERDUE"] } },
-						_sum: { amount: true, amountPaid: true },
+						select: { amount: true, amountPaid: true, trip: { select: { payments: { where: { cancelled: false }, select: { amount: true } } } } },
 					}),
-					prisma.invoice.aggregate({ where: { status: "PAID", updatedAt: { gte: startOfMonth } }, _sum: { amountPaid: true } }),
+					prisma.tripPayment.aggregate({ where: { cancelled: false, paymentDate: { gte: startOfMonth } }, _sum: { amount: true } }),
 					prisma.document.count(),
 					prisma.supplier.count(),
 					prisma.segmentCommission.aggregate({ where: { status: "PENDING" }, _sum: { amount: true } }),
@@ -101,8 +105,8 @@ export default async function SettingsPage({ searchParams }) {
 				overdueReminders: workspaceMetrics[11],
 				openInvoices: workspaceMetrics[12],
 				overdueInvoices: workspaceMetrics[13],
-				openInvoiceBalance: (workspaceMetrics[14]._sum.amount || 0) - (workspaceMetrics[14]._sum.amountPaid || 0),
-				paidThisMonth: workspaceMetrics[15]._sum.amountPaid || 0,
+				openInvoiceBalance: workspaceMetrics[14].reduce((sum, invoice) => sum + getInvoiceOutstandingBalance(invoice), 0),
+				paidThisMonth: workspaceMetrics[15]._sum.amount || 0,
 				totalDocuments: workspaceMetrics[16],
 				totalSuppliers: workspaceMetrics[17],
 				pendingCommissions: workspaceMetrics[18]._sum.amount || 0,

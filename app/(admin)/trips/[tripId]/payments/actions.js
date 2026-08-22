@@ -27,6 +27,15 @@ function readPaymentFields(formData) {
 	};
 }
 
+async function revalidateTripInvoiceViews(tripId, clientId) {
+	const invoices = await prisma.invoice.findMany({ where: { tripId }, select: { id: true, clientId: true } });
+	for (const invoice of invoices) {
+		revalidatePath(`/invoices/${invoice.id}`);
+	}
+	revalidatePath("/invoices");
+	if (clientId) revalidatePath(`/clients/${clientId}/invoices`);
+}
+
 /**
  * @param {string} tripId
  * @param {string | undefined} prevState
@@ -56,6 +65,7 @@ export async function createPayment(tripId, prevState, formData) {
 
 	revalidatePath(`/trips/${tripId}/payments`);
 	revalidatePath(`/trips/${tripId}/overview`);
+	await revalidateTripInvoiceViews(tripId, trip.clientId);
 }
 
 /**
@@ -72,13 +82,14 @@ export async function updatePayment(paymentId, tripId, prevState, formData) {
 	if (fields.amount == null || fields.amount < 0) return t("errors.validPaymentAmount", "Enter a valid payment amount.");
 	if (!fields.paymentDate) return t("errors.requiredPaymentDate", "Payment date is required.");
 
-	const existing = await prisma.tripPayment.findFirst({ where: { id: paymentId, tripId } });
+	const existing = await prisma.tripPayment.findFirst({ where: { id: paymentId, tripId }, include: { trip: { select: { clientId: true } } } });
 	if (!existing) return t("errors.paymentNotFound", "Payment not found.");
 
 	await prisma.tripPayment.update({ where: { id: paymentId }, data: fields });
 
 	revalidatePath(`/trips/${tripId}/payments`);
 	revalidatePath(`/trips/${tripId}/overview`);
+	await revalidateTripInvoiceViews(tripId, existing.trip.clientId);
 }
 
 /**
@@ -88,11 +99,12 @@ export async function updatePayment(paymentId, tripId, prevState, formData) {
  */
 export async function setPaymentCancelled(paymentId, tripId, cancelled) {
 	await requireTripStaffAccess(tripId);
-	const existing = await prisma.tripPayment.findFirst({ where: { id: paymentId, tripId } });
+	const existing = await prisma.tripPayment.findFirst({ where: { id: paymentId, tripId }, include: { trip: { select: { clientId: true } } } });
 	if (!existing) return;
 
 	await prisma.tripPayment.update({ where: { id: paymentId }, data: { cancelled } });
 
 	revalidatePath(`/trips/${tripId}/payments`);
 	revalidatePath(`/trips/${tripId}/overview`);
+	await revalidateTripInvoiceViews(tripId, existing.trip.clientId);
 }

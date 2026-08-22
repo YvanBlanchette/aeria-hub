@@ -12,7 +12,7 @@ const COLUMNS = [
 	{ key: "fullName", label: "Name" },
 	{ key: "primaryEmail", label: "Email" },
 	{ key: "primaryPhone", label: "Phone" },
-	{ key: "status", label: "Status" },
+	// { key: "status", label: "Status" },
 ];
 
 export function RecentClientsTable({ clients }) {
@@ -80,14 +80,14 @@ export function RecentClientsTable({ clients }) {
 								label="phone"
 							/>
 						</TableCell>
-						<TableCell className="text-muted-foreground">
+						{/* <TableCell className="text-muted-foreground">
 							<Badge
 								variant={client.status === "ACTIVE" ? "default" : "secondary"}
 								className="text-[10px] capitalize"
 							>
 								{client.status.toLowerCase()}
 							</Badge>
-						</TableCell>
+						</TableCell> */}
 					</TableRow>
 				))}
 			</TableBody>

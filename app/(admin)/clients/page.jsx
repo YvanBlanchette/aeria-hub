@@ -30,6 +30,7 @@ export default async function ClientsPage({ searchParams }) {
 			where,
 			orderBy: { createdAt: "desc" },
 			include: {
+				portalUser: { select: { portalEnabled: true } },
 				_count: {
 					select: { trips: { where: { status: { in: ["BOOKED", "TRAVELING"] } } } },
 				},

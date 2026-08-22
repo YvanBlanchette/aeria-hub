@@ -56,20 +56,46 @@ export async function createClient(prevState, formData) {
 	const t = tServer;
 	const user = await requireUser();
 	const fields = readClientFields(formData);
+	const createPortalAccess = formData.get("createPortalAccess") === "on";
 
 	if (!fields.firstName || !fields.lastName) {
 		return t("errors.requiredFirstLastName", "First and last name are required.");
 	}
+	if (createPortalAccess && !fields.primaryEmail) {
+		return "A primary email is required to create portal access.";
+	}
 
-	const client = await prisma.client.create({ data: fields });
+	let portalPasswordHash = null;
+	if (createPortalAccess) {
+		const existingUser = await prisma.user.findFirst({ where: { email: { equals: fields.primaryEmail, mode: "insensitive" } }, select: { id: true } });
+		if (existingUser) return "This email is already used by another account.";
+		portalPasswordHash = await bcrypt.hash(`Aeria-${crypto.randomBytes(5).toString("hex")}`, 10);
+	}
 
-	await logActivity({
-		entityType: "Client",
-		entityId: client.id,
-		action: "created",
-		description: `Client ${client.firstName} ${client.lastName} created`,
-		userId: user.id,
-		clientId: client.id,
+	const client = await prisma.$transaction(async (tx) => {
+		const createdClient = await tx.client.create({ data: fields });
+		if (portalPasswordHash) {
+			await tx.user.create({
+				data: {
+					name: `${createdClient.firstName} ${createdClient.lastName}`.trim(),
+					email: fields.primaryEmail.trim().toLowerCase(),
+					passwordHash: portalPasswordHash,
+					role: "CLIENT",
+					clientId: createdClient.id,
+				},
+			});
+		}
+		await tx.activityLog.create({
+			data: {
+				entityType: "Client",
+				entityId: createdClient.id,
+				action: "created",
+				description: `Client ${createdClient.firstName} ${createdClient.lastName} created`,
+				userId: user.id,
+				clientId: createdClient.id,
+			},
+		});
+		return createdClient;
 	});
 
 	revalidatePath("/clients");
@@ -106,6 +132,15 @@ export async function updateClient(clientId, prevState, formData) {
 	redirect(`/clients/${clientId}`);
 }
 
+export async function setClientPortalEnabled(clientId, enabled) {
+	await requireAdmin();
+	const client = await prisma.client.findUnique({ where: { id: clientId }, select: { portalUser: { select: { id: true } } } });
+	if (!client?.portalUser) return "Create portal access for this client first.";
+	await prisma.user.update({ where: { id: client.portalUser.id }, data: { portalEnabled: Boolean(enabled) } });
+	revalidatePath("/clients");
+	revalidatePath(`/clients/${clientId}`);
+}
+
 export async function createClientPortalAccess(clientId, prevState, formData) {
 	const admin = await requireAdmin();
 	try {
@@ -123,22 +158,26 @@ export async function createClientPortalAccess(clientId, prevState, formData) {
 		});
 		if (existingUser && existingUser.clientId !== client.id) return { error: "This email is already used by another account." };
 
-		const temporaryPassword = `Aeria-${crypto.randomBytes(5).toString("base64url")}`;
+		const temporaryPassword = `Aeria-${crypto.randomBytes(5).toString("hex")}`;
 		const passwordHash = await bcrypt.hash(temporaryPassword, 10);
 		const user = client.portalUser || existingUser;
-		if (user) {
-			await prisma.user.update({ where: { id: user.id }, data: { email, role: "CLIENT", clientId: client.id, passwordHash } });
-		} else {
-			await prisma.user.create({ data: { name: `${client.firstName} ${client.lastName}`.trim(), email, role: "CLIENT", clientId: client.id, passwordHash } });
-		}
+		await prisma.$transaction(async (tx) => {
+			if (user) {
+				await tx.user.update({ where: { id: user.id }, data: { email, role: "CLIENT", clientId: client.id, passwordHash } });
+			} else {
+				await tx.user.create({ data: { name: `${client.firstName} ${client.lastName}`.trim(), email, role: "CLIENT", clientId: client.id, passwordHash } });
+			}
 
-		await logActivity({
-			entityType: "Client",
-			entityId: client.id,
-			action: "portal_access_created",
-			description: `Portal access created for ${client.firstName} ${client.lastName}`,
-			userId: admin.id,
-			clientId: client.id,
+			await tx.activityLog.create({
+				data: {
+					entityType: "Client",
+					entityId: client.id,
+					action: "portal_access_created",
+					description: `Portal access created for ${client.firstName} ${client.lastName}`,
+					userId: admin.id,
+					clientId: client.id,
+				},
+			});
 		});
 		revalidatePath(`/clients/${client.id}`);
 		revalidatePath(`/clients/${client.id}/profile`);

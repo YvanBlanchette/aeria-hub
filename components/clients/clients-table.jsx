@@ -8,6 +8,7 @@ import { SortableTableHead, useSortableRows } from "@/components/ui/sortable-tab
 import { DeleteClientButton } from "@/components/clients/delete-client-button";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { formatCurrency, initials } from "@/lib/format";
+import { PortalAccessToggle } from "@/components/clients/portal-access-toggle";
 
 export function ClientsTable({ clients, spentByClient }) {
 	const { t } = useLocale();
@@ -18,6 +19,7 @@ export function ClientsTable({ clients, spentByClient }) {
 		{ key: "activeBookings", label: t("clients.table.activeBookings", "Active bookings"), align: "right", kind: "number" },
 		{ key: "totalSpent", label: t("clients.table.totalSpent", "Total spent"), align: "right", kind: "number" },
 		{ key: "status", label: t("clients.table.status", "Status"), align: "right" },
+		{ key: "portalAccess", label: "Portal", align: "center" },
 	];
 	const rows = clients.map((c) => ({
 		...c,
@@ -85,6 +87,12 @@ export function ClientsTable({ clients, spentByClient }) {
 							>
 								{client.status === "ACTIVE" ? t("clients.status.active", "active") : t("clients.status.inactive", "inactive")}
 							</Badge>
+						</TableCell>
+						<TableCell className="text-center">
+							<PortalAccessToggle
+								clientId={client.id}
+								enabled={Boolean(client.portalUser?.portalEnabled)}
+							/>
 						</TableCell>
 						<TableCell>
 							<DeleteClientButton

@@ -1,0 +1,1 @@
+ALTER TABLE "User" ADD COLUMN "portalEnabled" BOOLEAN NOT NULL DEFAULT true;

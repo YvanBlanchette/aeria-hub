@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 
 function dateInputValue(date) {
 	if (!date) return "";
@@ -48,6 +49,14 @@ export function ClientForm({ action, client, agents, submitLabel }) {
 							defaultValue={client?.lastName}
 							required
 						/>
+					</div>
+					<div className="flex items-center gap-2 sm:col-span-2">
+						<Checkbox
+							id="createPortalAccess"
+							name="createPortalAccess"
+							defaultChecked={!client}
+						/>
+						<Label htmlFor="createPortalAccess">Create client portal access</Label>
 					</div>
 					<div className="space-y-2">
 						<Label htmlFor="primaryEmail">Primary email</Label>

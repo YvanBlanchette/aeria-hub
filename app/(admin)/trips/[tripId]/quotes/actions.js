@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireTripStaffAccess } from "@/lib/trip-access";
 import { logActivity } from "@/lib/activity";
 import { tServer } from "@/lib/i18n-server";
 import { dollarsToCents } from "@/lib/format";
@@ -14,7 +14,7 @@ import { dollarsToCents } from "@/lib/format";
  */
 export async function createQuote(tripId, prevState, formData) {
 	const t = tServer;
-	const user = await requireUser();
+	const { user } = await requireTripStaffAccess(tripId);
 	const title = formData.get("title");
 	const validUntil = formData.get("validUntil");
 	const notes = formData.get("notes");
@@ -59,7 +59,9 @@ export async function createQuote(tripId, prevState, formData) {
  */
 export async function updateQuote(quoteId, prevState, formData) {
 	const t = tServer;
-	const user = await requireUser();
+	const existingQuote = await prisma.quote.findUnique({ where: { id: quoteId }, select: { tripId: true } });
+	if (!existingQuote) return t("errors.quoteNotFound", "Quote not found.");
+	const { user } = await requireTripStaffAccess(existingQuote.tripId);
 	const title = formData.get("title");
 	const validUntil = formData.get("validUntil");
 	const notes = formData.get("notes");
@@ -97,7 +99,7 @@ export async function updateQuote(quoteId, prevState, formData) {
  * @param {string} tripId
  */
 export async function deleteQuote(quoteId, tripId) {
-	await requireUser();
+	await requireTripStaffAccess(tripId);
 	const quote = await prisma.quote.findFirst({ where: { id: quoteId, tripId } });
 	if (!quote) return;
 	await prisma.quote.delete({ where: { id: quoteId } });
@@ -111,7 +113,9 @@ export async function deleteQuote(quoteId, tripId) {
  */
 export async function createLineItem(quoteId, prevState, formData) {
 	const t = tServer;
-	await requireUser();
+	const quote = await prisma.quote.findUnique({ where: { id: quoteId }, select: { tripId: true } });
+	if (!quote) return t("errors.quoteNotFound", "Quote not found.");
+	await requireTripStaffAccess(quote.tripId);
 	const description = formData.get("description");
 	const quantity = Number(formData.get("quantity"));
 	const unitPrice = dollarsToCents(formData.get("unitPrice"));
@@ -122,9 +126,6 @@ export async function createLineItem(quoteId, prevState, formData) {
 	if (unitPrice == null || unitPrice < 0) {
 		return t("errors.validUnitPrice", "Enter a valid unit price.");
 	}
-
-	const quote = await prisma.quote.findUnique({ where: { id: quoteId }, select: { tripId: true } });
-	if (!quote) return t("errors.quoteNotFound", "Quote not found.");
 
 	const maxSort = await prisma.quoteLineItem.aggregate({ where: { quoteId }, _max: { sortOrder: true } });
 	await prisma.quoteLineItem.create({
@@ -148,7 +149,12 @@ export async function createLineItem(quoteId, prevState, formData) {
  */
 export async function updateLineItem(lineItemId, quoteId, prevState, formData) {
 	const t = tServer;
-	await requireUser();
+	const existing = await prisma.quoteLineItem.findFirst({
+		where: { id: lineItemId, quoteId },
+		include: { quote: { select: { tripId: true } } },
+	});
+	if (!existing) return t("errors.lineItemNotFound", "Line item not found.");
+	await requireTripStaffAccess(existing.quote.tripId);
 	const description = formData.get("description");
 	const quantity = Number(formData.get("quantity"));
 	const unitPrice = dollarsToCents(formData.get("unitPrice"));
@@ -159,12 +165,6 @@ export async function updateLineItem(lineItemId, quoteId, prevState, formData) {
 	if (unitPrice == null || unitPrice < 0) {
 		return t("errors.validUnitPrice", "Enter a valid unit price.");
 	}
-
-	const existing = await prisma.quoteLineItem.findFirst({
-		where: { id: lineItemId, quoteId },
-		include: { quote: { select: { tripId: true } } },
-	});
-	if (!existing) return t("errors.lineItemNotFound", "Line item not found.");
 
 	await prisma.quoteLineItem.update({
 		where: { id: lineItemId },
@@ -183,12 +183,12 @@ export async function updateLineItem(lineItemId, quoteId, prevState, formData) {
  * @param {string} quoteId
  */
 export async function deleteLineItem(lineItemId, quoteId) {
-	await requireUser();
 	const existing = await prisma.quoteLineItem.findFirst({
 		where: { id: lineItemId, quoteId },
 		include: { quote: { select: { tripId: true } } },
 	});
 	if (!existing) return;
+	await requireTripStaffAccess(existing.quote.tripId);
 
 	await prisma.quoteLineItem.delete({ where: { id: lineItemId } });
 	revalidatePath(`/trips/${existing.quote.tripId}/quotes`);

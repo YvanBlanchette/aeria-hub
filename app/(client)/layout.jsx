@@ -3,8 +3,19 @@ import { Sidebar } from "@/components/admin/sidebar";
 import { Topbar } from "@/components/admin/topbar";
 import { Toaster } from "@/components/ui/sonner";
 
-export default async function AdminLayout({ children }) {
+export default async function ClientLayout({ children }) {
 	const user = await requireUser();
+
+	if (user.role !== "CLIENT") {
+		return (
+			<div className="flex min-h-screen items-center justify-center p-6">
+				<div className="max-w-md rounded-2xl border border-border bg-card p-6 text-center">
+					<h1 className="text-xl font-semibold">Access restricted</h1>
+					<p className="mt-2 text-sm text-muted-foreground">This client portal is only available to client accounts.</p>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex h-screen overflow-hidden bg-background">

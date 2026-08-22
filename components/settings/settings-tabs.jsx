@@ -15,6 +15,11 @@ import {
 	Receipt,
 	Shield,
 	Users,
+	UserCircle,
+	KeyRound,
+	Palette,
+	SlidersHorizontal,
+	UserCog,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -32,10 +37,10 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { disconnectGoogleCalendar, syncGoogleCalendar } from "@/app/(admin)/calendar/actions";
+import { DatabaseBackupButton } from "@/components/settings/database-backup-button";
 
 export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary, googleCalendarConnection, googleStatus }) {
 	const { t } = useLocale();
-
 	const quickLinks = [
 		{ href: "/dashboard", label: t("nav.dashboard", "Dashboard"), icon: Activity },
 		{ href: "/clients", label: t("nav.clients", "Clients"), icon: Users },
@@ -44,41 +49,62 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary, googl
 		{ href: "/suppliers", label: t("nav.suppliers", "Suppliers"), icon: Building2 },
 	];
 
+	const tabs = [
+		{ value: "profile", label: t("settings.tab.profile", "Profile"), icon: UserCircle },
+		{ value: "security", label: t("settings.tab.security", "Security"), icon: KeyRound },
+		{ value: "appearance", label: t("settings.tab.appearance", "Appearance"), icon: Palette },
+		{ value: "system", label: t("settings.tab.system", "System"), icon: SlidersHorizontal },
+		...(isAdmin ? [{ value: "workspace", label: t("settings.tab.workspace", "Workspace"), icon: BriefcaseBusiness }] : []),
+		...(isAdmin ? [{ value: "team", label: t("settings.tab.team", "Team"), icon: UserCog }] : []),
+	];
+
 	return (
 		<Tabs defaultValue="profile">
-			<TabsList variant="line">
-				<TabsTrigger value="profile">{t("settings.tab.profile", "Profile")}</TabsTrigger>
-				<TabsTrigger value="security">{t("settings.tab.security", "Security")}</TabsTrigger>
-				<TabsTrigger value="appearance">{t("settings.tab.appearance", "Appearance")}</TabsTrigger>
-				<TabsTrigger value="system">{t("settings.tab.system", "System")}</TabsTrigger>
-				{isAdmin && <TabsTrigger value="workspace">{t("settings.tab.workspace", "Workspace")}</TabsTrigger>}
-				{isAdmin && <TabsTrigger value="team">{t("settings.tab.team", "Team")}</TabsTrigger>}
+			<TabsList
+				className="w-full justify-start gap-1 overflow-x-auto rounded-xl border border-border/70 bg-card p-1 shadow-sm"
+				variant="default"
+			>
+				{tabs.map((tab) => {
+					const Icon = tab.icon;
+					return (
+						<TabsTrigger
+							key={tab.value}
+							value={tab.value}
+							className="flex-none gap-2 px-3 py-2 data-active:bg-primary data-active:text-primary-foreground data-active:shadow-sm"
+						>
+							<Icon className="size-4" />
+							{tab.label}
+						</TabsTrigger>
+					);
+				})}
 			</TabsList>
 
 			{/* PROFILE TAB */}
 			<TabsContent
 				value="profile"
-				className="space-y-6 pt-4"
+				className="pt-4"
 			>
-				<Card>
-					<CardHeader>
-						<CardTitle>{t("settings.profile.picture", "Picture")}</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<AvatarUpload
-							name={user.name}
-							avatarUrl={user.avatarUrl}
-						/>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader>
-						<CardTitle>{t("settings.profile.info", "Profile info")}</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<ProfileForm user={user} />
-					</CardContent>
-				</Card>
+				<div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+					<Card>
+						<CardHeader>
+							<CardTitle>{t("settings.profile.picture", "Picture")}</CardTitle>
+						</CardHeader>
+						<CardContent className="flex min-h-36 items-center">
+							<AvatarUpload
+								name={user.name}
+								avatarUrl={user.avatarUrl}
+							/>
+						</CardContent>
+					</Card>
+					<Card>
+						<CardHeader>
+							<CardTitle>{t("settings.profile.info", "Profile info")}</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<ProfileForm user={user} />
+						</CardContent>
+					</Card>
+				</div>
 			</TabsContent>
 
 			{/* SECURITY TAB */}
@@ -204,6 +230,18 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary, googl
 						<LanguageForm />
 					</CardContent>
 				</Card>
+
+				{isAdmin && (
+					<Card>
+						<CardHeader>
+							<CardTitle>{t("settings.system.backup", "Database backup")}</CardTitle>
+						</CardHeader>
+						<CardContent className="flex flex-wrap items-center justify-between gap-3">
+							<p className="text-sm text-muted-foreground">Download a complete PostgreSQL backup of this workspace.</p>
+							<DatabaseBackupButton />
+						</CardContent>
+					</Card>
+				)}
 
 				<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
 					<Card>
@@ -481,7 +519,7 @@ export function SettingsTabs({ user, isAdmin, teamUsers, workspaceSummary, googl
 							</div>
 							<InviteAgentDialog />
 						</CardHeader>
-						<CardContent>
+						<CardContent className="p-0">
 							<TeamTable
 								users={teamUsers}
 								currentUserId={user.id}

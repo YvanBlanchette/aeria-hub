@@ -83,6 +83,24 @@
 	--sidebar-ring: #bf8002;
 }
 
+:root[data-accent="forest"] {
+	--primary: #2f6b54;
+	--ring: #2f6b54;
+	--chart-1: #2f6b54;
+}
+
+:root[data-accent="plum"] {
+	--primary: #6b466f;
+	--ring: #6b466f;
+	--chart-1: #6b466f;
+}
+
+:root[data-accent="terracotta"] {
+	--primary: #b45f3c;
+	--ring: #b45f3c;
+	--chart-1: #b45f3c;
+}
+
 .dark {
 	--background: #08131c;
 	--foreground: #eaf0f2;
@@ -117,6 +135,24 @@
 	--sidebar-ring: #bf8002;
 }
 
+.dark[data-accent="forest"] {
+	--primary: #63b38b;
+	--ring: #63b38b;
+	--chart-1: #63b38b;
+}
+
+.dark[data-accent="plum"] {
+	--primary: #bd83c2;
+	--ring: #bd83c2;
+	--chart-1: #bd83c2;
+}
+
+.dark[data-accent="terracotta"] {
+	--primary: #e28a61;
+	--ring: #e28a61;
+	--chart-1: #e28a61;
+}
+
 @layer base {
 	* {
 		@apply border-border outline-ring/50;
@@ -137,4 +173,57 @@
 			radial-gradient(circle at top left, rgba(226, 161, 63, 0.08), transparent 22%),
 			radial-gradient(circle at top right, rgba(67, 151, 184, 0.08), transparent 18%), linear-gradient(to bottom, rgba(255, 255, 255, 0.03), transparent 16%);
 	}
+}
+
+/* Every card uses the same blue title bar; table cards add a beige column bar. */
+[data-slot="card"] > [data-slot="card-header"] {
+	background: var(--primary);
+	color: var(--primary-foreground);
+}
+
+[data-slot="card"]:has(> [data-slot="card-header"]) {
+	gap: 0;
+	padding-top: 0;
+	padding-bottom: 0;
+}
+
+[data-slot="card"]:has(> [data-slot="card-header"]):not(:has(table)) > [data-slot="card-content"] {
+	padding-top: var(--card-spacing);
+	padding-bottom: var(--card-spacing);
+}
+
+[data-slot="card"] > [data-slot="card-header"] [data-slot="card-description"] {
+	color: color-mix(in srgb, var(--primary-foreground) 78%, transparent);
+}
+
+[data-slot="card"] > [data-slot="card-header"] [data-slot="button"] {
+	background: color-mix(in srgb, var(--primary-foreground) 10%, transparent) !important;
+	border-color: color-mix(in srgb, var(--primary-foreground) 55%, transparent) !important;
+	color: var(--primary-foreground);
+}
+
+[data-slot="card"] > [data-slot="card-header"] [data-slot="button"]:hover {
+	background: color-mix(in srgb, var(--primary-foreground) 20%, transparent) !important;
+}
+
+/* Table cards keep the blue header attached to the beige column header. */
+[data-slot="card"]:has(table) {
+	gap: 0;
+	padding-top: 0;
+	padding-bottom: 0;
+}
+
+[data-slot="card"]:has(table) > [data-slot="card-header"] {
+	border-radius: 0;
+}
+
+[data-slot="card"]:has(table) [data-slot="table-head"] {
+	border-bottom-color: color-mix(in srgb, var(--foreground) 14%, transparent);
+	background: #ded4c4;
+	color: #3f3528;
+}
+
+.dark [data-slot="card"]:has(table) [data-slot="table-head"] {
+	background: #302b23;
+	color: #eee4d5;
 }

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireTripStaffAccess } from "@/lib/trip-access";
 import { TripForm } from "@/components/trips/trip-form";
 import { updateTrip } from "../../actions";
 
@@ -9,6 +10,7 @@ export const metadata = {
 
 export default async function EditTripPage({ params }) {
 	const { tripId } = await params;
+	await requireTripStaffAccess(tripId);
 
 	const [trip, clients] = await Promise.all([
 		prisma.trip.findUnique({ where: { id: tripId } }),

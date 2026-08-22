@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireTripStaffAccess, requireTripStaffAccessBySegment } from "@/lib/trip-access";
 import { logActivity } from "@/lib/activity";
 import { SEGMENT_DETAIL_FIELDS, SEGMENT_TYPE_MAP, groupSegmentsByDay } from "@/lib/trip-segments";
 import { parseLocalDateTime, dollarsToCents } from "@/lib/format";
@@ -49,7 +49,7 @@ function readSegmentFields(formData) {
  */
 export async function createSegment(tripId, prevState, formData) {
 	const t = tServer;
-	const user = await requireUser();
+	const { user } = await requireTripStaffAccess(tripId);
 	const fields = readSegmentFields(formData);
 	if (!fields.title) return t("errors.requiredTitle", "Title is required.");
 	if (fields.startDateTime && fields.endDateTime && fields.endDateTime < fields.startDateTime) {
@@ -84,7 +84,7 @@ export async function createSegment(tripId, prevState, formData) {
  */
 export async function updateSegment(segmentId, prevState, formData) {
 	const t = tServer;
-	const user = await requireUser();
+	const { user } = await requireTripStaffAccessBySegment(segmentId);
 	const fields = readSegmentFields(formData);
 	if (!fields.title) return t("errors.requiredTitle", "Title is required.");
 	if (fields.startDateTime && fields.endDateTime && fields.endDateTime < fields.startDateTime) {
@@ -115,7 +115,7 @@ export async function updateSegment(segmentId, prevState, formData) {
  * @param {string} tripId
  */
 export async function deleteSegment(segmentId, tripId) {
-	await requireUser();
+	await requireTripStaffAccess(tripId);
 	const existing = await prisma.tripSegment.findFirst({ where: { id: segmentId, tripId } });
 	if (!existing) return;
 	await prisma.tripSegment.delete({ where: { id: segmentId } });
@@ -132,7 +132,7 @@ export async function deleteSegment(segmentId, tripId) {
  */
 export async function importCruiseMapperItinerary(tripId, prevState, formData) {
 	const t = tServer;
-	const user = await requireUser();
+	const { user } = await requireTripStaffAccess(tripId);
 	const itineraryId = formData.get("itineraryId");
 	const mode = formData.get("mode") === "replace" ? "replace" : "append";
 	const includeSeaDays = formData.get("includeSeaDays") === "on";
@@ -243,7 +243,7 @@ export async function importCruiseMapperItinerary(tripId, prevState, formData) {
  * @param {"up" | "down"} direction
  */
 export async function reorderSegment(segmentId, tripId, direction) {
-	await requireUser();
+	await requireTripStaffAccess(tripId);
 
 	const trip = await prisma.trip.findUnique({ where: { id: tripId }, select: { startDate: true, endDate: true } });
 	if (!trip) return;
@@ -286,7 +286,6 @@ export async function reorderSegment(segmentId, tripId, direction) {
  */
 export async function uploadSegmentDocument(segmentId, prevState, formData) {
 	const t = tServer;
-	const user = await requireUser();
 	const file = formData.get("file");
 	const type = formData.get("type") || "TICKET";
 
@@ -298,6 +297,7 @@ export async function uploadSegmentDocument(segmentId, prevState, formData) {
 		include: { trip: { select: { id: true, clientId: true, name: true } } },
 	});
 	if (!segment) return t("errors.segmentNotFound", "Segment not found.");
+	const { user } = await requireTripStaffAccess(segment.trip.id);
 
 	const saved = await saveUploadedFile(segment.trip.clientId, file);
 
@@ -329,7 +329,7 @@ export async function uploadSegmentDocument(segmentId, prevState, formData) {
  * @param {string} tripId
  */
 export async function deleteSegmentDocument(documentId, segmentId, tripId) {
-	await requireUser();
+	const { user } = await requireTripStaffAccessBySegment(segmentId);
 	const document = await prisma.document.findFirst({ where: { id: documentId, segmentId } });
 	if (!document) return;
 
@@ -354,7 +354,6 @@ export async function deleteSegmentDocument(documentId, segmentId, tripId) {
  */
 export async function setSegmentCommission(segmentId, prevState, formData) {
 	const t = tServer;
-	await requireUser();
 	const amount = dollarsToCents(formData.get("amount"));
 	if (amount == null || amount < 0) return t("errors.validCommissionAmount", "Enter a valid commission amount.");
 
@@ -367,6 +366,7 @@ export async function setSegmentCommission(segmentId, prevState, formData) {
 		},
 	});
 	if (!segment) return "Segment not found.";
+	await requireTripStaffAccess(segment.trip.id);
 
 	const portions = computeCommissionPortions(amount, segment, segment.trip);
 	const existing = segment.commissions;
@@ -401,7 +401,7 @@ export async function setSegmentCommission(segmentId, prevState, formData) {
  * @param {string} tripId
  */
 export async function deleteSegmentCommission(segmentId, tripId) {
-	await requireUser();
+	await requireTripStaffAccess(tripId);
 	const segment = await prisma.tripSegment.findFirst({ where: { id: segmentId, tripId } });
 	if (!segment) return;
 	await prisma.segmentCommission.deleteMany({ where: { segmentId } });
@@ -414,12 +414,12 @@ export async function deleteSegmentCommission(segmentId, tripId) {
  * @param {boolean} received
  */
 export async function setCommissionReceived(portionId, received) {
-	await requireUser();
 	const portion = await prisma.segmentCommission.findUnique({
 		where: { id: portionId },
 		include: { segment: { select: { tripId: true } } },
 	});
 	if (!portion) return;
+	await requireTripStaffAccess(portion.segment.tripId);
 
 	await prisma.segmentCommission.update({
 		where: { id: portionId },

@@ -23,13 +23,13 @@ export function CommissionsTable({ rows }) {
 	const { sorted, sortKey, sortDir, toggleSort } = useSortableRows(rows, COLUMNS, { defaultKey: "bookingDate" });
 
 	if (rows.length === 0) {
-		return <p className="text-sm text-muted-foreground">No commissions set yet. Add one from a segment on a trip's Itinerary tab.</p>;
+		return <p className="text-sm text-muted-foreground">No commissions set yet. Add one from a segment on a trip&apos;s Itinerary tab.</p>;
 	}
 
 	const now = new Date();
 
 	return (
-		<div className="overflow-hidden rounded-2xl border border-border/70 bg-card/70 shadow-sm">
+		<div className="overflow-hidden">
 			<Table>
 				<TableHeader>
 					<TableRow>

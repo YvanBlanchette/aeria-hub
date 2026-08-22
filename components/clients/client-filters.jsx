@@ -4,9 +4,9 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
-export function ClientFilters({ defaultQuery, defaultStatus }) {
+export function ClientFilters({ defaultQuery, className }) {
 	const { t } = useLocale();
 	const router = useRouter();
 	const pathname = usePathname();
@@ -21,13 +21,13 @@ export function ClientFilters({ defaultQuery, defaultStatus }) {
 	}
 
 	return (
-		<div className="flex flex-col gap-8 sm:flex-row sm:items-center">
+		<div className={cn("flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center", className)}>
 			<form
 				onSubmit={(event) => {
 					event.preventDefault();
 					updateParam("q", new FormData(event.currentTarget).get("q"));
 				}}
-				className="relative min-w-md w-full flex-1 bg-card"
+				className="relative w-full flex-1 sm:min-w-64"
 			>
 				<Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 				<Input
@@ -37,20 +37,6 @@ export function ClientFilters({ defaultQuery, defaultStatus }) {
 					className="pl-8"
 				/>
 			</form>
-
-			<Select
-				value={defaultStatus || "all"}
-				onValueChange={(value) => updateParam("status", value === "all" ? "" : value)}
-			>
-				<SelectTrigger className="w-full sm:w-40 bg-card">
-					<SelectValue />
-				</SelectTrigger>
-				<SelectContent>
-					<SelectItem value="all">{t("clients.filters.all", "All")}</SelectItem>
-					<SelectItem value="ACTIVE">{t("clients.status.active", "Active")}</SelectItem>
-					<SelectItem value="INACTIVE">{t("clients.status.inactive", "Inactive")}</SelectItem>
-				</SelectContent>
-			</Select>
 		</div>
 	);
 }

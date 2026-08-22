@@ -13,6 +13,7 @@ datasource db {
 enum Role {
   ADMIN
   AGENT
+  CLIENT
 }
 
 enum TripStatus {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { formatDate } from "@/lib/format";
-import { LocaleText } from "../i18n/locale-text";
 
 function dayKey(date) {
 	return new Date(date).toISOString().slice(0, 10);
@@ -132,24 +132,27 @@ export function CrmCalendar({ initialEvents, currentUserId }) {
 	return (
 		<div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
 			<Card>
-				<CardHeader>
-					<CardTitle>{t("calendar.monthView", "Month view")}</CardTitle>
-					<div className="flex flex-wrap items-center gap-2">
+				<CardHeader className="flex flex-row items-center justify-between gap-3">
+					<CardTitle className="text-xl capitalize sm:text-2xl">{displayMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</CardTitle>
+					<div className="flex items-center gap-1 rounded-xl border border-border/70 bg-background/60 p-1 shadow-sm">
 						<Button
-							variant="outline"
-							size="sm"
+							variant="ghost"
+							size="icon-sm"
+							title={t("calendar.prevMonth", "Previous month")}
+							aria-label={t("calendar.prevMonth", "Previous month")}
 							onClick={() => setDisplayMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
 						>
-							{t("calendar.prevMonth", "Previous")}
+							<ChevronLeft className="size-4" />
 						</Button>
 						<Button
-							variant="outline"
-							size="sm"
+							variant="ghost"
+							size="icon-sm"
+							title={t("calendar.nextMonth", "Next month")}
+							aria-label={t("calendar.nextMonth", "Next month")}
 							onClick={() => setDisplayMonth((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
 						>
-							{t("calendar.nextMonth", "Next")}
+							<ChevronRight className="size-4" />
 						</Button>
-						<Badge variant="secondary">{displayMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</Badge>
 					</div>
 				</CardHeader>
 				<CardContent className="space-y-3">
@@ -194,14 +197,7 @@ export function CrmCalendar({ initialEvents, currentUserId }) {
 			<div className="space-y-4">
 				<Card>
 					<CardHeader>
-						<CardTitle>
-							<h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem]">
-								<LocaleText
-									messageKey="calendar.title"
-									fallback="Calendar"
-								/>
-							</h1>
-						</CardTitle>
+						<CardTitle>{t("calendar.filters.title", "Filters")}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-3">
 						<div className="space-y-1">
@@ -287,7 +283,7 @@ export function CrmCalendar({ initialEvents, currentUserId }) {
 
 				<Card>
 					<CardHeader>
-						<CardTitle>{t("calendar.dayPanel", "Selected day")}</CardTitle>
+						<CardTitle>{t("calendar.events", "Events")}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-2">
 						<p className="text-sm font-medium">{formatDate(selectedDate)}</p>

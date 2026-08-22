@@ -29,7 +29,7 @@ export function SuppliersTable({ suppliers }) {
 	}
 
 	return (
-		<div className="overflow-hidden rounded-lg border border-border">
+		<div className="overflow-hidden">
 			<Table>
 				<TableHeader>
 					<TableRow>

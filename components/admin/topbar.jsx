@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Search, Plus, Bell, LogOut, UserPlus, Plane, Receipt, Sun, Moon, Settings } from "lucide-react";
+import { Bell, LogOut, Sun, Moon, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	DropdownMenu,
@@ -21,34 +20,47 @@ import { initials } from "@/lib/format";
 import { useLocale } from "@/components/i18n/locale-provider";
 
 export function Topbar({ user }) {
-	const router = useRouter();
+	const pathname = usePathname();
 	const { resolvedTheme, setTheme } = useTheme();
 	const { t } = useLocale();
 
-	function handleSearch(event) {
-		event.preventDefault();
-		const q = new FormData(event.currentTarget).get("q");
-		router.push(q ? `/clients?q=${encodeURIComponent(q)}` : "/clients");
+	function getPageTitle() {
+		if (pathname === "/dashboard") return t("nav.dashboard", "Dashboard");
+		if (pathname === "/clients" || pathname.startsWith("/clients/")) return t("nav.clients", "Clients");
+		if (pathname === "/trips" || pathname.startsWith("/trips/")) return t("nav.trips", "Trips");
+		if (pathname === "/calendar") return t("nav.calendar", "Calendar");
+		if (pathname === "/packages") return t("nav.forfaits", "Packages");
+		if (pathname === "/commissions") return t("nav.commissions", "Commissions");
+		if (pathname === "/suppliers" || pathname.startsWith("/suppliers/")) return t("nav.suppliers", "Suppliers");
+		if (pathname === "/settings") return t("nav.settings", "Settings");
+		if (pathname === "/itinerary") return t("nav.itinerary", "Itinerary");
+		if (pathname === "/requests") return t("nav.clientRequests", "Requests");
+		return "ÆRIA Hub";
+	}
+
+	function getPageSubtitle() {
+		if (pathname === "/dashboard") return t("topbar.dashboardSubtitle", "Your operations overview");
+		if (pathname === "/clients" || pathname.startsWith("/clients/")) return t("topbar.clientsSubtitle", "Manage households and travelers");
+		if (pathname === "/trips" || pathname.startsWith("/trips/")) return t("topbar.tripsSubtitle", "Plan bookings and travel delivery");
+		if (pathname === "/calendar") return t("topbar.calendarSubtitle", "Track departures and important dates");
+		if (pathname === "/packages") return t("topbar.packagesSubtitle", "Build and manage travel packages");
+		if (pathname === "/commissions") return t("topbar.commissionsSubtitle", "Monitor agency earnings");
+		if (pathname === "/suppliers" || pathname.startsWith("/suppliers/")) return t("topbar.suppliersSubtitle", "Manage travel partners");
+		if (pathname === "/settings") return t("topbar.settingsSubtitle", "Configure your workspace");
+		if (pathname === "/itinerary") return t("topbar.itinerarySubtitle", "Review your travel arrangements");
+		if (pathname === "/requests") return t("topbar.requestsSubtitle", "Stay connected with your advisor");
+		return t("topbar.defaultSubtitle", "AERIA travel workspace");
 	}
 
 	return (
-		<header className="flex h-16 shrink-0 items-center gap-3 border-b border-border/80 bg-card/90 px-4 shadow-[0_1px_0_rgba(255,255,255,0.4)_inset] backdrop-blur-xl">
+		<header className="flex h-[4.75rem] shrink-0 items-center gap-3 border-b border-border/80 bg-card/90 px-4 shadow-[0_1px_0_rgba(255,255,255,0.4)_inset] backdrop-blur-xl">
 			<MobileSidebar />
 
 			<div className="flex w-full items-center justify-between gap-4 px-2 sm:px-4">
-				<form
-					onSubmit={handleSearch}
-					className="relative hidden flex-1 max-w-md sm:block"
-				>
-					<Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-					<Input
-						name="q"
-						placeholder={t("topbar.searchClients", "Search clients...")}
-						className="h-10 rounded-full border-border/80 bg-background/80 pl-8 shadow-sm backdrop-blur"
-					/>
-				</form>
-
-				<div className="flex-1 sm:hidden" />
+				<div className="min-w-0 flex-1">
+					<p className="truncate text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground">{getPageSubtitle()}</p>
+					<h1 className="truncate text-lg font-semibold leading-tight tracking-tight text-foreground sm:text-xl">{getPageTitle()}</h1>
+				</div>
 
 				<div className="flex items-center gap-1.5">
 					<Button

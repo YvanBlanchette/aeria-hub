@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireTripStaffAccess } from "@/lib/trip-access";
 import { QuoteFormDialog } from "@/components/trips/quote-form-dialog";
 import { QuoteCard } from "@/components/trips/quote-card";
 import { LocaleText } from "@/components/i18n/locale-text";
 
 export default async function TripQuotesPage({ params }) {
 	const { tripId } = await params;
+	await requireTripStaffAccess(tripId);
 
 	const trip = await prisma.trip.findUnique({ where: { id: tripId }, select: { id: true } });
 	if (!trip) notFound();

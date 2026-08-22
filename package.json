@@ -15,7 +15,8 @@
 		"db:import-airlines": "node scripts/import_airlines_to_db.mjs",
 		"db:import-airports": "node scripts/import_airports_to_existing_table.mjs",
 		"db:studio": "prisma studio",
-		"scrape:sync-db": "node scripts/sync_cruisemapper_to_db.mjs"
+		"scrape:sync-db": "node scripts/sync_cruisemapper_to_db.mjs",
+		"db:tunnel": "ssh -N -L 5432:127.0.0.1:5432 root@46.202.92.160"
 	},
 	"dependencies": {
 		"@prisma/adapter-pg": "^7.8.0",

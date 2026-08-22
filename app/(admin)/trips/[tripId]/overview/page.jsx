@@ -7,6 +7,7 @@ import { AddTripClientDialog } from "@/components/trips/add-trip-client-dialog";
 import { RemoveTripClientButton } from "@/components/trips/remove-trip-client-button";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { SEGMENT_TYPE_MAP } from "@/lib/trip-segments";
+import { requireTripStaffAccess } from "@/lib/trip-access";
 
 function Field({ label, value }) {
 	return (
@@ -28,6 +29,7 @@ const INVOICE_STATUS_VARIANT = {
 
 export default async function TripOverviewPage({ params }) {
 	const { tripId } = await params;
+	await requireTripStaffAccess(tripId);
 
 	const trip = await prisma.trip.findUnique({
 		where: { id: tripId },

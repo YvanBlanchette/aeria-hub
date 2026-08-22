@@ -1085,17 +1085,19 @@ export function ForfaitsWorkbench({
 	return (
 		<div className="space-y-6">
 			{/* WORKBENCH HERO */}
-			<Card>
-				<CardHeader className="relative overflow-hidden rounded-t-xl border-b border-border/50 bg-linear-to-br from-primary/10 via-background to-accent/25">
+			<Card className="overflow-hidden p-0">
+				<CardHeader className="relative overflow-hidden rounded-none border-b border-primary-foreground/15 bg-primary px-5 py-5 text-primary-foreground sm:px-6 sm:py-6">
 					<div className="pointer-events-none absolute right-0 top-0 h-28 w-28 -translate-y-5 translate-x-4 rounded-full bg-primary/15 blur-3xl" />
 					<div className="pointer-events-none absolute bottom-0 left-0 h-24 w-24 -translate-x-4 translate-y-4 rounded-full bg-accent/45 blur-2xl" />
 					<div className="relative flex flex-wrap items-start justify-between gap-3">
 						<div className="max-w-3xl space-y-2">
-							<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">{tr(locale, "Moteur forfaits", "Packages engine")}</p>
-							<CardTitle className="text-2xl font-semibold tracking-tight sm:text-[2rem]">
+							<p className="text-[10px] font-medium uppercase tracking-[0.3em] text-primary-foreground/65">
+								{tr(locale, "Moteur forfaits", "Packages engine")}
+							</p>
+							<CardTitle className="text-2xl font-semibold tracking-tight text-primary-foreground sm:text-3xl">
 								{tr(locale, "Calculateur de forfaits croisiere", "Cruise package calculator")}
 							</CardTitle>
-							<p className="text-sm leading-6 text-muted-foreground">
+							<p className="max-w-2xl text-sm leading-6 text-primary-foreground/70">
 								{tr(
 									locale,
 									"Outil integree de planification de forfaits croisiere, suivi de marge et sauvegarde de dossiers.",
@@ -1103,15 +1105,25 @@ export function ForfaitsWorkbench({
 								)}
 							</p>
 							<div className="flex flex-wrap items-center gap-2">
-								<Badge variant="secondary">
+								<Badge className="border-primary-foreground/20 bg-primary-foreground/12 text-primary-foreground hover:bg-primary-foreground/12">
 									{tr(locale, "Etat", "Status")} {summary.health}
 								</Badge>
 								{selectedProject ? (
-									<Badge variant="outline">
+									<Badge
+										variant="outline"
+										className="border-primary-foreground/25 bg-transparent text-primary-foreground"
+									>
 										{tr(locale, "Revision", "Revision")} {selectedProject.currentRevision || 1}
 									</Badge>
 								) : null}
-								{selectedTrip ? <Badge variant="outline">{selectedTrip.name}</Badge> : null}
+								{selectedTrip ? (
+									<Badge
+										variant="outline"
+										className="max-w-56 truncate border-primary-foreground/25 bg-transparent text-primary-foreground"
+									>
+										{selectedTrip.name}
+									</Badge>
+								) : null}
 							</div>
 						</div>
 						<div className="flex flex-wrap items-center gap-2">
@@ -1125,14 +1137,16 @@ export function ForfaitsWorkbench({
 							</Button>
 							<Button
 								type="button"
-								variant="outline"
+								variant="ghost"
+								className="border border-primary-foreground/35 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground"
 								onClick={exportPdf}
 							>
 								<FileText className="size-4" /> {tr(locale, "PDF client", "Client PDF")}
 							</Button>
 							<Button
 								type="button"
-								variant="outline"
+								variant="ghost"
+								className="border border-primary-foreground/35 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground"
 								onClick={resetAll}
 								disabled={busy}
 							>
@@ -1141,7 +1155,7 @@ export function ForfaitsWorkbench({
 						</div>
 					</div>
 				</CardHeader>
-				<CardContent className="grid gap-4 md:grid-cols-3">
+				<CardContent className="grid gap-4 bg-card px-5 py-5 sm:px-6 sm:py-6 md:grid-cols-3">
 					<div className="space-y-2">
 						<Label htmlFor="projectName">{tr(locale, "Nom du dossier", "Project name")}</Label>
 						<Input
@@ -1187,7 +1201,7 @@ export function ForfaitsWorkbench({
 						{headerStats.map((item) => (
 							<div
 								key={item.label}
-								className="rounded-xl border border-border/70 bg-card/70 px-3 py-2"
+								className="rounded-xl border border-border/70 bg-background/70 px-3 py-2.5"
 							>
 								<p className="text-[11px] uppercase tracking-wide text-muted-foreground">{item.label}</p>
 								<p className="text-base font-semibold tabular-nums">{item.value}</p>
@@ -1199,14 +1213,14 @@ export function ForfaitsWorkbench({
 			</Card>
 
 			{/* WORKBENCH TABS */}
-			<div className="flex flex-wrap items-center gap-1 rounded-2xl border border-border bg-card/70 p-1">
+			<div className="flex flex-wrap items-center gap-1 rounded-2xl border border-border/70 bg-card p-1.5 shadow-sm">
 				{TAB_ITEMS.map((item) => (
 					<Button
 						key={item.id}
 						type="button"
 						variant={tab === item.id ? "default" : "ghost"}
 						size="sm"
-						className="h-auto min-h-9 rounded-xl px-3 py-1.5"
+						className="h-auto min-h-10 rounded-xl px-3 py-1.5 text-left"
 						onClick={() => setTab(item.id)}
 					>
 						<span className="flex flex-col items-start leading-tight">

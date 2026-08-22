@@ -1,7 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
-import { Card, CardContent } from "@/components/ui/card";
-import { LocaleText } from "@/components/i18n/locale-text";
 import { SettingsTabs } from "@/components/settings/settings-tabs";
 
 export const metadata = {
@@ -97,29 +95,6 @@ export default async function SettingsPage({ searchParams }) {
 
 	return (
 		<div className="space-y-6">
-			<Card className="border-border/70 bg-card/85 shadow-sm backdrop-blur-sm">
-				<CardContent className="space-y-2 p-5 sm:p-6">
-					<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
-						<LocaleText
-							messageKey="settings.kicker"
-							fallback="Account and workspace"
-						/>
-					</p>
-					<h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem]">
-						<LocaleText
-							messageKey="settings.title"
-							fallback="Settings"
-						/>
-					</h1>
-					<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-						<LocaleText
-							messageKey="settings.subtitle"
-							fallback="Manage your account, team access, and CRM workspace controls from one organized place."
-						/>
-					</p>
-				</CardContent>
-			</Card>
-
 			<SettingsTabs
 				user={user}
 				isAdmin={isAdmin}

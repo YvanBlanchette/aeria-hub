@@ -23,11 +23,13 @@ export function TripsTable({ trips }) {
 		{ key: "name", label: t("trips.table.trip", "Trip") },
 		{ key: "clientName", label: t("trips.table.client", "Client") },
 		{ key: "destination", label: t("trips.table.destination", "Destination") },
-		{ key: "startDate", label: t("trips.table.dates", "Dates"), kind: "date" },
+		{ key: "startDate", label: t("trips.table.departure", "Departure date"), kind: "date" },
+		{ key: "endDate", label: t("trips.table.return", "Return date"), kind: "date" },
 		{ key: "totalPrice", label: t("trips.table.totalPrice", "Total price"), align: "right", kind: "number" },
+		{ key: "readiness", label: t("trips.table.readiness", "Readiness") },
 		{ key: "status", label: t("trips.table.status", "Status"), align: "right" },
 	];
-	const rows = trips.map((t) => ({ ...t, clientName: `${t.client.firstName} ${t.client.lastName}` }));
+	const rows = trips.map((t) => ({ ...t, clientName: `${t.client.firstName} ${t.client.lastName}`, readiness: t.segments?.length || 0 }));
 	const { sorted, sortKey, sortDir, toggleSort } = useSortableRows(rows, COLUMNS);
 
 	if (rows.length === 0) {
@@ -82,11 +84,24 @@ export function TripsTable({ trips }) {
 							</Link>
 						</TableCell>
 						<TableCell className="text-muted-foreground">{trip.destination}</TableCell>
-						<TableCell className="text-muted-foreground">
-							{trip.startDate ? formatDate(trip.startDate) : "—"}
-							{trip.endDate ? ` – ${formatDate(trip.endDate)}` : ""}
-						</TableCell>
+						<TableCell className="text-muted-foreground">{trip.startDate ? formatDate(trip.startDate) : "—"}</TableCell>
+						<TableCell className="text-muted-foreground">{trip.endDate ? formatDate(trip.endDate) : "—"}</TableCell>
 						<TableCell className="text-right tabular-nums">{trip.totalPrice != null ? formatCurrency(trip.totalPrice) : "—"}</TableCell>
+						<TableCell>
+							<div className="flex flex-wrap gap-1">
+								<Badge variant={trip.segments?.length ? "secondary" : "outline"}>{trip.segments?.length || 0} elements</Badge>
+								{(() => {
+									const outstanding = (trip.invoices || []).reduce((sum, invoice) => sum + Math.max((invoice.amount || 0) - (invoice.amountPaid || 0), 0), 0);
+									const overdueTasks = (trip.tasks || []).filter((task) => !task.completed && task.dueDate && new Date(task.dueDate) < new Date()).length;
+									return (
+										<>
+											<Badge variant={outstanding > 0 ? "destructive" : "secondary"}>{outstanding > 0 ? "Balance due" : "Paid"}</Badge>
+											{overdueTasks > 0 && <Badge variant="destructive">{overdueTasks} overdue</Badge>}
+										</>
+									);
+								})()}
+							</div>
+						</TableCell>
 						<TableCell className="text-right">
 							<Badge variant={STATUS_VARIANT[trip.status] || "secondary"}>{trip.status}</Badge>
 						</TableCell>

@@ -68,11 +68,11 @@ export default async function InquiriesPage() {
 				</div>
 			</div>
 
-			<Card>
+			<Card className="p-0">
 				<CardHeader>
 					<CardTitle>Create inquiry</CardTitle>
 				</CardHeader>
-				<CardContent>
+				<CardContent className="p-0">
 					<form
 						action={createInquiry}
 						className="grid grid-cols-1 gap-3 md:grid-cols-8"
@@ -177,7 +177,7 @@ export default async function InquiriesPage() {
 					{inquiries.length === 0 ? (
 						<p className="text-sm text-muted-foreground">No inquiries yet.</p>
 					) : (
-						<div className="overflow-hidden rounded-lg border border-border">
+						<div className="overflow-hidden">
 							<Table>
 								<TableHeader>
 									<TableRow>

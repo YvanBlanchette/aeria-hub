@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireTripStaffAccess } from "@/lib/trip-access";
 import { logActivity } from "@/lib/activity";
 import { tServer } from "@/lib/i18n-server";
 import { dollarsToCents } from "@/lib/format";
@@ -34,7 +34,7 @@ function readPaymentFields(formData) {
  */
 export async function createPayment(tripId, prevState, formData) {
 	const t = tServer;
-	const user = await requireUser();
+	const { user } = await requireTripStaffAccess(tripId);
 	const fields = readPaymentFields(formData);
 
 	if (fields.amount == null || fields.amount < 0) return t("errors.validPaymentAmount", "Enter a valid payment amount.");
@@ -66,7 +66,7 @@ export async function createPayment(tripId, prevState, formData) {
  */
 export async function updatePayment(paymentId, tripId, prevState, formData) {
 	const t = tServer;
-	await requireUser();
+	await requireTripStaffAccess(tripId);
 	const fields = readPaymentFields(formData);
 
 	if (fields.amount == null || fields.amount < 0) return t("errors.validPaymentAmount", "Enter a valid payment amount.");
@@ -87,7 +87,7 @@ export async function updatePayment(paymentId, tripId, prevState, formData) {
  * @param {boolean} cancelled
  */
 export async function setPaymentCancelled(paymentId, tripId, cancelled) {
-	await requireUser();
+	await requireTripStaffAccess(tripId);
 	const existing = await prisma.tripPayment.findFirst({ where: { id: paymentId, tripId } });
 	if (!existing) return;
 

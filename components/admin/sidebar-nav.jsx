@@ -6,13 +6,18 @@ import { cn } from "@/lib/utils";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { navItems } from "./nav-config";
 
-export function SidebarNav({ onNavigate }) {
+export function SidebarNav({ onNavigate, user }) {
 	const pathname = usePathname();
 	const { t } = useLocale();
+	const visibleItems = navItems.filter((item) => {
+		if (item.isClient) return user?.role === "CLIENT";
+		if (!item.isAdmin) return true;
+		return user?.role === "ADMIN" || user?.role === "AGENT";
+	});
 
 	return (
 		<nav className="flex flex-1 flex-col gap-1.5 px-3 py-4">
-			{navItems.map((item) => {
+			{visibleItems.map((item) => {
 				const Icon = item.icon;
 				const isActive = item.href && pathname.startsWith(item.href);
 				const label = t(item.labelKey, item.label);

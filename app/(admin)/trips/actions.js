@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
+import { requireTripStaffAccess } from "@/lib/trip-access";
 import { logActivity } from "@/lib/activity";
 import { tServer } from "@/lib/i18n-server";
 import { dollarsToCents } from "@/lib/format";
@@ -37,6 +38,7 @@ function readTripFields(formData) {
 export async function createTrip(prevState, formData) {
 	const t = tServer;
 	const user = await requireUser();
+	if (user.role === "CLIENT") throw new Error("Forbidden: staff trip access required.");
 	const { clientId, ...fields } = readTripFields(formData);
 
 	if (!clientId) return t("errors.selectClient", "Please select a client.");
@@ -68,7 +70,7 @@ export async function createTrip(prevState, formData) {
  */
 export async function updateTrip(tripId, prevState, formData) {
 	const t = tServer;
-	const user = await requireUser();
+	const { user } = await requireTripStaffAccess(tripId);
 	const { clientId, ...fields } = readTripFields(formData);
 
 	if (!clientId) return t("errors.selectClient", "Please select a client.");
@@ -107,7 +109,7 @@ export async function updateTrip(tripId, prevState, formData) {
  */
 export async function duplicateTrip(tripId, prevState, formData) {
 	const t = tServer;
-	const user = await requireUser();
+	const { user } = await requireTripStaffAccess(tripId);
 	const targetClientId = formData.get("clientId");
 	if (typeof targetClientId !== "string" || !targetClientId) return t("errors.selectClient", "Please select a client.");
 
@@ -167,7 +169,7 @@ export async function duplicateTrip(tripId, prevState, formData) {
  */
 export async function addTripClient(tripId, prevState, formData) {
 	const t = tServer;
-	const user = await requireUser();
+	const { user } = await requireTripStaffAccess(tripId);
 	const clientId = formData.get("clientId");
 	if (typeof clientId !== "string" || !clientId) return t("errors.selectClient", "Please select a client.");
 
@@ -200,7 +202,7 @@ export async function addTripClient(tripId, prevState, formData) {
  * @param {string} tripId
  */
 export async function removeTripClient(tripClientId, tripId) {
-	await requireUser();
+	await requireTripStaffAccess(tripId);
 	const tripClient = await prisma.tripClient.findFirst({ where: { id: tripClientId, tripId } });
 	if (!tripClient) return;
 
@@ -215,7 +217,7 @@ export async function removeTripClient(tripClientId, tripId) {
  * @param {string} clientId
  */
 export async function deleteTrip(tripId, clientId) {
-	const user = await requireUser();
+	const { user } = await requireTripStaffAccess(tripId);
 	const existing = await prisma.trip.findFirst({ where: { id: tripId, clientId } });
 	if (!existing) return;
 	const trip = await prisma.trip.delete({ where: { id: tripId } });

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireTripStaffAccess } from "@/lib/trip-access";
 import { logActivity } from "@/lib/activity";
 import { tServer } from "@/lib/i18n-server";
 
@@ -13,7 +13,7 @@ import { tServer } from "@/lib/i18n-server";
  */
 export async function createTask(tripId, prevState, formData) {
 	const t = tServer;
-	const user = await requireUser();
+	const { user } = await requireTripStaffAccess(tripId);
 	const title = formData.get("title");
 	const dueDate = formData.get("dueDate");
 	const assigneeId = formData.get("assigneeId");
@@ -52,7 +52,7 @@ export async function createTask(tripId, prevState, formData) {
  * @param {boolean} completed
  */
 export async function toggleTask(taskId, tripId, completed) {
-	await requireUser();
+	await requireTripStaffAccess(tripId);
 	const task = await prisma.tripTask.findFirst({ where: { id: taskId, tripId } });
 	if (!task) return;
 	await prisma.tripTask.update({ where: { id: taskId }, data: { completed } });
@@ -65,7 +65,7 @@ export async function toggleTask(taskId, tripId, completed) {
  * @param {string} tripId
  */
 export async function deleteTask(taskId, tripId) {
-	await requireUser();
+	await requireTripStaffAccess(tripId);
 	const task = await prisma.tripTask.findFirst({ where: { id: taskId, tripId } });
 	if (!task) return;
 	await prisma.tripTask.delete({ where: { id: taskId } });

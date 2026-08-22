@@ -5,7 +5,7 @@ import { useLocale } from "@/components/i18n/locale-provider";
 import { SidebarNav } from "./sidebar-nav";
 import Image from "next/image";
 
-export function Sidebar() {
+export function Sidebar({ user }) {
 	const { t } = useLocale();
 
 	return (
@@ -17,7 +17,7 @@ export function Sidebar() {
 				>
 					<div className="min-w-0">
 						<Image
-							src="/branding/aeria-hub-logo-white-horizontal.svg"
+							src="/branding/aeria-hub-client-logo--white.svg"
 							alt="ÆRIA Hub Logo"
 							width={100}
 							height={100}
@@ -26,7 +26,7 @@ export function Sidebar() {
 					</div>
 				</Link>
 			</div>
-			<SidebarNav />
+			<SidebarNav user={user} />
 		</aside>
 	);
 }

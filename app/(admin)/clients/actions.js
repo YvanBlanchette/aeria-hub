@@ -190,7 +190,9 @@ export async function createClientPortalAccess(clientId, prevState, formData) {
 		if (error?.code === "P2002") return { error: "This email is already used by another account." };
 		if (error?.code === "P2025") return { error: "The client or account could not be found. Refresh the page and try again." };
 		if (error?.code === "P2003") return { error: "The database is missing the client portal relationship. Apply the latest Prisma migration." };
-		return { error: "Unable to create portal access. Please try again." };
+		const diagnostic = error?.code ? ` (${error.code})` : "";
+		const detail = error instanceof Error && error.message ? ` ${error.message.slice(0, 220)}` : " Check the server logs for the exact cause.";
+		return { error: `Unable to create portal access${diagnostic}.${detail}` };
 	}
 }
 

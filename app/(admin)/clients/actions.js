@@ -117,7 +117,10 @@ export async function createClientPortalAccess(clientId, prevState, formData) {
 		if (!client.primaryEmail) return { error: "This client needs a primary email before portal access can be created." };
 
 		const email = client.primaryEmail.trim().toLowerCase();
-		const existingUser = await prisma.user.findUnique({ where: { email }, select: { id: true, role: true, clientId: true } });
+		const existingUser = await prisma.user.findFirst({
+			where: { email: { equals: email, mode: "insensitive" } },
+			select: { id: true, role: true, clientId: true },
+		});
 		if (existingUser && existingUser.clientId !== client.id) return { error: "This email is already used by another account." };
 
 		const temporaryPassword = `Aeria-${crypto.randomBytes(5).toString("base64url")}`;
@@ -143,6 +146,8 @@ export async function createClientPortalAccess(clientId, prevState, formData) {
 		return { email, temporaryPassword };
 	} catch (error) {
 		console.error("createClientPortalAccess failed", error);
+		if (error?.code === "P2002") return { error: "This email is already used by another account." };
+		if (error?.code === "P2025") return { error: "The client or account could not be found. Refresh the page and try again." };
 		return { error: "Unable to create portal access. Please try again." };
 	}
 }

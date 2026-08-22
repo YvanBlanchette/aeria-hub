@@ -17,8 +17,24 @@ export default async function SettingsPage({ searchParams }) {
 
 	const user = await prisma.user.findUnique({
 		where: { id: sessionUser.id },
-		select: { id: true, name: true, email: true, role: true, avatarUrl: true },
+		select: { id: true, name: true, email: true, role: true, avatarUrl: true, clientId: true },
 	});
+	if (!user) return null;
+	if (user.role === "CLIENT") {
+		return (
+			<div className="space-y-6">
+				<SettingsTabs
+					user={user}
+					isAdmin={false}
+					teamUsers={[]}
+					portalClients={[]}
+					workspaceSummary={null}
+					googleCalendarConnection={null}
+					googleStatus={null}
+				/>
+			</div>
+		);
+	}
 
 	const googleCalendarConnection = await prisma.googleCalendarConnection.findUnique({
 		where: { userId: sessionUser.id },

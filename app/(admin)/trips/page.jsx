@@ -21,10 +21,17 @@ export const metadata = {
 
 const PAGE_SIZE = 25;
 async function ClientTripsView({ user }) {
-	const portal = await getClientPortalRecord(user);
+	const account = await prisma.user.findUnique({ where: { id: user.id }, select: { clientId: true } });
+	const clientId = account?.clientId;
+	const portal = clientId
+		? await prisma.client.findUnique({
+				where: { id: clientId },
+				select: { id: true, trips: { orderBy: { startDate: "asc" }, include: { invoices: true, tasks: true, payments: true, quotes: true, segments: true } } },
+			})
+		: await getClientPortalRecord(user);
 	if (!portal) return <div className="p-6 text-muted-foreground">No client profile found for this account.</div>;
 
-	const trips = [...(portal.client.trips || [])].sort((a, b) => new Date(a.startDate || 0) - new Date(b.startDate || 0));
+	const trips = [...(portal.trips || portal.client?.trips || [])].sort((a, b) => new Date(a.startDate || 0) - new Date(b.startDate || 0));
 	return (
 		<div className="space-y-6">
 			<Card className="p-0">

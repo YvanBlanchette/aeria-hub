@@ -1091,20 +1091,20 @@ export function ForfaitsWorkbench({
 					<div className="pointer-events-none absolute bottom-0 left-0 h-24 w-24 -translate-x-4 translate-y-4 rounded-full bg-accent/45 blur-2xl" />
 					<div className="relative flex flex-wrap items-start justify-between gap-3">
 						<div className="max-w-3xl space-y-2">
-							<p className="text-[10px] font-medium uppercase tracking-[0.3em] text-primary-foreground/65">
+							{/* <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-primary-foreground/65">
 								{tr(locale, "Moteur forfaits", "Packages engine")}
-							</p>
+							</p> */}
 							<CardTitle className="text-2xl font-semibold tracking-tight text-primary-foreground sm:text-3xl">
 								{tr(locale, "Calculateur de forfaits croisiere", "Cruise package calculator")}
 							</CardTitle>
-							<p className="max-w-2xl text-sm leading-6 text-primary-foreground/70">
+							{/* <p className="max-w-2xl text-sm leading-6 text-primary-foreground/70">
 								{tr(
 									locale,
 									"Outil integree de planification de forfaits croisiere, suivi de marge et sauvegarde de dossiers.",
 									"Integrated cruise package planning tool with margin tracking and project persistence.",
 								)}
-							</p>
-							<div className="flex flex-wrap items-center gap-2">
+							</p> */}
+							{/* <div className="flex flex-wrap items-center gap-2">
 								<Badge className="border-primary-foreground/20 bg-primary-foreground/12 text-primary-foreground hover:bg-primary-foreground/12">
 									{tr(locale, "Etat", "Status")} {summary.health}
 								</Badge>
@@ -1124,7 +1124,7 @@ export function ForfaitsWorkbench({
 										{selectedTrip.name}
 									</Badge>
 								) : null}
-							</div>
+							</div> */}
 						</div>
 						<div className="flex flex-wrap items-center gap-2">
 							<Button
@@ -1225,9 +1225,9 @@ export function ForfaitsWorkbench({
 					>
 						<span className="flex flex-col items-start leading-tight">
 							<span>{tabMeta[item.id]?.title || item.id}</span>
-							<span className={cn("text-[10px] uppercase tracking-wide", tab === item.id ? "text-primary-foreground/80" : "text-muted-foreground")}>
+							{/* <span className={cn("text-[10px] uppercase tracking-wide", tab === item.id ? "text-primary-foreground/80" : "text-muted-foreground")}>
 								{tabMeta[item.id]?.hint || ""}
-							</span>
+							</span> */}
 						</span>
 					</Button>
 				))}

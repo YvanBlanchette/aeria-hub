@@ -36,6 +36,7 @@ export function ClientPortalAccessDialog({ clientId, clientName, email, hasPorta
 				<Button
 					variant="outline"
 					size="sm"
+					className="text-gray-900 cursor-pointer"
 				>
 					<KeyRound className="size-4" />
 					{hasPortalAccess ? "Reset portal password" : "Create portal access"}

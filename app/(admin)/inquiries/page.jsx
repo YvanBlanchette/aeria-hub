@@ -1,7 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { forfaitScope, inquiryScope } from "@/lib/visibility-scope";
-import { createInquiry, updateInquiryStatus, convertInquiryToClient, convertInquiryToQuoteFromPackage, updateInquiryLinkedForfait } from "./actions";
+import {
+	approveClientProfileUpdate,
+	createInquiry,
+	updateInquiryStatus,
+	convertInquiryToClient,
+	convertInquiryToQuoteFromPackage,
+	updateInquiryLinkedForfait,
+} from "./actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +36,10 @@ function sourceLabel(source) {
 	if (source === "client_profile_update") return "Profile update";
 	if (source === "client_portal") return "Client portal";
 	return source || "-";
+}
+
+function isProfileUpdate(inquiry) {
+	return inquiry.source === "client_profile_update" && inquiry.convertedClientId && inquiry.status !== "CONVERTED";
 }
 
 export default async function InquiriesPage() {
@@ -64,16 +75,6 @@ export default async function InquiriesPage() {
 
 	return (
 		<div className="space-y-6">
-			<div className="rounded-3xl border border-border/70 bg-card/85 p-5 shadow-sm backdrop-blur-sm sm:p-6">
-				<div className="space-y-2">
-					<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">Lead workspace</p>
-					<h1 className="text-2xl font-semibold tracking-tight sm:text-[2rem]">Inquiries</h1>
-					<p className="text-sm leading-6 text-muted-foreground">
-						Capture inbound demand, update pipeline status, and convert qualified leads into client trips.
-					</p>
-				</div>
-			</div>
-
 			<Card className="p-0">
 				<CardHeader>
 					<CardTitle>Create inquiry</CardTitle>
@@ -175,13 +176,13 @@ export default async function InquiriesPage() {
 				</CardContent>
 			</Card>
 
-			<Card>
+			<Card className="p-0">
 				<CardHeader>
 					<CardTitle>Inquiry pipeline</CardTitle>
 				</CardHeader>
-				<CardContent>
+				<CardContent className="p-0">
 					{inquiries.length === 0 ? (
-						<p className="text-sm text-muted-foreground">No inquiries yet.</p>
+						<p className="p-4 text-sm text-muted-foreground">No inquiries yet.</p>
 					) : (
 						<div className="overflow-hidden">
 							<Table>
@@ -254,6 +255,21 @@ export default async function InquiriesPage() {
 											<TableCell>{formatDate(inquiry.createdAt)}</TableCell>
 											<TableCell>
 												<div className="flex flex-wrap items-center justify-end gap-2">
+													{isProfileUpdate(inquiry) && (
+														<form action={approveClientProfileUpdate}>
+															<input
+																type="hidden"
+																name="inquiryId"
+																value={inquiry.id}
+															/>
+															<Button
+																type="submit"
+																size="sm"
+															>
+																Approve
+															</Button>
+														</form>
+													)}
 													<form action={updateInquiryLinkedForfait}>
 														<input
 															type="hidden"

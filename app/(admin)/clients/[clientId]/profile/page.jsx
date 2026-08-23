@@ -22,13 +22,17 @@ export default async function ClientProfilePage({ params }) {
 	});
 	if (!client) notFound();
 
-	const [loyaltyPrograms, activity, recentTrips] = await Promise.all([
+	const [loyaltyPrograms, primaryTrips, companionLinks, activity] = await Promise.all([
 		prisma.loyaltyProgram.findMany({ where: { clientId }, orderBy: { createdAt: "asc" } }),
 		prisma.trip.findMany({
 			where: { clientId },
 			orderBy: { startDate: "desc" },
 			take: 5,
 			select: { id: true, name: true, destination: true, startDate: true, endDate: true, status: true },
+		}),
+		prisma.tripClient.findMany({
+			where: { clientId },
+			include: { trip: { select: { id: true, name: true, destination: true, startDate: true, endDate: true, status: true } } },
 		}),
 		prisma.activityLog.findMany({
 			where: { clientId },
@@ -37,6 +41,9 @@ export default async function ClientProfilePage({ params }) {
 			include: { user: { select: { name: true } } },
 		}),
 	]);
+	const recentTrips = [...primaryTrips.map((trip) => ({ ...trip, isCompanion: false })), ...companionLinks.map(({ trip }) => ({ ...trip, isCompanion: true }))]
+		.sort((a, b) => new Date(b.startDate ?? 0) - new Date(a.startDate ?? 0))
+		.slice(0, 5);
 
 	return (
 		<div className="space-y-6">
@@ -144,43 +151,17 @@ export default async function ClientProfilePage({ params }) {
 								className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-muted/40"
 							>
 								<div>
-									<p className="font-medium">{trip.name}</p>
-									<p className="text-xs text-muted-foreground">
-										{trip.destination} · {trip.startDate ? formatDate(trip.startDate) : "No departure date"}
-									</p>
-								</div>
-								<Badge variant={trip.status === "BOOKED" || trip.status === "TRAVELING" ? "default" : "secondary"}>{trip.status}</Badge>
-							</Link>
-						))
-					)}
-				</CardContent>
-			</Card>
-
-			<Card className="p-0">
-				<CardHeader className="flex flex-row items-center justify-between gap-3">
-					<CardTitle>Trips</CardTitle>
-					<Button
-						variant="outline"
-						size="sm"
-						asChild
-					>
-						<Link href={`/clients/${clientId}/trips`}>
-							View all <ArrowRight className="size-4" />
-						</Link>
-					</Button>
-				</CardHeader>
-				<CardContent className="space-y-2 p-3">
-					{recentTrips.length === 0 ? (
-						<p className="p-2 text-sm text-muted-foreground">No trips on record for this client.</p>
-					) : (
-						recentTrips.map((trip) => (
-							<Link
-								key={trip.id}
-								href={`/trips/${trip.id}/overview`}
-								className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-muted/40"
-							>
-								<div>
-									<p className="font-medium">{trip.name}</p>
+									<div className="flex items-center gap-2">
+										<p className="font-medium">{trip.name}</p>
+										{trip.isCompanion && (
+											<Badge
+												variant="outline"
+												className="text-[10px]"
+											>
+												Companion
+											</Badge>
+										)}
+									</div>
 									<p className="text-xs text-muted-foreground">
 										{trip.destination} · {trip.startDate ? formatDate(trip.startDate) : "No departure date"}
 									</p>

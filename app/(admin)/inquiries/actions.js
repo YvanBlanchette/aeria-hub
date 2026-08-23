@@ -126,6 +126,78 @@ export async function updateInquiryStatus(formData) {
 	revalidatePath("/dashboard");
 }
 
+function parseProfileUpdateNotes(notes) {
+	const labelToField = {
+		"First name": "firstName",
+		"Last name": "lastName",
+		"Primary email": "primaryEmail",
+		"Secondary email": "secondaryEmail",
+		"Primary phone": "primaryPhone",
+		"Secondary phone": "secondaryPhone",
+		Address: "address",
+		City: "city",
+		"Province / State": "stateProvince",
+		"Postal code": "postalCode",
+		Country: "country",
+		"Date of birth": "dateOfBirth",
+		"Passport number": "passportNumber",
+		"Passport issue date": "passportIssueDate",
+		"Passport expiry date": "passportExpiry",
+		"Redress number": "redressNumber",
+		"Known traveler number": "knownTravelerNumber",
+		Nationality: "nationality",
+		"Travel preferences": "travelPreferences",
+		"Dietary / medical notes": "dietaryNotes",
+		"Mobility notes": "mobilityNotes",
+	};
+	const dateFields = new Set(["dateOfBirth", "passportIssueDate", "passportExpiry"]);
+	const data = {};
+
+	for (const line of String(notes || "").split("\n")) {
+		const match = line.match(/^(.+): "[\s\S]*" -> "([\s\S]*)"$/);
+		if (!match) continue;
+		const field = labelToField[match[1]];
+		if (!field) continue;
+		const value = match[2] === "-" ? null : match[2];
+		data[field] = dateFields.has(field) && value ? new Date(`${value}T00:00:00.000Z`) : value;
+	}
+
+	return data;
+}
+
+export async function approveClientProfileUpdate(formData) {
+	const user = await requireUser();
+	const inquiryIdValue = formData.get("inquiryId");
+	const inquiryId = typeof inquiryIdValue === "string" ? inquiryIdValue.trim() : "";
+	if (!inquiryId) return;
+
+	const inquiry = await prisma.inquiry.findFirst({
+		where: { id: inquiryId, source: "client_profile_update", ...inquiryScope(user) },
+		select: { id: true, name: true, notes: true, convertedClientId: true },
+	});
+	if (!inquiry?.convertedClientId) return;
+
+	const data = parseProfileUpdateNotes(inquiry.notes);
+	if (Object.keys(data).length === 0) return;
+
+	await prisma.client.update({ where: { id: inquiry.convertedClientId }, data });
+	await prisma.inquiry.update({ where: { id: inquiry.id }, data: { status: "CONVERTED", convertedAt: new Date() } });
+
+	await logActivity({
+		entityType: "Client",
+		entityId: inquiry.convertedClientId,
+		action: "updated",
+		description: `Approved profile update request for ${inquiry.name}`,
+		userId: user.id,
+		clientId: inquiry.convertedClientId,
+	});
+
+	revalidatePath("/inquiries");
+	revalidatePath(`/clients/${inquiry.convertedClientId}`);
+	revalidatePath(`/clients/${inquiry.convertedClientId}/profile`);
+	revalidatePath("/dashboard");
+}
+
 export async function convertInquiryToClient(formData) {
 	const user = await requireUser();
 	const t = tServer;

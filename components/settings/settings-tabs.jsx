@@ -233,6 +233,20 @@ export function SettingsTabs({ user, client = null, isAdmin, teamUsers, portalCl
 									</Button>
 								</CardContent>
 							</Card>
+							<Card>
+								<CardHeader>
+									<CardTitle>Cruise catalog</CardTitle>
+								</CardHeader>
+								<CardContent className="flex flex-wrap items-center justify-between gap-3">
+									<p className="text-sm text-muted-foreground">View and edit the cruise ship and port reference data used by the cruise segment builder.</p>
+									<Button
+										variant="outline"
+										asChild
+									>
+										<Link href="/settings/cruise-catalog/ships">Manage catalog</Link>
+									</Button>
+								</CardContent>
+							</Card>
 						</>
 					)}
 

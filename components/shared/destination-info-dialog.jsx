@@ -94,7 +94,7 @@ export function DestinationInfoDialog({ location, date, children }) {
 								<p className="mt-2 text-xs text-muted-foreground">Current conditions — actual weather during your trip may differ.</p>
 							</div>
 						) : (
-							<p className="text-xs text-muted-foreground">Weather data isn&apos;t available for this destination.</p>
+							!state.data?.typicalWeather && <p className="text-xs text-muted-foreground">Weather data isn&apos;t available for this destination.</p>
 						)}
 
 						{/* TYPICAL WEATHER FOR THIS TIME OF YEAR */}

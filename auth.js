@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
 	session: { strategy: "jwt" },
+	// Required behind a reverse proxy (nginx) where the app binds to localhost but is served on a public domain.
+	trustHost: true,
 	pages: {
 		signIn: "/login",
 	},

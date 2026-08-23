@@ -1,0 +1,42 @@
+{
+  "generated_at": "2026-08-23T11:11:11+00:00",
+  "discovered_ports": 2301,
+  "ports_in_database": 2301,
+  "failed_ports": 0,
+  "port_calls": 16430,
+  "coverage": {
+    "coordinates": {
+      "count": 2301,
+      "percent": 100.0
+    },
+    "locode": {
+      "count": 1078,
+      "percent": 46.8
+    },
+    "country": {
+      "count": 390,
+      "percent": 16.9
+    },
+    "city": {
+      "count": 2301,
+      "percent": 100.0
+    },
+    "description": {
+      "count": 2301,
+      "percent": 100.0
+    },
+    "getting_from_port": {
+      "count": 2301,
+      "percent": 100.0
+    }
+  },
+  "port_access": {
+    "tender_confirmed": 215,
+    "dock_confirmed": 284,
+    "unknown": 1802
+  },
+  "port_calls_missing_times": {
+    "arrival": 8341,
+    "departure": 7860
+  }
+}

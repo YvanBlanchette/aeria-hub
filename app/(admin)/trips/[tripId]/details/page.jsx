@@ -26,6 +26,14 @@ export default async function TripDetailsPage({ params }) {
 		isStaff ? prisma.supplier.findMany({ orderBy: { name: "asc" } }) : [],
 	]);
 
+	const cruisePortRows = isStaff
+		? await prisma.cruisePort.findMany({
+				orderBy: [{ name: "asc" }, { country: "asc" }],
+				select: { id: true, name: true, displayText: true, country: true },
+			})
+		: [];
+	const cruisePortOptions = cruisePortRows.map((port) => ({ id: port.id, value: port.name, label: port.displayText || port.name }));
+
 	return (
 		<div className="space-y-6">
 			<div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-2">
@@ -41,6 +49,7 @@ export default async function TripDetailsPage({ params }) {
 						<SegmentFormDialog
 							tripId={tripId}
 							suppliers={suppliers}
+							cruisePortOptions={cruisePortOptions}
 						/>
 					</div>
 				)}
@@ -56,6 +65,7 @@ export default async function TripDetailsPage({ params }) {
 							segment={segment}
 							tripId={tripId}
 							suppliers={suppliers}
+							cruisePortOptions={cruisePortOptions}
 							canMoveUp={isStaff && index > 0}
 							canMoveDown={isStaff && index < segments.length - 1}
 							canManage={isStaff}

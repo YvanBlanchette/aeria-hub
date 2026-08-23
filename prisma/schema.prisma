@@ -540,6 +540,17 @@ model CruisePort {
   displayText String?
   country     String?
 
+  /// CruiseMapper's own numeric port id, used to dedupe/re-sync the scraped catalog.
+  externalId      String?  @unique
+  latitude        Float?
+  longitude       Float?
+  locode          String?
+  region          String?
+  description     String?
+  gettingFromPort String?
+  thingsToDo      Json?
+  sourceUrl       String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

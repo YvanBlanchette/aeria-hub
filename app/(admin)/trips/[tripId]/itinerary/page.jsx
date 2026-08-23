@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
-import { Anchor, CalendarDays, Clock, Ship } from "lucide-react";
+import { Anchor, CalendarDays, Clock, Ship, MapPin } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatTime } from "@/lib/format";
 import { SEGMENT_TYPE_MAP } from "@/lib/trip-segments";
 import { requireTripAccess } from "@/lib/trip-access";
+import { DestinationInfoDialog } from "@/components/shared/destination-info-dialog";
 
 function dateKey(date) {
 	if (!date) return null;
@@ -119,7 +120,21 @@ export default async function ItineraryPage({ params }) {
 												<Anchor className="size-4" />
 											</div>
 											<div className="min-w-0 flex-1">
-												<p className="font-medium">{call.port || "At sea"}</p>
+												{call.port ? (
+													<DestinationInfoDialog
+														location={call.port}
+														date={call.segment.startDateTime}
+													>
+														<button
+															type="button"
+															className="font-medium underline-offset-2 hover:underline"
+														>
+															{call.port}
+														</button>
+													</DestinationInfoDialog>
+												) : (
+													<p className="font-medium">At sea</p>
+												)}
 												<p className="text-xs text-muted-foreground">
 													<Ship className="mr-1 inline size-3" />
 													{call.segment.details?.shipName || call.segment.title}
@@ -141,8 +156,23 @@ export default async function ItineraryPage({ params }) {
 												</div>
 												<div className="min-w-0 flex-1">
 													<p className="font-medium">{segment.title}</p>
-													<p className="text-xs text-muted-foreground">
-														{segment.location || "Location TBD"}
+													<p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+														{segment.location ? (
+															<DestinationInfoDialog
+																location={segment.location}
+																date={segment.startDateTime}
+															>
+																<button
+																	type="button"
+																	className="inline-flex items-center gap-1 underline-offset-2 hover:text-foreground hover:underline"
+																>
+																	<MapPin className="size-3" />
+																	{segment.location}
+																</button>
+															</DestinationInfoDialog>
+														) : (
+															"Location TBD"
+														)}
 														{segment.supplier?.name ? ` · ${segment.supplier.name}` : ""}
 													</p>
 												</div>

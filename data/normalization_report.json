@@ -1,0 +1,42 @@
+{
+  "normalization_version": "3.0",
+  "generated_at": "2026-08-23T16:18:29+00:00",
+  "ports_total": 2301,
+  "port_calls_total": 16430,
+  "countries_filled": 2301,
+  "countries_missing": 0,
+  "country_coverage_percent": 100.0,
+  "country_methods": {
+    "unlocode_country_prefix": 1077,
+    "cruisemapper_name": 1036,
+    "cruisemapper_description": 116,
+    "missing": 16,
+    "official_web": 27,
+    "cruisemapper_summary": 29
+  },
+  "subdivision_filled": 882,
+  "locodes_present": 1078,
+  "coordinates_present": 2301,
+  "web_resolved_ports": 27,
+  "ships_unique": 673,
+  "cruise_lines_unique": 67,
+  "arrival_datetimes_parsed": 8089,
+  "departure_datetimes_parsed": 8570,
+  "unresolved_country_external_ids": [],
+  "source_policy": {
+    "unlocode_country_prefix": "https://unece.org/trade/cefact/UNLOCODE-Download",
+    "country_code_reference": "https://unece.org/trade/cefact/unlocode-code-list-country-and-territory",
+    "galapagos": "https://galapagos.gob.ec/donde-nos-encontramos/",
+    "us_states": "https://www.usa.gov/state-governments/",
+    "saint_vincent_grenadines": "https://tourism.gov.vc/tourism/index.php/national-sites-of-svg/tobago-cays",
+    "timor_leste_jaco": "https://timorleste.tl/destinations/jaco-island",
+    "canary_islands": "https://www.gobiernodecanarias.org/transparencia/temas/institucional-organizativa/instituciones/informacion-sobre-las-islas-canarias/geografia-canarias/index.html",
+    "cabo_verde": "https://portaldoclima.gov.cv/wp-content/uploads/2024/05/Municipal-profile_Praia_reviewedFinal_LM.pdf",
+    "federated_states_micronesia": "https://dofa.gov.fm/wp-content/uploads/2020/06/FMIP-GRM_June-2020.pdf"
+  },
+  "russia_explicit_text_resolved": 16,
+  "encoding_cleanup": {
+    "remaining_suspicious_records": 7,
+    "remaining_known_mojibake_records": []
+  }
+}

@@ -15,11 +15,9 @@ import { dateTimeInputValue, centsToDollarsInputValue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import cruiseVendorsData from "@/data/cruise-vendors.json";
 import cruiseShipsData from "@/data/cruise-ships.json";
-import cruisePortsData from "@/data/cruise-ports.json";
 
 const cruiseLineOptions = toCruiseOptions(cruiseVendorsData?.v).filter((option) => option.value);
 const cruiseShipOptions = toCruiseOptions(cruiseShipsData?.s).filter((option) => option.value);
-const cruisePortOptions = toCruiseOptions(cruisePortsData?.p).filter((option) => option.value);
 
 const CRUISE_LINE_SHIP_TERMS = {
 	AmaWaterways: ["ama"],
@@ -106,7 +104,7 @@ function commissionInputValue(segment) {
 	return centsToDollarsInputValue(total);
 }
 
-export function SegmentFormDialog({ tripId, segment, suppliers = [], trigger }) {
+export function SegmentFormDialog({ tripId, segment, suppliers = [], cruisePortOptions = [], trigger }) {
 	const [open, setOpen] = useState(false);
 	const [type, setType] = useState(segment?.type || "FLIGHT");
 	const [startDateTime, setStartDateTime] = useState(dateTimeInputValue(segment?.startDateTime));
@@ -431,11 +429,15 @@ export function SegmentFormDialog({ tripId, segment, suppliers = [], trigger }) 
 															<p className="font-medium">Day {index + 1}</p>
 															<p className="text-xs text-muted-foreground">{formatCruiseItineraryDate(row.date)}</p>
 														</div>
-														<Input
-															aria-label={`Day ${index + 1} port of call`}
+														<CruiseSearchSelect
+															ariaLabel={`Day ${index + 1} port of call`}
 															value={row.port}
-															onChange={(event) => updateCruiseItineraryRow(row.date, "port", event.target.value)}
+															onValueChange={(value) => updateCruiseItineraryRow(row.date, "port", value)}
+															options={cruisePortOptions}
 															placeholder="At sea, Nassau, Cozumel..."
+															searchPlaceholder="Search ports or type a custom name..."
+															emptyMessage="No port found."
+															allowCustomValue
 														/>
 														<Input
 															aria-label={`Day ${index + 1} arrival time`}
@@ -492,7 +494,19 @@ export function SegmentFormDialog({ tripId, segment, suppliers = [], trigger }) 
 	);
 }
 
-function CruiseSearchSelect({ id, name, value, onValueChange, options, placeholder, searchPlaceholder, emptyMessage, disabled = false }) {
+function CruiseSearchSelect({
+	id,
+	name,
+	value,
+	onValueChange,
+	options,
+	placeholder,
+	searchPlaceholder,
+	emptyMessage,
+	disabled = false,
+	allowCustomValue = false,
+	ariaLabel,
+}) {
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 
@@ -506,6 +520,10 @@ function CruiseSearchSelect({ id, name, value, onValueChange, options, placehold
 		const q = query.trim().toLowerCase();
 		return list.filter((option) => option.label.toLowerCase().includes(q)).slice(0, 120);
 	}, [options, query]);
+
+	const trimmedQuery = query.trim();
+	const hasExactMatch = filtered.some((option) => option.label.toLowerCase() === trimmedQuery.toLowerCase());
+	const showCustomValueOption = allowCustomValue && trimmedQuery && !hasExactMatch;
 
 	return (
 		<>
@@ -527,6 +545,7 @@ function CruiseSearchSelect({ id, name, value, onValueChange, options, placehold
 						variant="outline"
 						role="combobox"
 						aria-expanded={open}
+						aria-label={ariaLabel}
 						disabled={disabled}
 						className="h-8 w-full justify-between rounded-lg border-input bg-transparent px-3 py-1 text-sm font-normal"
 					>
@@ -562,6 +581,20 @@ function CruiseSearchSelect({ id, name, value, onValueChange, options, placehold
 							</button>
 						) : null}
 						{filtered.length === 0 ? <p className="p-3 text-sm text-muted-foreground">{emptyMessage}</p> : null}
+						{showCustomValueOption && (
+							<button
+								type="button"
+								onClick={() => {
+									onValueChange(trimmedQuery);
+									setOpen(false);
+									setQuery("");
+								}}
+								className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm hover:bg-muted/60"
+							>
+								<Plus className="size-4 shrink-0" />
+								<span className="flex-1 truncate">Use "{trimmedQuery}"</span>
+							</button>
+						)}
 						{filtered.map((option) => {
 							const isSelected = value === option.value;
 							return (

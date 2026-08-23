@@ -17,7 +17,16 @@ import { SEGMENT_TYPE_MAP, summarizeSegmentDetails } from "@/lib/trip-segments";
 import { formatCurrency, formatTime } from "@/lib/format";
 import { reorderSegment } from "@/app/(admin)/trips/[tripId]/itinerary/actions";
 
-export function SegmentCard({ segment, tripId, suppliers = [], canMoveUp = false, canMoveDown = false, canManage = true, canClientEdit = false }) {
+export function SegmentCard({
+	segment,
+	tripId,
+	suppliers = [],
+	cruisePortOptions = [],
+	canMoveUp = false,
+	canMoveDown = false,
+	canManage = true,
+	canClientEdit = false,
+}) {
 	const [isPending, startTransition] = useTransition();
 	const meta = SEGMENT_TYPE_MAP[segment.type] || SEGMENT_TYPE_MAP.OTHER;
 	const Icon = meta.icon;
@@ -140,6 +149,7 @@ export function SegmentCard({ segment, tripId, suppliers = [], canMoveUp = false
 								tripId={tripId}
 								segment={segment}
 								suppliers={suppliers}
+								cruisePortOptions={cruisePortOptions}
 								trigger={
 									<Button
 										variant="ghost"

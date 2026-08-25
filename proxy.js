@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import NextAuth from "next-auth";
 
-const publicRoutes = ["/login"];
+const publicRoutes = ["/login", "/travel-profile"];
 
 const { auth } = NextAuth({
 	session: { strategy: "jwt" },

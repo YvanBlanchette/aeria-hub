@@ -38,6 +38,7 @@ function readSupplierFields(formData) {
 		website: get("website"),
 		agentPortalUrl: get("agentPortalUrl"),
 		notes: get("notes"),
+		excursionsLineCode: get("excursionsLineCode"),
 	};
 }
 

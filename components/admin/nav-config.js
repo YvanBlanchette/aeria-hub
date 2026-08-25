@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Plane, Calculator, Percent, FileText, Receipt, Inbox, Building2, MessageSquareText, Settings, Sparkle } from "lucide-react";
+import { Compass, LayoutDashboard, Users, Plane, Calculator, Percent, FileText, Receipt, Inbox, Building2, MessageSquareText, Settings, Sparkle } from "lucide-react";
 
 /** Sidebar navigation entries. `href: null` renders a disabled "coming soon" item. */
 export const navItems = [
@@ -11,6 +11,7 @@ export const navItems = [
 	// { label: "Quotes", labelKey: "nav.quotes", href: "/quotes", icon: FileText, isAdmin: true },
 	// { label: "Invoices", labelKey: "nav.invoices", href: "/invoices", icon: Receipt, isAdmin: true },
 	{ label: "Itinerary", labelKey: "nav.itinerary", href: "/itinerary", icon: FileText, isAdmin: false, isClient: true },
+	{ label: "Travel Profile", labelKey: "nav.travelProfile", href: "/travel-profile", icon: Compass, isAdmin: false, isClient: true },
 	{ label: "Requests", labelKey: "nav.clientRequests", href: "/requests", icon: MessageSquareText, isAdmin: false, isClient: true },
 	{ label: "Inquiries", labelKey: "nav.inquiries", href: "/inquiries", icon: Inbox, isAdmin: true },
 	{ label: "Suppliers", labelKey: "nav.suppliers", href: "/suppliers", icon: Building2, isAdmin: true },

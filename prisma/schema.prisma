@@ -503,6 +503,9 @@ model Supplier {
   agentPortalUrl String?
   notes          String?
 
+  /// Shore Excursions Group's numeric "line" code for this cruise line (affiliate deep links).
+  excursionsLineCode String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -521,6 +524,9 @@ model CruiseShip {
 
   supplierId String?
   supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  /// Shore Excursions Group's numeric "shipId" code (affiliate deep links).
+  excursionsShipCode String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

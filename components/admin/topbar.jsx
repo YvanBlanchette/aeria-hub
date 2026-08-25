@@ -32,6 +32,7 @@ export function Topbar({ user }) {
 		if (pathname === "/suppliers" || pathname.startsWith("/suppliers/")) return t("nav.suppliers", "Suppliers");
 		if (pathname === "/settings") return t("nav.settings", "Settings");
 		if (pathname === "/itinerary") return t("nav.itinerary", "Itinerary");
+		if (pathname === "/travel-profile") return t("nav.travelProfile", "Travel Profile");
 		if (pathname === "/requests") return t("nav.clientRequests", "Requests");
 		return "ÆRIA Hub";
 	}
@@ -46,13 +47,14 @@ export function Topbar({ user }) {
 		if (pathname === "/suppliers" || pathname.startsWith("/suppliers/")) return t("topbar.suppliersSubtitle", "Manage travel partners");
 		if (pathname === "/settings") return t("topbar.settingsSubtitle", "Configure your workspace");
 		if (pathname === "/itinerary") return t("topbar.itinerarySubtitle", "Review your travel arrangements");
+		if (pathname === "/travel-profile") return t("topbar.travelProfileSubtitle", "Discover your AERIA travel style");
 		if (pathname === "/requests") return t("topbar.requestsSubtitle", "Stay connected with your advisor");
 		return t("topbar.defaultSubtitle", "AERIA travel workspace");
 	}
 
 	return (
 		<header className="flex h-[80px] shrink-0 items-center gap-3 border-b border-border/80 bg-card/90 px-4 shadow-[0_1px_0_rgba(255,255,255,0.4)_inset] backdrop-blur-xl">
-			<MobileSidebar />
+			<MobileSidebar user={user} />
 
 			<div className="flex w-full items-center justify-between gap-4 px-2 sm:px-4">
 				<div className="min-w-0 flex-1">

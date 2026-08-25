@@ -16,6 +16,7 @@ export function CruiseShipsTable({ ships, cruiseLines }) {
 				<TableRow>
 					<TableHead>Name</TableHead>
 					<TableHead>Cruise line</TableHead>
+					<TableHead>SEG ship code</TableHead>
 					<TableHead className="w-24 text-right">Actions</TableHead>
 				</TableRow>
 			</TableHeader>
@@ -24,6 +25,7 @@ export function CruiseShipsTable({ ships, cruiseLines }) {
 					<TableRow key={ship.id}>
 						<TableCell className="font-medium">{ship.name}</TableCell>
 						<TableCell className="text-muted-foreground">{ship.supplier?.name || "—"}</TableCell>
+						<TableCell className="text-muted-foreground">{ship.excursionsShipCode || "—"}</TableCell>
 						<TableCell>
 							<div className="flex items-center justify-end gap-1">
 								<CruiseShipFormDialog

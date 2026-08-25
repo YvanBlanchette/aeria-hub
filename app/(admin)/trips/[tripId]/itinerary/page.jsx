@@ -1,12 +1,14 @@
 import { notFound } from "next/navigation";
-import { Anchor, CalendarDays, Clock, Ship, MapPin } from "lucide-react";
+import { Anchor, CalendarDays, Clock, Ship, MapPin, ExternalLink } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatDate, formatTime } from "@/lib/format";
 import { SEGMENT_TYPE_MAP } from "@/lib/trip-segments";
 import { requireTripAccess } from "@/lib/trip-access";
 import { DestinationInfoDialog } from "@/components/shared/destination-info-dialog";
+import { buildShoreExcursionsUrl } from "@/lib/shore-excursions";
 
 function dateKey(date) {
 	if (!date) return null;
@@ -45,6 +47,31 @@ function getCruiseCallsForDay(segments, key) {
 	});
 }
 
+/** Distinct ship names used by CRUISE segments, for a single batch CruiseShip lookup. */
+function collectCruiseShipNames(segments) {
+	const names = new Set();
+	for (const segment of segments) {
+		if (segment.type === "CRUISE" && segment.details?.shipName) names.add(segment.details.shipName);
+	}
+	return [...names];
+}
+
+/** Total cruise length in nights for a ship, derived from its port-call dates across the trip. */
+function computeCruiseNights(segments, shipName) {
+	const dates = new Set();
+	for (const segment of segments) {
+		if (segment.type !== "CRUISE" || segment.details?.shipName !== shipName) continue;
+		if (Array.isArray(segment.details?.cruiseItinerary)) {
+			for (const row of segment.details.cruiseItinerary) {
+				if (row.date) dates.add(row.date);
+			}
+		} else if (segment.startDateTime) {
+			dates.add(dateKey(segment.startDateTime));
+		}
+	}
+	return dates.size > 1 ? dates.size - 1 : null;
+}
+
 function timeRange(segment) {
 	const start = formatTime(segment.startDateTime);
 	const end = formatTime(segment.endDateTime);
@@ -80,6 +107,17 @@ export default async function ItineraryPage({ params }) {
 	});
 	if (!trip) notFound();
 
+	const shipNames = collectCruiseShipNames(trip.segments);
+	const cruiseShipRows = shipNames.length
+		? await prisma.cruiseShip.findMany({
+				where: { name: { in: shipNames } },
+				select: { name: true, excursionsShipCode: true, supplier: { select: { excursionsLineCode: true } } },
+			})
+		: [];
+	const shipCodeMap = new Map(
+		cruiseShipRows.map((row) => [row.name.toLowerCase(), { shipCode: row.excursionsShipCode, lineCode: row.supplier?.excursionsLineCode }]),
+	);
+
 	const days = buildTripDays(trip, trip.segments);
 
 	return (
@@ -111,41 +149,80 @@ export default async function ItineraryPage({ params }) {
 								</div>
 								<div className="space-y-3 p-4">
 									{itemCount === 0 && <p className="text-sm text-muted-foreground">No scheduled items.</p>}
-									{cruiseCalls.map((call, index) => (
-										<div
-											key={`${call.segment.id}-${call.date}-${index}`}
-											className="flex flex-wrap items-center gap-3 rounded-lg bg-card px-3 py-2 shadow-sm ring-1 ring-border/70"
-										>
-											<div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-												<Anchor className="size-4" />
-											</div>
-											<div className="min-w-0 flex-1">
-												{call.port ? (
-													<DestinationInfoDialog
-														location={call.port}
-														date={call.segment.startDateTime}
-													>
-														<button
-															type="button"
-															className="font-medium underline-offset-2 hover:underline"
+									{cruiseCalls.map((call, index) => {
+										const shipName = call.segment.details?.shipName || "";
+										const shipEntry = shipCodeMap.get(shipName.toLowerCase());
+										const excursionsUrl = call.port
+											? buildShoreExcursionsUrl({
+													lineCode: shipEntry?.lineCode,
+													shipCode: shipEntry?.shipCode,
+													arrivalDate: call.date,
+													nights: computeCruiseNights(trip.segments, shipName),
+												})
+											: null;
+										return (
+											<div
+												key={`${call.segment.id}-${call.date}-${index}`}
+												className="flex flex-wrap items-center gap-3 rounded-lg bg-card px-3 py-2 shadow-sm ring-1 ring-border/70"
+											>
+												<div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+													<Anchor className="size-4" />
+												</div>
+												<div className="min-w-0 flex-1">
+													{call.port ? (
+														<DestinationInfoDialog
+															location={call.port}
+															date={call.segment.startDateTime}
 														>
-															{call.port}
-														</button>
-													</DestinationInfoDialog>
-												) : (
-													<p className="font-medium">At sea</p>
+															<button
+																type="button"
+																className="font-medium underline-offset-2 hover:underline"
+															>
+																{call.port}
+															</button>
+														</DestinationInfoDialog>
+													) : (
+														<p className="font-medium">At sea</p>
+													)}
+													<p className="text-xs text-muted-foreground">
+														<Ship className="mr-1 inline size-3" />
+														{call.segment.details?.shipName || call.segment.title}
+													</p>
+												</div>
+												<ItineraryTime>{`${call.arrivalTime || "--:--"} / ${call.departureTime || "--:--"}`}</ItineraryTime>
+												{excursionsUrl && (
+													<Button
+														asChild
+														size="sm"
+														variant="outline"
+														className="w-full sm:w-auto"
+													>
+														<a
+															href={excursionsUrl}
+															target="_blank"
+															rel="noopener noreferrer"
+														>
+															Book your excursions
+															<ExternalLink className="size-3.5" />
+														</a>
+													</Button>
 												)}
-												<p className="text-xs text-muted-foreground">
-													<Ship className="mr-1 inline size-3" />
-													{call.segment.details?.shipName || call.segment.title}
-												</p>
 											</div>
-											<ItineraryTime>{`${call.arrivalTime || "--:--"} / ${call.departureTime || "--:--"}`}</ItineraryTime>
-										</div>
-									))}
+										);
+									})}
 									{visibleSegments.map((segment) => {
 										const meta = SEGMENT_TYPE_MAP[segment.type] || SEGMENT_TYPE_MAP.OTHER;
 										const Icon = meta.icon;
+										const shipName = segment.type === "CRUISE" ? segment.details?.shipName || "" : "";
+										const shipEntry = shipName ? shipCodeMap.get(shipName.toLowerCase()) : null;
+										const excursionsUrl = shipEntry
+											? buildShoreExcursionsUrl({
+													lineCode: shipEntry.lineCode,
+													shipCode: shipEntry.shipCode,
+													arrivalDate: segment.startDateTime,
+													nights: computeCruiseNights(trip.segments, shipName),
+												})
+											: null;
 										return (
 											<div
 												key={segment.id}
@@ -177,6 +254,23 @@ export default async function ItineraryPage({ params }) {
 													</p>
 												</div>
 												<ItineraryTime>{timeRange(segment)}</ItineraryTime>
+												{excursionsUrl && (
+													<Button
+														asChild
+														size="sm"
+														variant="outline"
+														className="w-full sm:w-auto"
+													>
+														<a
+															href={excursionsUrl}
+															target="_blank"
+															rel="noopener noreferrer"
+														>
+															Book your excursions
+															<ExternalLink className="size-3.5" />
+														</a>
+													</Button>
+												)}
 											</div>
 										);
 									})}

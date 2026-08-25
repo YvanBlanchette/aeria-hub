@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { CommissionsTable } from "@/components/commissions/commissions-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/format";
+import { StatCard } from "@/components/admin/stat-card";
 
 export const metadata = {
 	title: "Commissions — ÆRIA Hub",
@@ -85,17 +86,17 @@ export default async function CommissionsPage() {
 	return (
 		<div className="space-y-6">
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-				<CommissionStatCard
+				<StatCard
 					label="Pending"
 					value={formatCurrency(pendingAmount)}
 					icon={Clock}
 				/>
-				<CommissionStatCard
+				<StatCard
 					label="Received"
 					value={formatCurrency(receivedAmount)}
 					icon={CheckCircle2}
 				/>
-				<CommissionStatCard
+				<StatCard
 					label="Overdue portions"
 					value={overdueCount}
 					icon={AlertTriangle}

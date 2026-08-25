@@ -139,30 +139,6 @@ export default async function DashboardPage() {
 	const openBalance = openInvoices.reduce((sum, invoice) => sum + getInvoiceOutstandingBalance(invoice), 0);
 	return (
 		<div className="flex min-h-0 flex-col gap-4 overflow-hidden">
-			<div className="flex flex-wrap items-end justify-between gap-4">
-				<div>
-					<p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">Operations overview</p>
-					<h1 className="mt-1 text-2xl font-semibold tracking-tight">Dashboard</h1>
-				</div>
-				<div className="flex gap-2">
-					<Button asChild>
-						<Link href="/clients/new">
-							<Plus className="size-4" />
-							New client
-						</Link>
-					</Button>
-					<Button
-						variant="outline"
-						asChild
-					>
-						<Link href="/trips/new">
-							<Plus className="size-4" />
-							New trip
-						</Link>
-					</Button>
-				</div>
-			</div>
-
 			<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 				<StatCard
 					label="Active bookings"

@@ -92,6 +92,19 @@ export function SupplierFormDialog({ supplier, trigger }) {
 						</Select>
 					</div>
 
+					{category === "CRUISE" && (
+						<div className="space-y-2">
+							<Label htmlFor="excursionsLineCode">Shore Excursions Group line code</Label>
+							<Input
+								id="excursionsLineCode"
+								name="excursionsLineCode"
+								placeholder="50"
+								defaultValue={supplier?.excursionsLineCode ?? ""}
+							/>
+							<p className="text-xs text-muted-foreground">Powers the "Book your excursions" affiliate link in the itinerary.</p>
+						</div>
+					)}
+
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 						<div className="space-y-2">
 							<Label htmlFor="phone">{t("suppliers.form.phone", "Phone")}</Label>

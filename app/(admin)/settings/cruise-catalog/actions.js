@@ -26,7 +26,7 @@ export async function createCruiseShip(prevState, formData) {
 
 	try {
 		const ship = await prisma.cruiseShip.create({
-			data: { name, supplierId: readText(formData, "supplierId") },
+			data: { name, supplierId: readText(formData, "supplierId"), excursionsShipCode: readText(formData, "excursionsShipCode") },
 		});
 		await logActivity({ entityType: "CruiseShip", entityId: ship.id, action: "created", description: `Cruise ship "${ship.name}" created`, userId: user.id });
 	} catch (error) {
@@ -46,7 +46,7 @@ export async function updateCruiseShip(shipId, prevState, formData) {
 	try {
 		const ship = await prisma.cruiseShip.update({
 			where: { id: shipId },
-			data: { name, supplierId: readText(formData, "supplierId") },
+			data: { name, supplierId: readText(formData, "supplierId"), excursionsShipCode: readText(formData, "excursionsShipCode") },
 		});
 		await logActivity({ entityType: "CruiseShip", entityId: ship.id, action: "updated", description: `Cruise ship "${ship.name}" updated`, userId: user.id });
 	} catch (error) {

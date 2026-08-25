@@ -22,9 +22,11 @@ const STATUS_VARIANT = {
 	LOST: "destructive",
 };
 
-export default async function ClientRequestsPage() {
+export default async function ClientRequestsPage({ searchParams }) {
 	const user = await requireUser();
 	const portal = await getClientPortalRecord(user);
+	const params = await searchParams;
+	const suggestedMessage = typeof params?.message === "string" ? params.message : "";
 
 	if (!portal) {
 		return <div className="p-6 text-muted-foreground">No client profile found for this account.</div>;
@@ -63,6 +65,7 @@ export default async function ClientRequestsPage() {
 								placeholder="Tell us about a change, question, or new travel idea."
 								required
 								rows={5}
+								defaultValue={suggestedMessage}
 							/>
 						</div>
 						<Button type="submit">

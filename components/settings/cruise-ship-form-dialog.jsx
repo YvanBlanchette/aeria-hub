@@ -95,6 +95,17 @@ export function CruiseShipFormDialog({ ship, cruiseLines = [] }) {
 						</Select>
 					</div>
 
+					<div className="space-y-2">
+						<Label htmlFor="excursionsShipCode">Shore Excursions Group ship code</Label>
+						<Input
+							id="excursionsShipCode"
+							name="excursionsShipCode"
+							placeholder="690"
+							defaultValue={ship?.excursionsShipCode ?? ""}
+						/>
+						<p className="text-xs text-muted-foreground">Powers the "Book your excursions" affiliate link in the itinerary.</p>
+					</div>
+
 					{error && <p className="text-sm text-destructive">{error}</p>}
 
 					<DialogFooter showCloseButton>

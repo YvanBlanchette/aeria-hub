@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useLocale } from "@/components/i18n/locale-provider";
 import { SidebarNav } from "./sidebar-nav";
 
-export function MobileSidebar() {
+export function MobileSidebar({ user }) {
 	const [open, setOpen] = useState(false);
 	const { t } = useLocale();
 
@@ -47,7 +47,10 @@ export function MobileSidebar() {
 						</Link>
 					</SheetTitle>
 				</SheetHeader>
-				<SidebarNav onNavigate={() => setOpen(false)} />
+				<SidebarNav
+					onNavigate={() => setOpen(false)}
+					user={user}
+				/>
 				<div className="mx-3 mb-3 rounded-2xl border border-sidebar-border/70 bg-sidebar-accent/40 px-4 py-3 text-xs text-sidebar-foreground/70">
 					{t("ui.mobileWorkspace", "Mobile workspace access for trips, clients, and commissions.")}
 				</div>

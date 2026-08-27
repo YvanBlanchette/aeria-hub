@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-export function AeriaTravelProfileQuiz() {
+export function AeriaTravelProfileQuiz({ defaultFirstName = "", defaultLastName = "", defaultEmail = "" } = {}) {
 	const [answers, setAnswers] = useState(Array(QUESTIONS.length).fill(null));
 	const [step, setStep] = useState(0);
 	const [sendState, formAction, pending] = useActionState(sendTravelProfileResult, undefined);
@@ -81,7 +81,12 @@ export function AeriaTravelProfileQuiz() {
 									)}
 								>
 									<span className="leading-6">{option.label}</span>
-									<span className={cn("flex size-7 shrink-0 items-center justify-center rounded-full border", selected ? "border-primary bg-primary text-primary-foreground" : "border-border")}>
+									<span
+										className={cn(
+											"flex size-7 shrink-0 items-center justify-center rounded-full border",
+											selected ? "border-primary bg-primary text-primary-foreground" : "border-border",
+										)}
+									>
 										{selected ? <Check className="size-4" /> : <Compass className="size-3.5 text-muted-foreground" />}
 									</span>
 								</button>
@@ -162,7 +167,8 @@ export function AeriaTravelProfileQuiz() {
 						>
 							<div className="rounded-md border border-border bg-background p-4">
 								<p className="text-sm leading-6 text-muted-foreground">
-									Inscrivez vos coordonnées ci-dessous pour recevoir votre profil complet par courriel, incluant des recommandations de voyages personnalisées selon votre style, votre profil secondaire et les expériences qui vous correspondent le mieux.
+									Inscrivez vos coordonnées ci-dessous pour recevoir votre profil complet par courriel, incluant des recommandations de voyages personnalisées
+									selon votre style, votre profil secondaire et les expériences qui vous correspondent le mieux.
 								</p>
 							</div>
 							<input
@@ -176,6 +182,7 @@ export function AeriaTravelProfileQuiz() {
 									<Input
 										id="firstName"
 										name="firstName"
+										defaultValue={defaultFirstName}
 										required
 									/>
 								</div>
@@ -184,6 +191,7 @@ export function AeriaTravelProfileQuiz() {
 									<Input
 										id="lastName"
 										name="lastName"
+										defaultValue={defaultLastName}
 										required
 									/>
 								</div>
@@ -194,6 +202,7 @@ export function AeriaTravelProfileQuiz() {
 									id="email"
 									name="email"
 									type="email"
+									defaultValue={defaultEmail}
 									required
 								/>
 							</div>

@@ -31,8 +31,7 @@ export function Topbar({ user }) {
 		if (pathname === "/commissions") return t("nav.commissions", "Commissions");
 		if (pathname === "/suppliers" || pathname.startsWith("/suppliers/")) return t("nav.suppliers", "Suppliers");
 		if (pathname === "/settings") return t("nav.settings", "Settings");
-		if (pathname === "/itinerary") return t("nav.itinerary", "Itinerary");
-		if (pathname === "/travel-profile") return t("nav.travelProfile", "Travel Profile");
+		if (pathname === "/my-profile") return t("nav.travelProfile", "Travel Profile");
 		if (pathname === "/requests") return t("nav.clientRequests", "Requests");
 		return "ÆRIA Hub";
 	}
@@ -46,8 +45,7 @@ export function Topbar({ user }) {
 		if (pathname === "/commissions") return t("topbar.commissionsSubtitle", "Monitor agency earnings");
 		if (pathname === "/suppliers" || pathname.startsWith("/suppliers/")) return t("topbar.suppliersSubtitle", "Manage travel partners");
 		if (pathname === "/settings") return t("topbar.settingsSubtitle", "Configure your workspace");
-		if (pathname === "/itinerary") return t("topbar.itinerarySubtitle", "Review your travel arrangements");
-		if (pathname === "/travel-profile") return t("topbar.travelProfileSubtitle", "Discover your AERIA travel style");
+		if (pathname === "/my-profile") return t("topbar.travelProfileSubtitle", "Discover your AERIA travel style");
 		if (pathname === "/requests") return t("topbar.requestsSubtitle", "Stay connected with your advisor");
 		return t("topbar.defaultSubtitle", "AERIA travel workspace");
 	}

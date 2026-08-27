@@ -264,6 +264,13 @@ model Client {
   dietaryNotes      String?
   mobilityNotes     String?
 
+  /// AERIA travel-personality quiz result (see lib/aeria-travel-profiles.js), captured when the
+  /// client's quiz email matches this record — email-only leads never persist here.
+  aeriaProfilePrimary     String?
+  aeriaProfileSecondary   String?
+  aeriaProfileScores      Json?
+  aeriaProfileCompletedAt DateTime?
+
   status ClientStatus @default(ACTIVE)
 
   assignedAgentId String?

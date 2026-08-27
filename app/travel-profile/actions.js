@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
 import { PROFILES, QUESTIONS, getTravelProfileResult } from "@/lib/aeria-travel-profiles";
 import { renderTravelProfileEmail, sendEmail } from "@/lib/email";
 
@@ -47,6 +49,29 @@ export async function sendTravelProfileResult(prevState, formData) {
 	const primaryProfile = PROFILES[result.primary.key];
 	const secondaryProfile = PROFILES[result.secondary.key];
 	const { html, text } = renderTravelProfileEmail({ firstName, lastName, primaryProfile, secondaryProfile });
+
+	// Best-effort: attach the result to the client's record if their quiz email matches one on file.
+	// Anonymous leads with no matching client simply don't persist anything beyond the email.
+	try {
+		const matchedClient = await prisma.client.findFirst({
+			where: { OR: [{ primaryEmail: { equals: email, mode: "insensitive" } }, { secondaryEmail: { equals: email, mode: "insensitive" } }] },
+			select: { id: true },
+		});
+		if (matchedClient) {
+			await prisma.client.update({
+				where: { id: matchedClient.id },
+				data: {
+					aeriaProfilePrimary: result.primary.key,
+					aeriaProfileSecondary: result.secondary.key,
+					aeriaProfileScores: result.scores,
+					aeriaProfileCompletedAt: new Date(),
+				},
+			});
+			revalidatePath("/travel-profile");
+		}
+	} catch (error) {
+		console.error("Could not attach travel profile result to a client record", error);
+	}
 
 	const emailResult = await sendEmail({
 		to: email,

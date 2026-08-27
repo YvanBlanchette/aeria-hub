@@ -3,12 +3,11 @@ import { Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { TripFilters } from "@/components/trips/trip-filters";
 import { TripsTable } from "@/components/trips/trips-table";
+import { ClientTripsTable } from "@/components/trips/client-trips-table";
 import { LocaleText } from "@/components/i18n/locale-text";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { formatCurrency, formatDate } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { getClientPortalRecord } from "@/lib/client-portal";
 import { buildCrmCalendarEvents } from "@/lib/calendar-events";
@@ -31,44 +30,8 @@ async function ClientTripsView({ user }) {
 				<CardHeader>
 					<CardTitle>My trips</CardTitle>
 				</CardHeader>
-				<CardContent className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-3">
-					{trips.length === 0 ? (
-						<p className="text-sm text-muted-foreground">No trips are currently associated with your account.</p>
-					) : (
-						trips.map((trip) => (
-							<Link
-								key={trip.id}
-								href={`/trips/${trip.id}/overview`}
-								className="block"
-							>
-								<Card>
-									<CardHeader className="pb-2">
-										<div className="flex items-start justify-between gap-3">
-											<div>
-												<CardTitle className="text-lg">{trip.name}</CardTitle>
-												<CardDescription>{trip.destination}</CardDescription>
-											</div>
-											<Badge variant={trip.status === "BOOKED" || trip.status === "TRAVELING" ? "default" : "secondary"}>{trip.status}</Badge>
-										</div>
-									</CardHeader>
-									<CardContent className="space-y-3 text-sm">
-										<div className="flex items-center gap-2 text-muted-foreground">
-											<span>
-												{trip.startDate ? formatDate(trip.startDate) : "—"} to {trip.endDate ? formatDate(trip.endDate) : "—"}
-											</span>
-										</div>
-										<div className="text-muted-foreground">
-											{trip.finalPaymentDate ? `Final payment: ${formatDate(trip.finalPaymentDate)}` : "Final payment date not set"}
-										</div>
-										<div className="border-t border-border pt-2">
-											<span className="text-muted-foreground">Trip total</span>
-											<div className="mt-1 text-lg font-semibold">{trip.totalPrice != null ? formatCurrency(trip.totalPrice) : "—"}</div>
-										</div>
-									</CardContent>
-								</Card>
-							</Link>
-						))
-					)}
+				<CardContent className="p-0">
+					<ClientTripsTable trips={trips} />
 				</CardContent>
 			</Card>
 		</div>
